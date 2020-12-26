@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/kckrinke/go-cdk/branch/trunk/graph/badge.svg?token=8AVBADVD1S)](https://codecov.io/gh/kckrinke/go-cdk)
+
 # CDK - Curses Display Kit
 
 This package provides the GDK equivalent for [CTK](https://github.com/kckrinke/go-ctk). This is not intended to be a parity of GDK in any way, rather this package simply fulfills the terminal drawing and basic event systems required by CTK.
