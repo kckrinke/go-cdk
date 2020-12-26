@@ -1,0 +1,11 @@
+coverage.txt
+coverage.out
+.idea
+beep
+boxes
+colors
+hello_world
+mouse
+unicode
+*.log
+go_build_*_go
