@@ -59,10 +59,6 @@ ok      github.com/kckrinke/go-cdk  0.171s
 ok      github.com/kckrinke/go-cdk/terminfo 0.052s
 ```
 
-## Contributing
-
-Please read the CTK [CONTRIBUTING.md](https://github.com/kckrinke/go-ctk/CONTRIBUTING.md) page for details on code of conduct, style guide and process for submitting pull requests.
-
 ## Versioning
 
 The current API is unstable and subject to change dramatically.
