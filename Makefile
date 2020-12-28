@@ -27,6 +27,7 @@ clean:
 	@rm -fv boxes        || true
 	@rm -fv colors       || true
 	@rm -fv cdk-demo     || true
+	@rm -fv cdk-mouse    || true
 	@rm -fv hello_world  || true
 	@rm -fv mouse        || true
 	@rm -fv unicode      || true
@@ -42,6 +43,8 @@ demos: clean
 	@go build -v _demos/colors.go
 	@echo "building cdk-demo"
 	@go build -v _demos/cdk-demo.go
+	@echo "building cdk-mouse"
+	@go build -v _demos/cdk-mouse.go
 	@echo "building hello_world"
 	@go build -v _demos/hello_world.go
 	@echo "building mouse"
