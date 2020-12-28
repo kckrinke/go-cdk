@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	TAB_STOPS = 4
+	TabStops = 4
 )
 
 type Tango struct {
@@ -119,7 +119,7 @@ func (m *Tango) init() {
 				v, _ := utf8.DecodeRune(content[idx:])
 				switch v {
 				case '\t':
-					for i := 0; i < TAB_STOPS; i++ {
+					for i := 0; i < TabStops; i++ {
 						m.clean += " "
 						m.marked = append(m.marked, NewRuneCell(' ', cstyle))
 					}
