@@ -24,8 +24,6 @@ var (
 var (
 	DefaultMonoTheme = Theme{
 		Normal:      DefaultMonoCdkStyle,
-		Focused:     DefaultMonoCdkStyle.Dim(false),
-		Active:      DefaultMonoCdkStyle.Dim(false).Bold(true),
 		Border:      DefaultMonoCdkStyle.Dim(true),
 		FillRune:    DefaultFillRune,
 		BorderRunes: DefaultBorderRune,
@@ -33,8 +31,6 @@ var (
 	}
 	DefaultColorTheme = Theme{
 		Normal:      DefaultColorCdkStyle,
-		Focused:     DefaultColorCdkStyle.Dim(false),
-		Active:      DefaultColorCdkStyle.Dim(false).Bold(true),
 		Border:      DefaultColorCdkStyle.Dim(true),
 		FillRune:    DefaultFillRune,
 		BorderRunes: DefaultBorderRune,
