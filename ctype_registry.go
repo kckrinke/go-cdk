@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	CursesITypeRegistry = NewTypeRegistry()
+	ITypesManager = NewTypeRegistry()
 )
 
 type TypeRegistry interface {

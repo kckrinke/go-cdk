@@ -19,7 +19,7 @@ const (
 )
 
 func init() {
-	CursesITypeRegistry.AddType(ITypeWindow)
+	ITypesManager.AddType(ITypeWindow)
 }
 
 // Basic window interface
@@ -47,7 +47,7 @@ func (w *CWindow) Init() bool {
 	if w.CObject.Init() {
 		return true
 	}
-	CursesITypeRegistry.AddTypeItem(ITypeWindow, w)
+	ITypesManager.AddTypeItem(ITypeWindow, w)
 	return false
 }
 

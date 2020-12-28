@@ -65,7 +65,7 @@ func (o *CTypeItem) Init() (already bool) {
 		return true
 	}
 	var err error
-	o.id, err = CursesITypeRegistry.AddTypeItem(o.typeTag, o)
+	o.id, err = ITypesManager.AddTypeItem(o.typeTag, o)
 	if err != nil {
 		Fataldf(1, "AddTypeItem(%v) failed: %v", o.typeTag, err)
 	}
@@ -96,7 +96,7 @@ func (o *CTypeItem) ObjectID() int {
 }
 
 func (o *CTypeItem) DestroyObject() error {
-	return CursesITypeRegistry.RemoveTypeItem(o.typeTag, o)
+	return ITypesManager.RemoveTypeItem(o.typeTag, o)
 }
 
 // returns the unique string ITypeObject identity for this object

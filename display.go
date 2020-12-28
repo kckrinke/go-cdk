@@ -42,7 +42,7 @@ const (
 )
 
 func init() {
-	CursesITypeRegistry.AddType(ITypeDisplay)
+	ITypesManager.AddType(ITypeDisplay)
 }
 
 type DisplayCallbackFn = func(d Display) error
@@ -116,7 +116,7 @@ func (d *CDisplay) Init() (already bool) {
 	if d.CObject.Init() {
 		return true
 	}
-	CursesITypeRegistry.AddTypeItem(ITypeDisplay, d)
+	ITypesManager.AddTypeItem(ITypeDisplay, d)
 
 	d.running = false
 	d.done = make(chan bool)

@@ -21,7 +21,7 @@ const (
 )
 
 func init() {
-	CursesITypeRegistry.AddType(ITypeObject)
+	ITypesManager.AddType(ITypeObject)
 }
 
 // Basic object type

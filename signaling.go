@@ -48,7 +48,7 @@ var (
 )
 
 func init() {
-	CursesITypeRegistry.AddType(ITypeSignaling)
+	ITypesManager.AddType(ITypeSignaling)
 }
 
 type CSignaling struct {
@@ -63,7 +63,7 @@ func (o *CSignaling) Init() (already bool) {
 	if o.CTypeItem.Init() {
 		return true
 	}
-	CursesITypeRegistry.AddTypeItem(ITypeSignaling, o)
+	ITypesManager.AddTypeItem(ITypeSignaling, o)
 	return false
 }
 
