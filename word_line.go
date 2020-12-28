@@ -28,7 +28,8 @@ func NewWordLine(line string, style Style) *WordLine {
 		words: make([]*WordCell, len(words)),
 	}
 	for i, word := range words {
-		wl.words[i] = NewWordCell(word, style)
+		word, _ := NewWordCell(word, style)
+		wl.words[i] = word
 	}
 	return wl
 }

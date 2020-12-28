@@ -174,7 +174,8 @@ func (b *CTextBuffer) wrapSort(maxChars int, wordWrap WrapMode) []*WordLine {
 						sorted = append(sorted, NewWordLine("", b.style))
 						wid = 0
 						if len(sorted[lid].words) < wid {
-							sorted[lid].words = append(sorted[lid].words, NewWordCell("", b.style))
+							word, _ := NewWordCell("", b.style)
+							sorted[lid].words = append(sorted[lid].words, word)
 						}
 						sorted[lid].words[wid].characters = append(sorted[lid].words[wid].characters, char)
 					}
@@ -188,7 +189,8 @@ func (b *CTextBuffer) wrapSort(maxChars int, wordWrap WrapMode) []*WordLine {
 		truncate_loop:
 			for wid, word := range line.words {
 				if wid >= len(sorted[lid].words) {
-					sorted[lid].words = append(sorted[lid].words, NewWordCell("", b.style))
+					word, _ := NewWordCell("", b.style)
+					sorted[lid].words = append(sorted[lid].words, word)
 				}
 				for _, char := range word.characters {
 					if sorted[lid].LetterCount(true)+1+1 < maxChars {

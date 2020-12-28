@@ -14,6 +14,12 @@
 
 package cdk
 
+import (
+	"fmt"
+
+	"github.com/kckrinke/go-cdk/utils"
+)
+
 // CTextBuffer holds rows of words
 // Views can Draw text using this, along with other primitives
 
@@ -21,22 +27,39 @@ type WordCell struct {
 	characters []*CTextCell
 }
 
-func NewWordCell(word string, style Style) *WordCell {
-	wc := &WordCell{
-		characters: make([]*CTextCell, len(word)),
+func NewWordCell(word string, style Style) (*WordCell, error) {
+	w := &WordCell{}
+	if err := w.Set(word, style); err != nil {
+		return nil, err
 	}
-	wc.Set(word, style)
-	return wc
+	return w, nil
 }
 
-func (w *WordCell) Set(word string, style Style) {
+func (w WordCell) Characters() []*CTextCell {
+	return w.characters
+}
+
+func (w *WordCell) Set(word string, style Style) error {
+	if utils.HasSpace(word) {
+		return fmt.Errorf("words cannot contain spaces")
+	}
+	w.characters = make([]*CTextCell, len(word))
 	for i, c := range word {
 		w.characters[i] = NewRuneCell(c, style)
 	}
+	return nil
 }
 
 func (w WordCell) Len() int {
 	return len(w.characters)
+}
+
+func (w WordCell) Value() (word string) {
+	word = ""
+	for _, c := range w.characters {
+		word += string(c.Value())
+	}
+	return
 }
 
 func (w WordCell) String() (s string) {

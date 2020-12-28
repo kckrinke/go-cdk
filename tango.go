@@ -168,7 +168,8 @@ func (m *Tango) init() error {
 						look = true
 					} else if !unicode.IsSpace(v) {
 						if wid >= len(m.lines[lid].words) {
-							m.lines[lid].words = append(m.lines[lid].words, NewWordCell("", cstyle))
+							word, _ := NewWordCell("", cstyle)
+							m.lines[lid].words = append(m.lines[lid].words, word)
 						}
 						m.lines[lid].words[wid].characters = append(
 							m.lines[lid].words[wid].characters,
