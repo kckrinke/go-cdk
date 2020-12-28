@@ -1,5 +1,9 @@
 package cdk
 
+import (
+	"fmt"
+)
+
 var (
 	DefaultFillRune      rune  = ' '
 	DefaultMonoCdkStyle  Style = StyleDefault.Dim(true)
@@ -49,12 +53,35 @@ type BorderRune struct {
 	BottomRight rune
 }
 
+func (b BorderRune) String() string {
+	return fmt.Sprintf(
+		"{BorderRunes=%v,%v,%v,%v,%v,%v,%v,%v}",
+		b.TopRight,
+		b.Top,
+		b.TopLeft,
+		b.Left,
+		b.BottomLeft,
+		b.Bottom,
+		b.BottomRight,
+		b.Right,
+	)
+}
+
 type Theme struct {
 	Normal      Style
-	Focused     Style
-	Active      Style
 	Border      Style
 	FillRune    rune
 	BorderRunes BorderRune
 	Overlay     bool // keep existing background
+}
+
+func (t Theme) String() string {
+	return fmt.Sprintf(
+		"{Normal=%v,Border=%v,FillRune=%v,BorderRunes:%v,Overlay=%v}",
+		t.Normal,
+		t.Border,
+		t.FillRune,
+		t.BorderRunes,
+		t.Overlay,
+	)
 }

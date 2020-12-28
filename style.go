@@ -14,6 +14,10 @@
 
 package cdk
 
+import (
+	"fmt"
+)
+
 // Style represents a complete text style, including both foreground color,
 // background color, and additional attributes such as "bold" or "underline".
 //
@@ -26,6 +30,15 @@ type Style struct {
 	fg    Color
 	bg    Color
 	attrs AttrMask
+}
+
+func (s Style) String() string {
+	return fmt.Sprintf(
+		"{fg=%v,bg=%v,attrs=%v}",
+		s.fg.String(),
+		s.bg.String(),
+		s.attrs,
+	)
 }
 
 // StyleDefault represents a default style, based upon the context.
