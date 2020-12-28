@@ -19,11 +19,11 @@ func (w *MainWindow) Init() (already bool) {
 	return false
 }
 
-func (w *MainWindow) Draw(view *cdk.View) cdk.EventFlag {
-	w.LogInfo("Draw: %v", view)
-	theme := w.GetDisplay().DefaultTheme() //cdk.DefaultColorTheme //w.GetTheme()
-	size := view.GetSize()
-	view.Box(cdk.Point2I{0, 0}, size, true, true, theme)
+func (w *MainWindow) Draw(canvas *cdk.Canvas) cdk.EventFlag {
+	w.LogInfo("Draw: %s", canvas)
+	theme := w.GetDisplay().DefaultTheme()
+	size := canvas.GetSize()
+	canvas.Box(cdk.Point2I{0, 0}, size, true, true, theme)
 	content := "Hello World\n(press CTRL+c to exit)"
 	textPoint := cdk.Point2I{
 		X: size.W / 2 / 2,
@@ -33,7 +33,7 @@ func (w *MainWindow) Draw(view *cdk.View) cdk.EventFlag {
 		W: size.W / 2,
 		H: size.H / 2,
 	}
-	view.DrawText(textPoint, textSize, cdk.JUSTIFY_CENTER, false, cdk.WRAP_WORD, cdk.DefaultColorTheme.Normal, true, content)
+	canvas.DrawText(textPoint, textSize, cdk.JUSTIFY_CENTER, false, cdk.WRAP_WORD, cdk.DefaultColorTheme.Normal, true, content)
 	return cdk.EVENT_STOP
 }
 

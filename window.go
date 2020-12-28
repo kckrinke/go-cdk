@@ -17,7 +17,7 @@ type Window interface {
 	GetDisplay() Display
 	SetDisplay(d Display)
 
-	Draw(view *View) EventFlag
+	Draw(canvas *Canvas) EventFlag
 	ProcessEvent(evt Event) EventFlag
 }
 
@@ -47,7 +47,7 @@ func (w *CWindow) SetDisplay(d Display) {
 	w.display = d
 }
 
-func (w *CWindow) Draw(view *View) EventFlag {
+func (w *CWindow) Draw(canvas *Canvas) EventFlag {
 	w.LogDebug("method not implemented")
 	return EVENT_PASS
 }

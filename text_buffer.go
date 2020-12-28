@@ -12,7 +12,7 @@ var (
 type TextBuffer interface {
 	Set(input string, style Style)
 	LetterCount(spaces bool) int
-	Draw(view *View, singleLineMode bool, wordWrap WrapMode, justify Justification, align VerticalAlignment) EventFlag
+	Draw(canvas *Canvas, singleLineMode bool, wordWrap WrapMode, justify Justification, align VerticalAlignment) EventFlag
 }
 
 type CTextBuffer struct {
@@ -70,51 +70,51 @@ func (b *CTextBuffer) getPosAtChar(atLine, n int) (lid, wid, cid int) {
 	return
 }
 
-func (b *CTextBuffer) Draw(view *View, singleLine bool, wordWrap WrapMode, justify Justification, align VerticalAlignment) EventFlag {
-	if !singleLine && view.size.H == 1 {
+func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, justify Justification, align VerticalAlignment) EventFlag {
+	if !singleLine && canvas.size.H == 1 {
 		singleLine = true
 	}
-	maxChars := view.size.W
+	maxChars := canvas.size.W
 	if singleLine {
 		var atLine int
 		switch align {
 		case ALIGN_MIDDLE:
-			atLine = (view.size.H / 2) - (len(b.lines) / 2)
+			atLine = (canvas.size.H / 2) - (len(b.lines) / 2)
 		case ALIGN_BOTTOM:
-			atLine = view.size.H - len(b.lines)
+			atLine = canvas.size.H - len(b.lines)
 		case ALIGN_TOP:
 		default:
 			atLine = 0
 		}
 		spaces := b.LetterCount(true)
 		if spaces > maxChars {
-			b.truncateSingleLine(atLine, 0, view, wordWrap, maxChars)
+			b.truncateSingleLine(atLine, 0, canvas, wordWrap, maxChars)
 			return EVENT_STOP
 		}
-		b.justifySingleLine(atLine, 0, view, wordWrap, maxChars, justify)
+		b.justifySingleLine(atLine, 0, canvas, wordWrap, maxChars, justify)
 		return EVENT_STOP
 	}
-	b.wrapMultiLine(view, wordWrap, justify, align)
+	b.wrapMultiLine(canvas, wordWrap, justify, align)
 	return EVENT_STOP
 }
 
-func (b *CTextBuffer) wrapMultiLine(view *View, wordWrap WrapMode, justify Justification, align VerticalAlignment) {
+func (b *CTextBuffer) wrapMultiLine(canvas *Canvas, wordWrap WrapMode, justify Justification, align VerticalAlignment) {
 	var atLine int
 	switch align {
 	case ALIGN_MIDDLE:
-		atLine = (view.size.H / 2) - (len(b.lines) / 2)
+		atLine = (canvas.size.H / 2) - (len(b.lines) / 2)
 	case ALIGN_BOTTOM:
-		atLine = view.size.H - len(b.lines)
+		atLine = canvas.size.H - len(b.lines)
 	case ALIGN_TOP:
 	default:
 		atLine = 0
 	}
-	maxChars := view.size.W
+	maxChars := canvas.size.W
 	sorted := b.wrapSort(maxChars, wordWrap)
 	origLines := b.lines
 	b.lines = sorted
 	for y, _ := range sorted {
-		b.justifySingleLine(atLine+y, y, view, wordWrap, maxChars, justify)
+		b.justifySingleLine(atLine+y, y, canvas, wordWrap, maxChars, justify)
 	}
 	b.lines = origLines
 }
@@ -197,7 +197,7 @@ func (b *CTextBuffer) wrapSort(maxChars int, wordWrap WrapMode) []*WordLine {
 	return sorted
 }
 
-func (b *CTextBuffer) justifySingleLine(atLine, forLine int, view *View, wordWrap WrapMode, maxChars int, justify Justification) {
+func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wordWrap WrapMode, maxChars int, justify Justification) {
 	if len(b.lines) < forLine || len(b.lines[forLine].words) == 0 {
 		return
 	}
@@ -209,7 +209,7 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, view *View, wordWra
 		for x < maxChars-delta {
 			for _, word := range b.lines[forLine].words {
 				for _, char := range word.characters {
-					view.SetRune(x+delta, atLine, char.Value(), char.Style())
+					canvas.SetRune(x+delta, atLine, char.Value(), char.Style())
 					x++
 				}
 				// consume one blank space between words
@@ -219,13 +219,13 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, view *View, wordWra
 	case JUSTIFY_CENTER:
 		count := b.lines[forLine].LetterCount(true)
 		half := count / 2
-		halfway := view.size.W / 2
+		halfway := canvas.size.W / 2
 		delta := halfway - half
 		x := 0
 		for x < count {
 			for _, word := range b.lines[forLine].words {
 				for _, char := range word.characters {
-					view.SetRune(x+delta, atLine, char.Value(), char.Style())
+					canvas.SetRune(x+delta, atLine, char.Value(), char.Style())
 					x++
 				}
 				// consume one blank space between words
@@ -274,7 +274,7 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, view *View, wordWra
 		for x < len(s) {
 			for wid, word := range b.lines[forLine].words {
 				for _, char := range word.characters {
-					view.SetRune(x, atLine, char.Value(), char.Style())
+					canvas.SetRune(x, atLine, char.Value(), char.Style())
 					x++
 				}
 				if len(gaps) > wid {
@@ -288,7 +288,7 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, view *View, wordWra
 		x := 0
 		for _, word := range b.lines[forLine].words {
 			for _, char := range word.characters {
-				view.SetRune(x, atLine, char.Value(), char.Style())
+				canvas.SetRune(x, atLine, char.Value(), char.Style())
 				x++
 			}
 			// consume one blank space between words
@@ -297,7 +297,7 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, view *View, wordWra
 	}
 }
 
-func (b *CTextBuffer) truncateSingleLine(atLine, forLine int, view *View, wordWrap WrapMode, maxChars int) {
+func (b *CTextBuffer) truncateSingleLine(atLine, forLine int, canvas *Canvas, wordWrap WrapMode, maxChars int) {
 	switch wordWrap {
 	case WRAP_WORD:
 	case WRAP_WORD_CHAR:
@@ -314,7 +314,7 @@ func (b *CTextBuffer) truncateSingleLine(atLine, forLine int, view *View, wordWr
 			for i := 0; i < len(b.lines[lid].words); i++ {
 				for j := 0; j < len(b.lines[lid].words[i].characters); j++ {
 					char := b.lines[lid].words[i].characters[j]
-					view.SetRune(atLine, j, char.Value(), char.Style())
+					canvas.SetRune(atLine, j, char.Value(), char.Style())
 					if i == wid && j == cid {
 						break truncAtSpace
 					}
@@ -335,7 +335,7 @@ func (b *CTextBuffer) truncateSingleLine(atLine, forLine int, view *View, wordWr
 		for i := 0; i < len(b.lines[forLine].words); i++ {
 			for j := 0; j < len(b.lines[forLine].words[i].characters); j++ {
 				char := b.lines[forLine].words[i].characters[j]
-				view.SetRune(j, atLine, char.Value(), char.Style())
+				canvas.SetRune(j, atLine, char.Value(), char.Style())
 				count++
 				if count >= maxChars {
 					break truncAtChar

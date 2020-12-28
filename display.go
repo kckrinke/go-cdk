@@ -286,14 +286,9 @@ func (d *CDisplay) DrawScreen() EventFlag {
 	d.Lock()
 	defer d.Unlock()
 	w, h := d.screen.Size()
-	view := NewCView(Point2I{0, 0}, Rectangle{w, h}, d.GetTheme())
-	if f := window.Draw(view); f == EVENT_STOP {
-		for x := 0; x < view.size.W; x++ {
-			for y := 0; y < view.size.H; y++ {
-				cell := view.buffer.Cell(x, y)
-				d.screen.SetContent(x, y, cell.Value(), nil, cell.style)
-			}
-		}
+	canvas := NewCanvas(Point2I{0, 0}, Rectangle{w, h}, d.GetTheme())
+	if f := window.Draw(canvas); f == EVENT_STOP {
+		canvas.Render(d.screen)
 		return EVENT_STOP
 	}
 	return EVENT_PASS
