@@ -37,9 +37,9 @@ type CTextChar struct {
 	sync.RWMutex
 }
 
-func NewTextChar(b []byte) CTextChar {
+func NewTextChar(b []byte) *CTextChar {
 	r, s := utf8.DecodeRune(b)
-	return CTextChar{
+	return &CTextChar{
 		value: r,
 		width: s,
 	}

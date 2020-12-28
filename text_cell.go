@@ -32,26 +32,18 @@ type TextCell interface {
 }
 
 type CTextCell struct {
-	char  CTextChar
+	char  *CTextChar
 	style Style
 	dirty bool
 
 	sync.Mutex
 }
 
-func NewByteCell(char []byte, style Style) *CTextCell {
-	return NewTextCell(NewTextChar(char), style)
-}
-
-func NewStringCell(char string, style Style) *CTextCell {
-	return NewTextCell(NewTextChar([]byte(char)), style)
-}
-
 func NewRuneCell(char rune, style Style) *CTextCell {
 	return NewTextCell(NewTextChar([]byte(string(char))), style)
 }
 
-func NewTextCell(char CTextChar, style Style) *CTextCell {
+func NewTextCell(char *CTextChar, style Style) *CTextCell {
 	return &CTextCell{
 		char:  char,
 		style: style,
@@ -60,7 +52,7 @@ func NewTextCell(char CTextChar, style Style) *CTextCell {
 }
 
 func (t *CTextCell) Dirty() bool {
-	return t.Dirty()
+	return t.dirty
 }
 
 func (t *CTextCell) Set(r rune) {
