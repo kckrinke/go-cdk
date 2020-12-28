@@ -206,9 +206,10 @@ func TestLoggingToFiles(t *testing.T) {
 		envy.Set("GO_CDK_LOG_OUTPUT", "file")
 		envy.Set("GO_CDK_LOG_FORMAT", "pretty")
 		envy.Set("GO_CDK_LOG_LEVEL", "error")
+		envy.Set("GO_CDK_LOG_FILE", DEFAULT_LOG_PATH)
 		ReloadLogging()
-		Errorf("testing")
 		So(_cdk_logfh, ShouldNotBeNil)
+		Errorf("testing")
 		found_file := false
 		if _, err := os.Stat(DEFAULT_LOG_PATH); err == nil {
 			found_file = true

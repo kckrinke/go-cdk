@@ -127,14 +127,13 @@ func ReloadLogging() error {
 		fallthrough
 	default:
 		StopLogging()
-		if logfile := envy.Get("GO_CDK_LOG_FILE", DEFAULT_LOG_PATH); logfile != "/dev/null" {
-			logfh, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
+		if logfile := envy.Get("GO_CDK_LOG_FILE", DEFAULT_LOG_PATH); !utils.IsEmpty(logfile) && logfile != "/dev/null" {
+			logfh, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 			if err != nil {
 				return err
-			} else {
-				_cdk_logfh = logfh
-				_cdk_logger.SetOutput(_cdk_logfh)
 			}
+			_cdk_logfh = logfh
+			_cdk_logger.SetOutput(_cdk_logfh)
 		} else {
 			_cdk_logger.SetOutput(ioutil.Discard)
 		}
