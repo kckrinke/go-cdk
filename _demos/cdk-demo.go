@@ -39,7 +39,7 @@ func (w *MainWindow) Draw(view *cdk.View) cdk.EventFlag {
 
 func (w *MainWindow) ProcessEvent(evt cdk.Event) cdk.EventFlag {
 	w.LogInfo("ProcessEvent: %v", evt)
-	return cdk.EVENT_PASS
+	return cdk.EVENT_STOP
 }
 
 func main() {
