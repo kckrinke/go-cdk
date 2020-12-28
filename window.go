@@ -26,6 +26,9 @@ func init() {
 type Window interface {
 	Object
 
+	GetTitle() string
+	SetTitle(title string)
+
 	GetDisplay() Display
 	SetDisplay(d Display)
 
@@ -49,6 +52,14 @@ func (w *CWindow) Init() bool {
 	}
 	ITypesManager.AddTypeItem(ITypeWindow, w)
 	return false
+}
+
+func (w *CWindow) SetTitle(title string) {
+	w.title = title
+}
+
+func (w *CWindow) GetTitle() string {
+	return w.title
 }
 
 func (w *CWindow) GetDisplay() Display {
