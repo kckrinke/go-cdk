@@ -1,6 +1,7 @@
 package cdk
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -78,7 +79,11 @@ func (t *CTextCell) Value() rune {
 }
 
 func (t *CTextCell) String() string {
-	return t.char.String()
+	return fmt.Sprintf(
+		"{Char=%s,Style=%s}",
+		t.char.String(),
+		t.style.String(),
+	)
 }
 
 func (t *CTextCell) Style() Style {
