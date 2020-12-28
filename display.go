@@ -385,9 +385,6 @@ func (d *CDisplay) runRequestThread() {
 }
 func (d *CDisplay) Run() error {
 	d.CaptureScreen(d.ttyPath)
-	// if err := d.App().InitUI(d.App().GetContext()); err != nil {
-	// 	return err
-	// }
 	d.running = true
 	go d.runPollEventThread()
 	go d.runProcessEventThread()

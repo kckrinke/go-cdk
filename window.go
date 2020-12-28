@@ -1,7 +1,5 @@
 package cdk
 
-// basically what ctk.Window is right now
-
 const (
 	ITypeWindow ITypeTag = "window"
 )
