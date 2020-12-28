@@ -25,15 +25,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	. "github.com/smartystreets/goconvey/convey"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
-
-	"github.com/kckrinke/go-cdk/utils"
 )
 
 func TestLoggingInit(t *testing.T) {
 	Convey("Logging initialization checks", t, func() {
 		// check for system event
-		So(_cdk_system_events[SYSTEM_EVENT_BOOT]["cdk.logging.boot"], ShouldNotBeNil)
-		So(_cdk_system_events[SYSTEM_EVENT_SHUTDOWN]["cdk.logging.shutdown"], ShouldNotBeNil)
 		// test output methods: stdout, stderr, file, filepath, /dev/null
 		logged, _, err := DoWithFakeIO(func() error {
 			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
@@ -246,7 +242,7 @@ func TestLoggingToFiles(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(logged), ShouldEndWith, "testing\n")
 		So(_cdk_logfh, ShouldNotBeNil)
-		HandleSystemEvent(SYSTEM_EVENT_SHUTDOWN)
+		StopLogging()
 		So(_cdk_logfh, ShouldBeNil)
 		os.Chmod(tmp_log, 0000)
 		err = ReloadLogging()
