@@ -8,18 +8,18 @@ import (
 	"github.com/kckrinke/go-cdk"
 )
 
-type MainWindow struct {
+type CdkDemoWindow struct {
 	cdk.CWindow
 }
 
-func (w *MainWindow) Init() (already bool) {
+func (w *CdkDemoWindow) Init() (already bool) {
 	if w.CWindow.Init() {
 		return true
 	}
 	return false
 }
 
-func (w *MainWindow) Draw(canvas *cdk.Canvas) cdk.EventFlag {
+func (w *CdkDemoWindow) Draw(canvas *cdk.Canvas) cdk.EventFlag {
 	w.LogInfo("Draw: %s", canvas)
 	theme := w.GetDisplay().DefaultTheme()
 	size := canvas.GetSize()
@@ -37,7 +37,7 @@ func (w *MainWindow) Draw(canvas *cdk.Canvas) cdk.EventFlag {
 	return cdk.EVENT_STOP
 }
 
-func (w *MainWindow) ProcessEvent(evt cdk.Event) cdk.EventFlag {
+func (w *CdkDemoWindow) ProcessEvent(evt cdk.Event) cdk.EventFlag {
 	w.LogInfo("ProcessEvent: %v", evt)
 	return cdk.EVENT_STOP
 }
@@ -51,9 +51,9 @@ func main() {
 		"CDK Demo",
 		"/dev/tty",
 		func(d cdk.Display) error {
-			cdk.Debugf("ctk-demo initFn hit")
+			cdk.Debugf("cdk-demo initFn hit")
 			d.CaptureCtrlC()
-			w := &MainWindow{}
+			w := &CdkDemoWindow{}
 			w.Init()
 			d.SetActiveWindow(w)
 			return nil

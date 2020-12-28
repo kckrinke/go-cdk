@@ -1,4 +1,4 @@
-//+build ignore
+// +build ignore
 
 // Copyright 2015 The TCell Authors
 //
@@ -21,6 +21,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/kckrinke/go-cdk"
 	"github.com/kckrinke/go-cdk/encoding"
@@ -100,16 +101,30 @@ func drawSelect(s cdk.Screen, x1, y1, x2, y2 int, sel bool) {
 func main() {
 
 	encoding.Register()
-	if err := cdk.MainInit(); err != nil {
-		cdk.Fatalf("MainInit() error: %v", err)
+
+	s, e := cdk.NewScreen()
+	if e != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", e)
+		os.Exit(1)
 	}
-	s := cdk.MainScreen()
+	if e := s.Init(); e != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", e)
+		os.Exit(1)
+	}
+	defStyle = cdk.StyleDefault.
+		Background(cdk.ColorReset).
+		Foreground(cdk.ColorReset)
+	s.SetStyle(defStyle)
+	s.EnableMouse()
+	s.EnablePaste()
+	s.Clear()
 
 	posfmt := "Mouse: %d, %d  "
 	btnfmt := "Buttons: %s"
 	keyfmt := "Keys: %s"
 	pastefmt := "Paste: [%d] %s"
-	white := cdk.StyleDefault.Foreground(cdk.ColorWhite).Background(cdk.ColorRed)
+	white := cdk.StyleDefault.
+		Foreground(cdk.ColorWhite).Background(cdk.ColorRed)
 
 	mx, my := -1, -1
 	ox, oy := -1, -1
@@ -121,125 +136,8 @@ func main() {
 	pstr := ""
 	ecnt := 0
 	pasting := false
-	st := cdk.StyleDefault.Background(cdk.ColorRed)
-	up := cdk.StyleDefault.
-		Background(cdk.ColorBlue).
-		Foreground(cdk.ColorBlack)
 
-	cdk.SetMainPasteHandler(func(ev *cdk.EventPaste) error {
-		pasting = ev.Start()
-		if pasting {
-			pstr = ""
-		}
-		return nil
-	})
-	cdk.SetMainResizeHandler(func(ev *cdk.EventResize) error {
-		s.Sync()
-		s.SetContent(w-1, h-1, 'R', nil, st)
-		return nil
-	})
-	cdk.SetMainKeyHandler(func(ev *cdk.EventKey) error {
-		s.SetContent(w-2, h-2, ev.Rune(), nil, st)
-		if pasting {
-			s.SetContent(w-1, h-1, 'P', nil, st)
-			if ev.Key() == cdk.KeyRune {
-				pstr = pstr + string(ev.Rune())
-			} else {
-				pstr = pstr + "\ufffd" // replacement for now
-			}
-			lks = ""
-			return nil
-		}
-		pstr = ""
-		s.SetContent(w-1, h-1, 'K', nil, st)
-		if ev.Key() == cdk.KeyEscape {
-			ecnt++
-			if ecnt > 1 {
-				cdk.MainQuit()
-			}
-		} else if ev.Key() == cdk.KeyCtrlL {
-			s.Sync()
-		} else {
-			ecnt = 0
-			if ev.Rune() == 'C' || ev.Rune() == 'c' {
-				s.Clear()
-			}
-		}
-		lks = ev.Name()
-		return nil
-	})
-	cdk.SetMainMouseHandler(func(ev *cdk.EventMouse) error {
-		x, y := ev.Position()
-		button := ev.Buttons()
-		for i := uint(0); i < 8; i++ {
-			if int(button)&(1<<i) != 0 {
-				bstr += fmt.Sprintf(" Button%d", i+1)
-			}
-		}
-		if button&cdk.WheelUp != 0 {
-			bstr += " WheelUp"
-		}
-		if button&cdk.WheelDown != 0 {
-			bstr += " WheelDown"
-		}
-		if button&cdk.WheelLeft != 0 {
-			bstr += " WheelLeft"
-		}
-		if button&cdk.WheelRight != 0 {
-			bstr += " WheelRight"
-		}
-		// Only buttons, not wheel events
-		button &= cdk.ButtonMask(0xff)
-		ch := '*'
-
-		if button != cdk.ButtonNone && ox < 0 {
-			ox, oy = x, y
-		}
-		switch ev.Buttons() {
-		case cdk.ButtonNone:
-			if ox >= 0 {
-				bg := cdk.Color((lchar-'0')*2) | cdk.ColorValid
-				drawBox(s, ox, oy, x, y,
-					up.Background(bg),
-					lchar)
-				ox, oy = -1, -1
-				bx, by = -1, -1
-			}
-		case cdk.Button1:
-			ch = '1'
-		case cdk.Button2:
-			ch = '2'
-		case cdk.Button3:
-			ch = '3'
-		case cdk.Button4:
-			ch = '4'
-		case cdk.Button5:
-			ch = '5'
-		case cdk.Button6:
-			ch = '6'
-		case cdk.Button7:
-			ch = '7'
-		case cdk.Button8:
-			ch = '8'
-		default:
-			ch = '*'
-
-		}
-		if button != cdk.ButtonNone {
-			bx, by = x, y
-		}
-		lchar = ch
-		s.SetContent(w-1, h-1, 'M', nil, st)
-		mx, my = x, y
-
-		return nil
-	})
-	cdk.SetMainDefaultHandler(func(ev cdk.Event) error {
-		cdk.Infof("default event: %v\n", ev)
-		s.SetContent(w-1, h-1, 'X', nil, st)
-		return nil
-	})
-	cdk.SetMainPreLoopHandler(func() error {
+	for {
 		drawBox(s, 1, 1, 42, 7, white, ' ')
 		emitStr(s, 2, 2, white, "Press ESC twice to exit, C to clear.")
 		emitStr(s, 2, 3, white, fmt.Sprintf(posfmt, mx, my))
@@ -254,23 +152,125 @@ func main() {
 
 		s.Show()
 		bstr = ""
-
+		ev := s.PollEvent()
+		st := cdk.StyleDefault.Background(cdk.ColorRed)
+		up := cdk.StyleDefault.
+			Background(cdk.ColorBlue).
+			Foreground(cdk.ColorBlack)
 		w, h = s.Size()
 
 		// always clear any old selection box
 		if ox >= 0 && oy >= 0 && bx >= 0 {
 			drawSelect(s, ox, oy, bx, by, false)
 		}
-		return nil
-	})
-	cdk.SetMainPostLoopHandler(func() error {
+
+		switch ev := ev.(type) {
+		case *cdk.EventResize:
+			s.Sync()
+			s.SetContent(w-1, h-1, 'R', nil, st)
+		case *cdk.EventKey:
+			s.SetContent(w-2, h-2, ev.Rune(), nil, st)
+			if pasting {
+				s.SetContent(w-1, h-1, 'P', nil, st)
+				if ev.Key() == cdk.KeyRune {
+					pstr = pstr + string(ev.Rune())
+				} else {
+					pstr = pstr + "\ufffd" // replacement for now
+				}
+				lks = ""
+				continue
+			}
+			pstr = ""
+			s.SetContent(w-1, h-1, 'K', nil, st)
+			if ev.Key() == cdk.KeyEscape {
+				ecnt++
+				if ecnt > 1 {
+					s.Close()
+					os.Exit(0)
+				}
+			} else if ev.Key() == cdk.KeyCtrlL {
+				s.Sync()
+			} else {
+				ecnt = 0
+				if ev.Rune() == 'C' || ev.Rune() == 'c' {
+					s.Clear()
+				}
+			}
+			lks = ev.Name()
+		case *cdk.EventPaste:
+			pasting = ev.Start()
+			if pasting {
+				pstr = ""
+			}
+		case *cdk.EventMouse:
+			x, y := ev.Position()
+			button := ev.Buttons()
+			for i := uint(0); i < 8; i++ {
+				if int(button)&(1<<i) != 0 {
+					bstr += fmt.Sprintf(" Button%d", i+1)
+				}
+			}
+			if button&cdk.WheelUp != 0 {
+				bstr += " WheelUp"
+			}
+			if button&cdk.WheelDown != 0 {
+				bstr += " WheelDown"
+			}
+			if button&cdk.WheelLeft != 0 {
+				bstr += " WheelLeft"
+			}
+			if button&cdk.WheelRight != 0 {
+				bstr += " WheelRight"
+			}
+			// Only buttons, not wheel events
+			button &= cdk.ButtonMask(0xff)
+			ch := '*'
+
+			if button != cdk.ButtonNone && ox < 0 {
+				ox, oy = x, y
+			}
+			switch ev.Buttons() {
+			case cdk.ButtonNone:
+				if ox >= 0 {
+					bg := cdk.Color((lchar-'0')*2) | cdk.ColorValid
+					drawBox(s, ox, oy, x, y,
+						up.Background(bg),
+						lchar)
+					ox, oy = -1, -1
+					bx, by = -1, -1
+				}
+			case cdk.Button1:
+				ch = '1'
+			case cdk.Button2:
+				ch = '2'
+			case cdk.Button3:
+				ch = '3'
+			case cdk.Button4:
+				ch = '4'
+			case cdk.Button5:
+				ch = '5'
+			case cdk.Button6:
+				ch = '6'
+			case cdk.Button7:
+				ch = '7'
+			case cdk.Button8:
+				ch = '8'
+			default:
+				ch = '*'
+
+			}
+			if button != cdk.ButtonNone {
+				bx, by = x, y
+			}
+			lchar = ch
+			s.SetContent(w-1, h-1, 'M', nil, st)
+			mx, my = x, y
+		default:
+			s.SetContent(w-1, h-1, 'X', nil, st)
+		}
+
 		if ox >= 0 && bx >= 0 {
 			drawSelect(s, ox, oy, bx, by, true)
 		}
-		return nil
-	})
-	if err := cdk.MainLoop(); err != nil {
-		cdk.Errorf("exiting main loop, error - %v\n", err)
 	}
-	cdk.MainQuit()
 }
