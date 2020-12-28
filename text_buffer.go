@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	TAB_SPACE = "    "
+	TapSpace = "    "
 )
 
 type TextBuffer interface {
@@ -25,8 +25,8 @@ type CTextBuffer struct {
 func NewTextBuffer(input string, style Style) TextBuffer {
 	tb := &CTextBuffer{
 		lines: make([]*WordLine, 0),
+		style: style,
 	}
-	tb.style = style
 	tb.Set(input, style)
 	return tb
 }
@@ -51,20 +51,14 @@ func (b *CTextBuffer) LetterCount(spaces bool) int {
 
 func (b *CTextBuffer) getPosAtChar(atLine, n int) (lid, wid, cid int) {
 	c := 0
-	var line *WordLine
+	lid = atLine
 	var word *WordCell
-	for lid, line = range b.lines {
-		// TODO: sort this out better
-		if lid != atLine {
-			continue
-		}
-		for wid, word = range line.words {
-			for cid, _ = range word.characters {
-				if c == n {
-					return
-				}
-				c++
+	for wid, word = range b.lines[atLine].words {
+		for cid, _ = range word.characters {
+			if c == n {
+				return
 			}
+			c++
 		}
 	}
 	return
@@ -180,7 +174,7 @@ func (b *CTextBuffer) wrapSort(maxChars int, wordWrap WrapMode) []*WordLine {
 		truncate_loop:
 			for wid, word := range line.words {
 				if wid >= len(sorted[lid].words) {
-					sorted[lid].words = append(sorted[lid].words, &WordCell{})
+					sorted[lid].words = append(sorted[lid].words, NewWordCell("", b.style))
 				}
 				for _, char := range word.characters {
 					if sorted[lid].LetterCount(true)+1+1 < maxChars {
@@ -212,8 +206,10 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 					canvas.SetRune(x+delta, atLine, char.Value(), char.Style())
 					x++
 				}
-				// consume one blank space between words
-				x++
+				if x < maxChars-delta {
+					canvas.SetRune(x, atLine, ' ', b.style)
+					x++
+				}
 			}
 		}
 	case JUSTIFY_CENTER:
@@ -224,12 +220,16 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		x := 0
 		for x < count {
 			for _, word := range b.lines[forLine].words {
+				var lastStyle Style
 				for _, char := range word.characters {
 					canvas.SetRune(x+delta, atLine, char.Value(), char.Style())
+					lastStyle = char.Style()
 					x++
 				}
-				// consume one blank space between words
-				x++
+				if x < count {
+					canvas.SetRune(x+delta, atLine, ' ', lastStyle)
+					x++
+				}
 			}
 		}
 	case JUSTIFY_FILL:
@@ -238,7 +238,7 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		if numgap == 0 {
 			return
 		}
-		var gaps []string
+		gaps := []string{}
 		for i := 0; i < numgap; i++ {
 			gaps = append(gaps, " ")
 		}
@@ -273,12 +273,17 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		x := 0
 		for x < len(s) {
 			for wid, word := range b.lines[forLine].words {
+				var lastStyle Style
 				for _, char := range word.characters {
 					canvas.SetRune(x, atLine, char.Value(), char.Style())
+					lastStyle = char.Style()
 					x++
 				}
-				if len(gaps) > wid {
-					x += len(gaps[wid])
+				if len(gaps) > wid && x < len(s) {
+					for i := 0; i < len(gaps[wid]); i++ {
+						canvas.SetRune(x, atLine, ' ', lastStyle)
+						x++
+					}
 				}
 			}
 		}
@@ -286,13 +291,18 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		fallthrough
 	default:
 		x := 0
+		count := b.lines[forLine].LetterCount(true)
 		for _, word := range b.lines[forLine].words {
+			var lastStyle Style
 			for _, char := range word.characters {
 				canvas.SetRune(x, atLine, char.Value(), char.Style())
+				lastStyle = char.Style()
 				x++
 			}
-			// consume one blank space between words
-			x++
+			if x < count {
+				canvas.SetRune(x, atLine, ' ', lastStyle)
+				x++
+			}
 		}
 	}
 }
