@@ -88,7 +88,11 @@ func (cb *CellBuffer) SetContent(x int, y int, mainc rune, combc []rune, style S
 	if x >= 0 && y >= 0 && x < cb.w && y < cb.h {
 		c := cb.cells[(y*cb.w)+x]
 		c.Lock()
-		c.currComb = append([]rune{}, combc...)
+		if combc == nil {
+			c.currComb = []rune{}
+		} else {
+			c.currComb = append([]rune{}, combc...)
+		}
 		if c.currMain != mainc {
 			c.width = runewidth.RuneWidth(mainc)
 		}
