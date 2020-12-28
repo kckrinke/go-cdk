@@ -29,8 +29,9 @@ type cell struct {
 	lastStyle Style
 	lastComb  []rune
 	width     int
+	valid     bool
 
-	mutex *sync.Mutex
+	sync.Mutex
 }
 
 func newCell() *cell {
@@ -40,21 +41,13 @@ func newCell() *cell {
 }
 
 func (c *cell) init() bool {
-	if c.mutex == nil {
+	if !c.valid {
 		c.currComb = make([]rune, 0)
 		c.lastComb = make([]rune, 0)
-		c.mutex = &sync.Mutex{}
+		c.valid = true
 		return true
 	}
 	return false
-}
-
-func (c *cell) lock() {
-	c.mutex.Lock()
-}
-
-func (c *cell) unlock() {
-	c.mutex.Unlock()
 }
 
 // CellBuffer represents a two dimensional array of character cells.
@@ -67,8 +60,9 @@ type CellBuffer struct {
 	w     int
 	h     int
 	cells []*cell
+	valid bool
 
-	mutex *sync.Mutex
+	sync.Mutex
 }
 
 func NewCellBuffer() *CellBuffer {
@@ -78,38 +72,29 @@ func NewCellBuffer() *CellBuffer {
 }
 
 func (cb *CellBuffer) init() bool {
-	if cb.mutex == nil {
+	if !cb.valid {
 		cb.cells = make([]*cell, 0)
-		cb.mutex = &sync.Mutex{}
+		cb.valid = true
 		return true
 	}
 	return false
 }
 
-func (cb *CellBuffer) lock() {
-	cb.mutex.Lock()
-}
-
-func (cb *CellBuffer) unlock() {
-	cb.mutex.Unlock()
-}
-
 // SetContent sets the contents (primary rune, combining runes,
 // and style) for a cell at a given location.
 func (cb *CellBuffer) SetContent(x int, y int, mainc rune, combc []rune, style Style) {
-	Tracef("x=%d, y=%d, rune=%v, style=%v", x, y, mainc, style)
-	cb.lock()
-	defer cb.unlock()
+	cb.Lock()
+	defer cb.Unlock()
 	if x >= 0 && y >= 0 && x < cb.w && y < cb.h {
 		c := cb.cells[(y*cb.w)+x]
-		c.lock()
+		c.Lock()
 		c.currComb = append([]rune{}, combc...)
 		if c.currMain != mainc {
 			c.width = runewidth.RuneWidth(mainc)
 		}
 		c.currMain = mainc
 		c.currStyle = style
-		c.unlock()
+		c.Unlock()
 	}
 }
 
@@ -118,38 +103,38 @@ func (cb *CellBuffer) SetContent(x int, y int, mainc rune, combc []rune, style S
 // nil), the style, and the display width in cells.  (The width can be
 // either 1, normally, or 2 for East Asian full-width characters.)
 func (cb *CellBuffer) GetContent(x, y int) (mainc rune, combc []rune, style Style, width int) {
-	cb.lock()
-	defer cb.unlock()
+	cb.Lock()
+	defer cb.Unlock()
 	if x >= 0 && y >= 0 && x < cb.w && y < cb.h {
 		c := cb.cells[(y*cb.w)+x]
-		c.lock()
+		c.Lock()
 		mainc, combc, style = c.currMain, c.currComb, c.currStyle
 		if width = c.width; width == 0 || mainc < ' ' {
 			width = 1
 			mainc = ' '
 		}
-		c.unlock()
+		c.Unlock()
 	}
 	return
 }
 
 // Size returns the (width, height) in cells of the buffer.
 func (cb *CellBuffer) Size() (w, h int) {
-	cb.lock()
-	defer cb.unlock()
+	cb.Lock()
+	defer cb.Unlock()
 	w, h = cb.w, cb.h
 	return
 }
 
 // Invalidate marks all characters within the buffer as dirty.
 func (cb *CellBuffer) Invalidate() {
-	Tracef("called")
-	cb.lock()
-	defer cb.unlock()
+	Tracef("invalidate called")
+	cb.Lock()
+	defer cb.Unlock()
 	for i := range cb.cells {
-		cb.cells[i].lock()
+		cb.cells[i].Lock()
 		cb.cells[i].lastMain = rune(0)
-		cb.cells[i].unlock()
+		cb.cells[i].Unlock()
 	}
 }
 
@@ -158,8 +143,8 @@ func (cb *CellBuffer) Invalidate() {
 // if the cell content is different since the last time it was
 // marked clean.
 func (cb *CellBuffer) Dirty(x, y int) bool {
-	cb.lock()
-	defer cb.unlock()
+	cb.Lock()
+	defer cb.Unlock()
 	if x >= 0 && y >= 0 && x < cb.w && y < cb.h {
 		c := cb.cells[(y*cb.w)+x]
 		if c.lastMain == rune(0) {
@@ -187,12 +172,11 @@ func (cb *CellBuffer) Dirty(x, y int) bool {
 // been displayed (in which case dirty is false), or to manually
 // force a cell to be marked dirty.
 func (cb *CellBuffer) SetDirty(x, y int, dirty bool) {
-	Tracef("x=%d, y=%d, dirty=%v", x, y, dirty)
-	cb.lock()
-	defer cb.unlock()
+	cb.Lock()
+	defer cb.Unlock()
 	if x >= 0 && y >= 0 && x < cb.w && y < cb.h {
 		c := cb.cells[(y*cb.w)+x]
-		c.lock()
+		c.Lock()
 		if dirty {
 			c.lastMain = rune(0)
 		} else {
@@ -203,7 +187,7 @@ func (cb *CellBuffer) SetDirty(x, y int, dirty bool) {
 			c.lastComb = c.currComb
 			c.lastStyle = c.currStyle
 		}
-		c.unlock()
+		c.Unlock()
 	}
 }
 
@@ -215,8 +199,8 @@ func (cb *CellBuffer) Resize(w, h int) {
 	if cb.h == h && cb.w == w {
 		return
 	}
-	cb.lock()
-	defer cb.unlock()
+	cb.Lock()
+	defer cb.Unlock()
 	if w == 0 || h == 0 {
 		cb.cells = make([]*cell, 0)
 		return
@@ -228,14 +212,14 @@ func (cb *CellBuffer) Resize(w, h int) {
 			k := (y * cb.w) + x
 			if len(cb.cells) > k {
 				oc := cb.cells[k]
-				oc.lock()
+				oc.Lock()
 				if oc != nil {
 					nc.currMain = oc.currMain
 					nc.currComb = oc.currComb
 					nc.currStyle = oc.currStyle
 					nc.width = oc.width
 				}
-				oc.unlock()
+				oc.Unlock()
 			}
 			nc.lastMain = rune(0)
 			newc[(y*w)+x] = nc
@@ -251,14 +235,14 @@ func (cb *CellBuffer) Resize(w, h int) {
 // support combining characters, or characters with a width larger than one.
 func (cb *CellBuffer) Fill(r rune, style Style) {
 	Tracef("rune=%v, style=%v", r, style)
-	cb.lock()
-	defer cb.unlock()
+	cb.Lock()
+	defer cb.Unlock()
 	for _, c := range cb.cells {
-		c.lock()
+		c.Lock()
 		c.currMain = r
 		c.currComb = nil
 		c.currStyle = style
 		c.width = 1
-		c.unlock()
+		c.Unlock()
 	}
 }
