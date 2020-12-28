@@ -14,62 +14,188 @@
 
 package cdk
 
+// cli, flags, timers, threading, logging
+
 import (
 	"fmt"
+	"sort"
+
+	"github.com/gobuffalo/envy"
+	"github.com/urfave/cli/v2"
 )
 
-var cdkMainScreen Screen
+type ScreenStateReq uint64
 
-func MainScreen() Screen {
-	return cdkMainScreen
+const (
+	NullRequest ScreenStateReq = 1 << iota
+	DrawRequest
+	ShowRequest
+	SyncRequest
+	QuitRequest
+)
+
+type DisplayInitFn = func(d Display) error
+
+type App interface {
+	GetContext() *cli.Context
+	Tag() string
+	Title() string
+	Name() string
+	Display() Display
+	CLI() *cli.App
+	Version() string
+	InitUI(c *cli.Context) error
+	AddFlag(f cli.Flag)
+	AddCommand(c *cli.Command)
+	Run(args []string) error
+	MainActionFn(c *cli.Context) error
 }
 
-func SetMainScreen(s Screen) {
-	cdkMainScreen = s
+type CApp struct {
+	name    string
+	usage   string
+	version string
+	tag     string
+	title   string
+	ttyPath string
+	display *CDisplay
+	context *cli.Context
+	cli     *cli.App
+	initFn  DisplayInitFn
+	valid   bool
 }
 
-var cdkDidBoot = false
+func NewApp(name, usage, version, tag, title, ttyPath string, initFn DisplayInitFn) *CApp {
+	app := &CApp{
+		name:    name,
+		usage:   usage,
+		version: version,
+		tag:     tag,
+		title:   title,
+		ttyPath: ttyPath,
+		initFn:  initFn,
+	}
+	app.init()
+	return app
+}
 
-func Bootstrap() error {
-	if cdkDidBoot {
+func (app *CApp) init() {
+	app.display = NewDisplay(app.title, app.ttyPath)
+	app.display.app = app
+	app.cli = &cli.App{
+		Name:    app.name,
+		Usage:   app.usage,
+		Version: app.version,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "cdk-log-file",
+				EnvVars:     []string{"GO_CDK_LOG_FILE"},
+				Value:       "",
+				Usage:       "path to log file",
+				DefaultText: DEFAULT_LOG_PATH,
+			},
+			&cli.StringFlag{
+				Name:        "cdk-log-level",
+				EnvVars:     []string{"GO_CDK_LOG_LEVEL"},
+				Value:       "error",
+				Usage:       "highest level of verbosity",
+				DefaultText: "error",
+			},
+			&cli.StringFlag{
+				Name:        "cdk-log-format",
+				EnvVars:     []string{"GO_CDK_LOG_FORMAT"},
+				Value:       "pretty",
+				Usage:       "json, text or pretty",
+				DefaultText: "pretty",
+			},
+			&cli.BoolFlag{
+				Name:  "cdk-log-levels",
+				Value: false,
+				Usage: "list the levels of logging verbosity",
+			},
+		},
+		Commands: []*cli.Command{},
+		Action:   app.MainActionFn,
+	}
+	cli.VersionFlag = &cli.BoolFlag{
+		Name:    "version",
+		Aliases: []string{},
+		Usage:   "display the version",
+	}
+	cli.HelpFlag = &cli.BoolFlag{
+		Name:    "help",
+		Aliases: []string{"h", "usage"},
+		Usage:   "display command-line usage information",
+	}
+	app.valid = true
+	return
+}
+
+func (app *CApp) GetContext() *cli.Context {
+	return app.context
+}
+
+func (app *CApp) Tag() string {
+	return app.tag
+}
+
+func (app *CApp) Title() string {
+	return app.title
+}
+
+func (app *CApp) Name() string {
+	return app.name
+}
+
+func (app *CApp) Display() Display {
+	return app.display
+}
+
+func (app *CApp) CLI() *cli.App {
+	return app.cli
+}
+
+func (app *CApp) Version() string {
+	return app.version
+}
+
+func (app *CApp) InitUI(c *cli.Context) error {
+	return app.initFn(app.Display())
+}
+
+func (app *CApp) AddFlag(f cli.Flag) {
+	app.cli.Flags = append(app.cli.Flags, f)
+}
+
+func (app *CApp) AddCommand(c *cli.Command) {
+	app.cli.Commands = append(app.cli.Commands, c)
+}
+
+func (app *CApp) Run(args []string) error {
+	sort.Sort(cli.CommandsByName(app.cli.Commands))
+	sort.Sort(CliFlagSorter(app.cli.Flags))
+	return app.cli.Run(args)
+}
+
+func (app *CApp) MainActionFn(c *cli.Context) error {
+	if c.Bool("ctk-log-levels") {
+		for i := len(LOG_LEVELS) - 1; i >= 0; i-- {
+			fmt.Printf("%s\n", LOG_LEVELS[i])
+		}
 		return nil
 	}
-	return HandleSystemEvent(SYSTEM_EVENT_BOOT)
-}
-
-func MainInit() error {
-	return MainInitWithTty("")
-}
-
-func MainInitWithTty(ttyPath string) error {
-	Bootstrap()
-	if cdkMainScreen == nil {
-		s, e := NewScreen()
-		if e != nil {
-			return fmt.Errorf("error creating new screen: %v", e)
-		}
-		if e := s.Init(); e != nil {
-			return fmt.Errorf("error initializing new screen: %v", e)
-		}
-		defStyle := StyleDefault.
-			Background(ColorReset).
-			Foreground(ColorReset)
-		s.SetStyle(defStyle)
-		s.EnableMouse()
-		s.EnablePaste()
-		s.Clear()
-		SetMainScreen(s)
-		HandleSystemEvent(SYSTEM_EVENT_INIT)
-		return nil
+	if v := c.String("cdk-log-file"); v != "" {
+		envy.Set("GO_CDK_LOG_OUTPUT", "file")
+		envy.Set("GO_CDK_LOG_FILE", v)
 	}
-	return fmt.Errorf("non-operation: main already initialized")
-}
-
-func MainQuit() {
-	HandleSystemEvent(SYSTEM_EVENT_SHUTDOWN)
-	if cdkMainScreen != nil {
-		cdkMainScreen.Close()
-		cdkMainScreen = nil
+	if v := c.String("cdk-log-level"); v != "" {
+		envy.Set("GO_CDK_LOG_LEVEL", v)
 	}
-	Exit(0)
+	ReloadLogging()
+	defer StopLogging()
+	app.context = c
+	if err := app.InitUI(c); err != nil {
+		return err
+	}
+	return app.Display().Run()
 }
