@@ -61,25 +61,6 @@ var (
 	DEFAULT_LOG_PATH        = os.TempDir() + string(os.PathSeparator) + "cdk.log"
 )
 
-func init() {
-	AddSystemEventHandler(
-		SYSTEM_EVENT_BOOT,
-		"cdk.logging.boot",
-		ReloadLogging,
-	)
-	AddSystemEventHandler(
-		SYSTEM_EVENT_SHUTDOWN,
-		"cdk.logging.shutdown",
-		func() error {
-			if _cdk_logfh != nil {
-				_cdk_logfh.Close()
-				_cdk_logfh = nil
-			}
-			return nil
-		},
-	)
-}
-
 func ReloadLogging() error {
 	disable_timestamp := true
 	if v := envy.Get("GO_CDK_LOG_TIMESTAMPS", "false"); v == "true" {
@@ -143,10 +124,7 @@ func ReloadLogging() error {
 	case OUTPUT_FILE:
 		fallthrough
 	default:
-		if _cdk_logfh != nil {
-			_cdk_logfh.Close()
-			_cdk_logfh = nil
-		}
+		StopLogging()
 		if logfile := envy.Get("GO_CDK_LOG_FILE", DEFAULT_LOG_PATH); logfile != "/dev/null" {
 			logfh, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
 			if err != nil {
@@ -158,6 +136,14 @@ func ReloadLogging() error {
 		} else {
 			_cdk_logger.SetOutput(ioutil.Discard)
 		}
+	}
+	return nil
+}
+
+func StopLogging() error {
+	if _cdk_logfh != nil {
+		_cdk_logfh.Close()
+		_cdk_logfh = nil
 	}
 	return nil
 }
