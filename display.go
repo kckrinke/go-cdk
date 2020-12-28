@@ -274,6 +274,8 @@ func (d *CDisplay) ProcessEvent(evt Event) EventFlag {
 }
 
 func (d *CDisplay) DrawScreen() EventFlag {
+	d.Lock()
+	defer d.Unlock()
 	if d.screen == nil {
 		d.LogError("display missing screen")
 		return EVENT_PASS
@@ -283,8 +285,6 @@ func (d *CDisplay) DrawScreen() EventFlag {
 		d.LogDebug("cannot draw the screen, display missing a window")
 		return EVENT_PASS
 	}
-	d.Lock()
-	defer d.Unlock()
 	w, h := d.screen.Size()
 	canvas := NewCanvas(Point2I{0, 0}, Rectangle{w, h}, d.GetTheme())
 	if f := window.Draw(canvas); f == EVENT_STOP {
@@ -342,9 +342,6 @@ func (d *CDisplay) PostEvent(evt Event) error {
 }
 
 func (d *CDisplay) runPollEventThread() {
-	// d.display.Resize()
-	d.RequestDraw()
-	d.RequestSync()
 	for d.running {
 		d.process <- d.screen.PollEvent()
 	}
@@ -352,8 +349,6 @@ func (d *CDisplay) runPollEventThread() {
 }
 
 func (d *CDisplay) runProcessEventThread() {
-	d.RequestDraw()
-	d.RequestSync()
 	for d.running {
 		if evt := <-d.process; evt != nil {
 			if f := d.ProcessEvent(evt); f == EVENT_STOP {
@@ -364,10 +359,16 @@ func (d *CDisplay) runProcessEventThread() {
 	}
 }
 func (d *CDisplay) runRequestThread() {
+	if d.running {
+		d.RequestDraw()
+		d.RequestSync()
+	}
 	for d.running {
 		switch <-d.requests {
 		case DrawRequest:
-			d.DrawScreen()
+			if d.screen != nil {
+				d.DrawScreen()
+			}
 		case ShowRequest:
 			if d.screen != nil {
 				d.screen.Show()
