@@ -43,6 +43,10 @@ func (c *Canvas) Resize(size Rectangle) {
 	c.size = size
 }
 
+func (c *Canvas) GetContent(x, y int) (mainc rune, style Style, width int) {
+	return c.buffer.GetContent(x, y)
+}
+
 func (c *Canvas) SetContent(x, y int, char string, s Style) error {
 	r, _ := utf8.DecodeRune([]byte(char))
 	return c.buffer.SetContent(x, y, r, s)
