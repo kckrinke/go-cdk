@@ -7,8 +7,7 @@ import (
 var (
 	DefaultFillRune      rune  = ' '
 	DefaultMonoCdkStyle  Style = StyleDefault.Dim(true)
-	DefaultColorCdkStyle Style = DefaultMonoCdkStyle.Foreground(ColorWhite).Background(ColorNavy)
-	DefaultCdkStyle      Style = DefaultMonoCdkStyle
+	DefaultColorCdkStyle Style = StyleDefault.Foreground(ColorWhite).Background(ColorNavy)
 	DefaultBorderRune          = BorderRune{
 		TopLeft:     RuneULCorner,
 		Top:         RuneHLine,
