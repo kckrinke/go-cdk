@@ -23,6 +23,7 @@ package cdk
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -40,16 +41,19 @@ type Tango struct {
 	lines  []*WordLine
 }
 
-func NewMarkup(text string, style Style) *Tango {
+func NewMarkup(text string, style Style) (markup *Tango, err error) {
 	if !strings.HasPrefix(text, "<markup") {
 		text = "<markup>" + text + "</markup>"
 	}
-	m := &Tango{
+	markup = &Tango{
 		raw:   text,
 		style: style,
 	}
-	m.init()
-	return m
+	err = markup.init()
+	if err != nil {
+		markup = nil
+	}
+	return
 }
 
 func (m *Tango) Raw() string {
@@ -63,11 +67,12 @@ func (m *Tango) Clean() string {
 func (m *Tango) TextBuffer() *CTextBuffer {
 	tb := &CTextBuffer{
 		lines: m.lines,
+		style: m.style,
 	}
 	return tb
 }
 
-func (m *Tango) init() {
+func (m *Tango) init() error {
 	m.clean = ""
 	m.marked = []*CTextCell{}
 	m.lines = []*WordLine{}
@@ -80,11 +85,16 @@ func (m *Tango) init() {
 	cstyle := m.style
 	pstyle := m.style
 
+	var err error
+	var token xml.Token
 	look := true
 	for {
-		token, err := parser.Token()
+		token, err = parser.Token()
 		if err != nil {
-			break
+			if err == io.EOF {
+				break
+			}
+			return err
 		}
 		switch t := token.(type) {
 		case xml.StartElement:
@@ -161,6 +171,7 @@ func (m *Tango) init() {
 			fmt.Println("Unknown")
 		}
 	}
+	return nil
 }
 
 func (m *Tango) parseStyleAttrs(attrs []xml.Attr) (style Style) {

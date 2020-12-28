@@ -125,7 +125,10 @@ func (c *Canvas) Render(screen Screen) error {
 func (c *Canvas) DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, style Style, markup bool, text string) {
 	var tb TextBuffer
 	if markup {
-		m := NewMarkup(text, style)
+		m, err := NewMarkup(text, style)
+		if err != nil {
+			Fataldf(1, "failed to parse markup: %v", err)
+		}
 		tb = m.TextBuffer()
 	} else {
 		tb = NewTextBuffer(text, style)
