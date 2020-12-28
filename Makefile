@@ -26,6 +26,7 @@ clean:
 	@rm -fv beep         || true
 	@rm -fv boxes        || true
 	@rm -fv colors       || true
+	@rm -fv cdk-demo     || true
 	@rm -fv hello_world  || true
 	@rm -fv mouse        || true
 	@rm -fv unicode      || true
@@ -38,6 +39,8 @@ demos: clean build
 	@go build -v _demos/boxes.go
 	@echo "building colors"
 	@go build -v _demos/colors.go
+	@echo "building cdk-demo"
+	@go build -v _demos/cdk-demo.go
 	@echo "building hello_world"
 	@go build -v _demos/hello_world.go
 	@echo "building mouse"
