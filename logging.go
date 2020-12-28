@@ -156,7 +156,7 @@ func get_log_prefix(depth int) string {
 		if i := strings.LastIndex(full_name, "."); i > -1 {
 			func_name = full_name[i+1:]
 		}
-		func_name = pad_left(func_name, " ", 12)
+		func_name = PadLeft(func_name, " ", 12)
 		pack_name := full_name
 		if i := strings.Index(full_name, "."); i > -1 {
 			pack_name = full_name[:i+1]

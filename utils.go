@@ -18,9 +18,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"unicode"
 )
 
-func pad_left(src, pad string, length int) string {
+func PadLeft(src, pad string, length int) string {
 	for {
 		if len(src) > length {
 			return src[0 : length+1]
@@ -29,7 +31,7 @@ func pad_left(src, pad string, length int) string {
 	}
 }
 
-func pad_right(src, pad string, length int) string {
+func PadRight(src, pad string, length int) string {
 	for {
 		if len(src) > length {
 			return src[0 : length+1]
@@ -38,7 +40,7 @@ func pad_right(src, pad string, length int) string {
 	}
 }
 
-func clean_crlf(s string) string {
+func CleanCRLF(s string) string {
 	length := len(s)
 	var last int
 	for last = length - 1; last >= 0; last-- {
@@ -50,7 +52,7 @@ func clean_crlf(s string) string {
 }
 
 func nlsprintf(format string, argv ...interface{}) string {
-	return clean_crlf(fmt.Sprintf(format, argv...))
+	return CleanCRLF(fmt.Sprintf(format, argv...))
 }
 
 var (
@@ -108,4 +110,89 @@ func DoWithFakeIO(fn func() error) (string, bool, error) {
 
 func GetLastFakeIO() (string, int, error) {
 	return _cdk__last_fake_logged, _cdk__last_fake_exited, _cdk__last_fake_error
+}
+
+var _rxIsEmpty = regexp.MustCompile(`^\s*$`)
+
+func IsEmpty(text string) bool {
+	return len(text) == 0 || _rxIsEmpty.MatchString(text)
+}
+
+func ClampI(v, min, max int) int {
+	if v < min && v <= max {
+		return v
+	}
+	if v > max {
+		return max
+	}
+	return min
+}
+
+func FloorI(v, min int) int {
+	if v < min {
+		return min
+	}
+	return v
+}
+
+// see: github.com/urfave/cli/v2
+func LexicographicLess(i, j string) bool {
+	iRunes := []rune(i)
+	jRunes := []rune(j)
+
+	lenShared := len(iRunes)
+	if lenShared > len(jRunes) {
+		lenShared = len(jRunes)
+	}
+
+	for index := 0; index < lenShared; index++ {
+		ir := iRunes[index]
+		jr := jRunes[index]
+
+		if lir, ljr := unicode.ToLower(ir), unicode.ToLower(jr); lir != ljr {
+			return lir < ljr
+		}
+
+		if ir != jr {
+			return ir < jr
+		}
+	}
+
+	return i < j
+}
+
+func SumInts(ints []int) (sum int) {
+	for _, v := range ints {
+		sum += v
+	}
+	return
+}
+
+func SolveGaps(n, max int) (gaps []int) {
+	// for n gaps, arrange max space
+	for i := 0; i < n; i++ {
+		gaps = append(gaps, 0)
+	}
+	if n < max {
+		front := false
+		fw, bw := 0, n-1
+		for SumInts(gaps) < max {
+			if front {
+				gaps[fw]++
+				front = false
+				fw++
+				if fw > n-1 {
+					fw = 0
+				}
+			} else {
+				gaps[bw]++
+				front = true
+				bw--
+				if bw < 1 {
+					bw = n - 1
+				}
+			}
+		}
+	}
+	return
 }

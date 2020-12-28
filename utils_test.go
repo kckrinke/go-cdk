@@ -22,12 +22,12 @@ import (
 
 func TestUtils(t *testing.T) {
 	Convey("Utility func checks", t, func() {
-		padded := pad_left("thing", " ", 6)
+		padded := PadLeft("thing", " ", 6)
 		So(padded[0], ShouldEqual, ' ')
-		padded = pad_right("thing", " ", 6)
+		padded = PadRight("thing", " ", 6)
 		So(padded[5], ShouldEqual, ' ')
 		nlstr := "thing\n\r\n"
-		So(clean_crlf(nlstr), ShouldEqual, "thing")
+		So(CleanCRLF(nlstr), ShouldEqual, "thing")
 		So(nlsprintf("%s\n\r\n", "thing"), ShouldEqual, "thing")
 		logged, faked_it, err := GetLastFakeIO()
 		So(logged, ShouldHaveSameTypeAs, "")
