@@ -164,8 +164,7 @@ func (d *CDisplay) DefaultTheme() Theme {
 	if d.screen != nil && d.screen.Colors() > 0 {
 		return DefaultColorTheme
 	}
-	// return DefaultMonoTheme
-	return DefaultColorTheme
+	return DefaultMonoTheme
 }
 
 func (d *CDisplay) ActiveWindow() Window {
