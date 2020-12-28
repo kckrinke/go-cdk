@@ -30,9 +30,10 @@ clean:
 	@rm -fv hello_world  || true
 	@rm -fv mouse        || true
 	@rm -fv unicode      || true
+	@rm -fv go_build_*   || true
 	@rm -fv coverage.out || true
 
-demos: clean build
+demos: clean
 	@echo "building beep"
 	@go build -v _demos/beep.go
 	@echo "building boxes"
