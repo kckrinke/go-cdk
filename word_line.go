@@ -34,6 +34,10 @@ func NewWordLine(line string, style Style) *WordLine {
 	return wl
 }
 
+func (w WordLine) Words() []*WordCell {
+	return w.words
+}
+
 func (w WordLine) LetterCount(spaces bool) int {
 	c := 0
 	for i, word := range w.words {
@@ -43,6 +47,17 @@ func (w WordLine) LetterCount(spaces bool) int {
 		c += word.Len()
 	}
 	return c
+}
+
+func (w WordLine) Value() (s string) {
+	s = ""
+	for i, c := range w.words {
+		if i > 0 {
+			s += " "
+		}
+		s += c.Value()
+	}
+	return
 }
 
 func (w WordLine) String() (s string) {
