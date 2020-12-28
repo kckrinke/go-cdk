@@ -25,6 +25,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	. "github.com/smartystreets/goconvey/convey"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+
+	"github.com/kckrinke/go-cdk/utils"
 )
 
 func TestLoggingInit(t *testing.T) {

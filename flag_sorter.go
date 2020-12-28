@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v2"
+
+	"github.com/kckrinke/go-cdk/utils"
 )
 
 // CliFlagSorter is a slice of Flag.
@@ -23,13 +25,13 @@ func (f CliFlagSorter) Less(i, j int) bool {
 	j_is_ctk := strings.HasPrefix(f[j].Names()[0], "ctk-")
 	if i_is_ctk {
 		if j_is_ctk {
-			return !LexicographicLess(f[i].Names()[0], f[j].Names()[0])
+			return !utils.LexicographicLess(f[i].Names()[0], f[j].Names()[0])
 		}
 		return false
 	} else if j_is_ctk {
 		return true
 	}
-	return LexicographicLess(f[i].Names()[0], f[j].Names()[0])
+	return utils.LexicographicLess(f[i].Names()[0], f[j].Names()[0])
 }
 
 func (f CliFlagSorter) Swap(i, j int) {

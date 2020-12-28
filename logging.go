@@ -24,6 +24,8 @@ import (
 	"github.com/gobuffalo/envy"
 	log "github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+
+	"github.com/kckrinke/go-cdk/utils"
 )
 
 const (
@@ -156,7 +158,7 @@ func get_log_prefix(depth int) string {
 		if i := strings.LastIndex(full_name, "."); i > -1 {
 			func_name = full_name[i+1:]
 		}
-		func_name = PadLeft(func_name, " ", 12)
+		func_name = utils.PadLeft(func_name, " ", 12)
 		pack_name := full_name
 		if i := strings.Index(full_name, "."); i > -1 {
 			pack_name = full_name[:i+1]
@@ -174,34 +176,34 @@ func get_log_prefix(depth int) string {
 
 func Tracef(format string, argv ...interface{}) { Tracedf(1, format, argv...) }
 func Tracedf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Tracef(nlsprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+	_cdk_logger.Tracef(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
 }
 
 func Debugf(format string, argv ...interface{}) { Debugdf(1, format, argv...) }
 func Debugdf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Debugf(nlsprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+	_cdk_logger.Debugf(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
 }
 
 func Infof(format string, argv ...interface{}) { Infodf(1, format, argv...) }
 func Infodf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Infof(nlsprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+	_cdk_logger.Infof(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
 }
 
 func Warnf(format string, argv ...interface{}) { Warndf(1, format, argv...) }
 func Warndf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Warnf(nlsprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+	_cdk_logger.Warnf(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
 }
 
 func Error(err error)                           { Errordf(1, err.Error()) }
 func Errorf(format string, argv ...interface{}) { Errordf(1, format, argv...) }
 func Errordf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Errorf(nlsprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+	_cdk_logger.Errorf(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
 }
 
 func Fatal(err error)                           { Fataldf(1, err.Error()) }
 func Fatalf(format string, argv ...interface{}) { Fataldf(1, format, argv...) }
 func Fataldf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Fatalf(nlsprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+	_cdk_logger.Fatalf(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
 }
 
 func Exit(code int) {
