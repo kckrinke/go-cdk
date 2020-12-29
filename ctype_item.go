@@ -22,6 +22,7 @@ import (
 type TypeItem interface {
 	Init() (already bool)
 
+	IsValid() bool
 	String() string
 
 	GetIType() ITypeTag
@@ -73,6 +74,10 @@ func (o *CTypeItem) Init() (already bool) {
 	return false
 }
 
+func (o *CTypeItem) IsValid() bool {
+	return o.valid
+}
+
 func (o *CTypeItem) String() string {
 	return o.ObjectName()
 }
@@ -96,6 +101,8 @@ func (o *CTypeItem) ObjectID() int {
 }
 
 func (o *CTypeItem) DestroyObject() error {
+	o.valid = false
+	o.id = -1
 	return ITypesManager.RemoveTypeItem(o.typeTag, o)
 }
 
