@@ -173,7 +173,7 @@ func (app *CApp) AddCommand(c *cli.Command) {
 
 func (app *CApp) Run(args []string) error {
 	sort.Sort(cli.CommandsByName(app.cli.Commands))
-	sort.Sort(CliFlagSorter(app.cli.Flags))
+	sort.Sort(FlagSorter(app.cli.Flags))
 	return app.cli.Run(args)
 }
 

@@ -22,14 +22,14 @@ import (
 	"github.com/kckrinke/go-cdk/utils"
 )
 
-// CliFlagSorter is a slice of Flag.
-type CliFlagSorter []cli.Flag
+// FlagSorter is a slice of Flag.
+type FlagSorter []cli.Flag
 
-func (f CliFlagSorter) Len() int {
+func (f FlagSorter) Len() int {
 	return len(f)
 }
 
-func (f CliFlagSorter) Less(i, j int) bool {
+func (f FlagSorter) Less(i, j int) bool {
 	if len(f[j].Names()) == 0 {
 		return false
 	} else if len(f[i].Names()) == 0 {
@@ -48,6 +48,6 @@ func (f CliFlagSorter) Less(i, j int) bool {
 	return utils.LexicographicLess(f[i].Names()[0], f[j].Names()[0])
 }
 
-func (f CliFlagSorter) Swap(i, j int) {
+func (f FlagSorter) Swap(i, j int) {
 	f[i], f[j] = f[j], f[i]
 }
