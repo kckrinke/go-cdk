@@ -1,11 +1,11 @@
 package cdk
 
-type SignalCallbackFn func(data []interface{}, argv ...interface{}) EventFlag
+type SignalListenerFn func(data []interface{}, argv ...interface{}) EventFlag
 
-type SignalCallbackData []interface{}
+type SignalListenerData []interface{}
 
 type CSignalListener struct {
 	n Signal
-	c SignalCallbackFn
-	d SignalCallbackData
+	c SignalListenerFn
+	d SignalListenerData
 }

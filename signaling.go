@@ -25,7 +25,7 @@ const (
 type Signaling interface {
 	TypeItem
 
-	Connect(signal, handle Signal, c SignalCallbackFn, data ...interface{})
+	Connect(signal, handle Signal, c SignalListenerFn, data ...interface{})
 	Disconnect(signal, handle Signal) error
 	Emit(signal Signal, argv ...interface{}) EventFlag
 	StopSignal(signal Signal)
@@ -60,7 +60,7 @@ func (o *CSignaling) Init() (already bool) {
 }
 
 // Connect callback to signal, identified by handle
-func (o *CSignaling) Connect(signal, handle Signal, c SignalCallbackFn, data ...interface{}) {
+func (o *CSignaling) Connect(signal, handle Signal, c SignalListenerFn, data ...interface{}) {
 	if _, ok := o.listeners[signal]; !ok {
 		o.listeners[signal] = make([]*CSignalListener, 0)
 	}
