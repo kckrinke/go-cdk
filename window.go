@@ -15,7 +15,10 @@
 package cdk
 
 const (
-	ITypeWindow ITypeTag = "window"
+	ITypeWindow      ITypeTag = "window"
+	SignalDraw       Signal   = "draw"
+	SignalSetTitle   Signal   = "set-title"
+	SignalSetDisplay Signal   = "set-display"
 )
 
 func init() {
@@ -55,7 +58,9 @@ func (w *CWindow) Init() bool {
 }
 
 func (w *CWindow) SetTitle(title string) {
-	w.title = title
+	if f := w.Emit(SignalSetTitle, w, title); f == EVENT_PASS {
+		w.title = title
+	}
 }
 
 func (w *CWindow) GetTitle() string {
@@ -67,15 +72,15 @@ func (w *CWindow) GetDisplay() Display {
 }
 
 func (w *CWindow) SetDisplay(d Display) {
-	w.display = d
+	if f := w.Emit(SignalSetDisplay, w, d); f == EVENT_PASS {
+		w.display = d
+	}
 }
 
 func (w *CWindow) Draw(canvas *Canvas) EventFlag {
-	w.LogDebug("method not implemented")
-	return EVENT_PASS
+	return w.Emit(SignalDraw, w, canvas)
 }
 
 func (w *CWindow) ProcessEvent(evt Event) EventFlag {
-	w.LogDebug("method not implemented")
-	return EVENT_PASS
+	return w.Emit(SignalEvent, w, evt)
 }
