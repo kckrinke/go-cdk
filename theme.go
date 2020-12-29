@@ -35,6 +35,7 @@ var (
 )
 
 var (
+	DefaultNilTheme = Theme{}
 	DefaultMonoTheme = Theme{
 		Normal:      DefaultMonoCdkStyle,
 		Border:      DefaultMonoCdkStyle.Dim(true),
