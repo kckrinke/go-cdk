@@ -69,5 +69,7 @@ func TestCellBufferBasics(t *testing.T) {
 		So(cb.Dirty(0, 0), ShouldEqual, true)
 		cb.cells[0].currComb = prev_comb
 		So(cb.Dirty(0, 0), ShouldEqual, false)
+		cb.SetContent(0, 0, '0', nil, StyleDefault)
+		So(len(cb.cells[0].currComb), ShouldEqual, 0)
 	})
 }
