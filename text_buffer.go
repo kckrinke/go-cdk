@@ -17,6 +17,8 @@ package cdk
 import (
 	"strings"
 	"sync"
+
+	"github.com/kckrinke/go-cdk/utils"
 )
 
 var (
@@ -148,7 +150,7 @@ func (b *CTextBuffer) wrapSort(maxChars int, wordWrap WrapMode) []*WordLine {
 			fallthrough
 		case WRAP_WORD_CHAR:
 			// attempt wrap word, if no spaces, fallback to char
-			if strings.Contains(line.String(), " ") {
+			if utils.HasSpace(line.String()) {
 				for _, word := range line.words {
 					if sorted[lid].LetterCount(true)+1+word.Len() < maxChars {
 						sorted[lid].words = append(sorted[lid].words, word)
