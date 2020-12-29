@@ -22,7 +22,7 @@ var (
 	DefaultFillRune      rune  = ' '
 	DefaultMonoCdkStyle  Style = StyleDefault.Dim(true)
 	DefaultColorCdkStyle Style = StyleDefault.Foreground(ColorWhite).Background(ColorNavy)
-	DefaultBorderRune          = BorderRune{
+	DefaultBorderRune          = FrameRunes{
 		TopLeft:     RuneULCorner,
 		Top:         RuneHLine,
 		TopRight:    RuneURCorner,
@@ -35,24 +35,24 @@ var (
 )
 
 var (
-	DefaultNilTheme = Theme{}
-	DefaultMonoTheme = Theme{
-		Normal:      DefaultMonoCdkStyle,
-		Border:      DefaultMonoCdkStyle.Dim(true),
-		FillRune:    DefaultFillRune,
-		BorderRunes: DefaultBorderRune,
-		Overlay:     false,
-	}
-	DefaultColorTheme = Theme{
-		Normal:      DefaultColorCdkStyle,
-		Border:      DefaultColorCdkStyle.Dim(true),
-		FillRune:    DefaultFillRune,
-		BorderRunes: DefaultBorderRune,
-		Overlay:     false,
-	}
+	DefaultNilTheme  = &CTheme{}
+	DefaultMonoTheme = NewTheme(
+		DefaultMonoCdkStyle,
+		DefaultMonoCdkStyle.Dim(true),
+		DefaultFillRune,
+		DefaultBorderRune,
+		false,
+	)
+	DefaultColorTheme = NewTheme(
+		DefaultColorCdkStyle,
+		DefaultColorCdkStyle.Dim(true),
+		DefaultFillRune,
+		DefaultBorderRune,
+		false,
+	)
 )
 
-type BorderRune struct {
+type FrameRunes struct {
 	TopLeft     rune
 	Top         rune
 	TopRight    rune
@@ -63,9 +63,9 @@ type BorderRune struct {
 	BottomRight rune
 }
 
-func (b BorderRune) String() string {
+func (b FrameRunes) String() string {
 	return fmt.Sprintf(
-		"{BorderRunes=%v,%v,%v,%v,%v,%v,%v,%v}",
+		"{Frame=%v,%v,%v,%v,%v,%v,%v,%v}",
 		b.TopRight,
 		b.Top,
 		b.TopLeft,
@@ -77,21 +77,90 @@ func (b BorderRune) String() string {
 	)
 }
 
-type Theme struct {
-	Normal      Style
-	Border      Style
-	FillRune    rune
-	BorderRunes BorderRune
-	Overlay     bool // keep existing background
+type Theme interface {
+	GetNormal() Style
+	SetNormal(normal Style) Theme
+	GetBorder() Style
+	SetBorder(border Style) Theme
+	GetFillRune() rune
+	SetFillRune(fill rune) Theme
+	GetFrame() FrameRunes
+	SetFrame(frame FrameRunes) Theme
+	GetOverlay() bool
+	SetOverlay(overlay bool) Theme
+	String() string
 }
 
-func (t Theme) String() string {
+type CTheme struct {
+	Normal   Style
+	Border   Style
+	FillRune rune
+	Frame    FrameRunes
+	Overlay  bool // keep existing background
+}
+
+func NewTheme(normal, border Style, fill rune, frame FrameRunes, overlay bool) Theme {
+	return &CTheme{
+		Normal:   normal,
+		Border:   border,
+		FillRune: fill,
+		Frame:    frame,
+		Overlay:  overlay,
+	}
+}
+
+func (t CTheme) GetNormal() Style {
+	return t.Normal
+}
+
+func (t *CTheme) SetNormal(normal Style) Theme {
+	t.Normal = normal
+	return t
+}
+
+func (t CTheme) GetBorder() Style {
+	return t.Border
+}
+
+func (t *CTheme) SetBorder(border Style) Theme {
+	t.Border = border
+	return t
+}
+
+func (t CTheme) GetFillRune() rune {
+	return t.FillRune
+}
+
+func (t *CTheme) SetFillRune(fill rune) Theme {
+	t.FillRune = fill
+	return t
+}
+
+func (t CTheme) GetFrame() FrameRunes {
+	return t.Frame
+}
+
+func (t *CTheme) SetFrame(frame FrameRunes) Theme {
+	t.Frame = frame
+	return t
+}
+
+func (t CTheme) GetOverlay() bool {
+	return t.Overlay
+}
+
+func (t *CTheme) SetOverlay(overlay bool) Theme {
+	t.Overlay = overlay
+	return t
+}
+
+func (t CTheme) String() string {
 	return fmt.Sprintf(
-		"{Normal=%v,Border=%v,FillRune=%v,BorderRunes:%v,Overlay=%v}",
+		"{Normal=%v,Border=%v,FillRune=%v,Frame:%v,Overlay=%v}",
 		t.Normal,
 		t.Border,
 		t.FillRune,
-		t.BorderRunes,
+		t.Frame,
 		t.Overlay,
 	)
 }

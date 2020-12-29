@@ -33,7 +33,7 @@ func (w *CdkDemoWindow) Draw(canvas *cdk.Canvas) cdk.EventFlag {
 		W: size.W / 2,
 		H: size.H / 2,
 	}
-	canvas.DrawText(textPoint, textSize, cdk.JUSTIFY_CENTER, false, cdk.WRAP_WORD, cdk.DefaultColorTheme.Normal, true, content)
+	canvas.DrawText(textPoint, textSize, cdk.JUSTIFY_CENTER, false, cdk.WRAP_WORD, cdk.DefaultColorTheme.GetNormal(), true, content)
 	return cdk.EVENT_STOP
 }
 

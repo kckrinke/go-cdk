@@ -31,7 +31,7 @@ type Canvas struct {
 
 func NewCanvas(origin Point2I, size Rectangle, theme Theme) *Canvas {
 	return &Canvas{
-		buffer: NewCanvasBuffer(size, theme.Normal),
+		buffer: NewCanvasBuffer(size, theme.GetNormal()),
 		origin: origin,
 		size:   size,
 		theme:  theme,
@@ -199,13 +199,17 @@ func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme 
 	for ix := pos.X; ix < (pos.X + size.W); ix++ {
 		// for each row
 		for iy := pos.Y; iy < (pos.Y + size.H); iy++ {
-			if theme.Overlay {
-				theme.Border = theme.Border.
+			if theme.GetOverlay() {
+				theme.SetBorder(
+					theme.GetBorder().
 					Background(c.buffer.GetBgColor(ix, iy)).
-					Dim(c.buffer.GetDim(ix, iy))
-				theme.Normal = theme.Normal.
+					Dim(c.buffer.GetDim(ix, iy)),
+				)
+				theme.SetNormal(
+					theme.GetNormal().
 					Background(c.buffer.GetBgColor(ix, iy)).
-					Dim(c.buffer.GetDim(ix, iy))
+					Dim(c.buffer.GetDim(ix, iy)),
+				)
 			}
 			switch {
 			case ix == pos.X:
@@ -213,16 +217,16 @@ func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme 
 				switch {
 				case iy == pos.Y && border:
 					// top left corner
-					c.SetRune(ix, iy, theme.BorderRunes.TopLeft, theme.Border)
+					c.SetRune(ix, iy, theme.GetFrame().TopLeft, theme.GetBorder())
 				case iy == endy && border:
 					// bottom left corner
-					c.SetRune(ix, iy, theme.BorderRunes.BottomLeft, theme.Border)
+					c.SetRune(ix, iy, theme.GetFrame().BottomLeft, theme.GetBorder())
 				default:
 					// left border
 					if border {
-						c.SetRune(ix, iy, theme.BorderRunes.Left, theme.Border)
+						c.SetRune(ix, iy, theme.GetFrame().Left, theme.GetBorder())
 					} else if fill {
-						c.SetRune(ix, iy, theme.FillRune, theme.Normal)
+						c.SetRune(ix, iy, theme.GetFillRune(), theme.GetNormal())
 					}
 				} // left column switch
 			case ix == endx:
@@ -230,16 +234,16 @@ func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme 
 				switch {
 				case iy == pos.Y && border:
 					// top right corner
-					c.SetRune(ix, iy, theme.BorderRunes.TopRight, theme.Border)
+					c.SetRune(ix, iy, theme.GetFrame().TopRight, theme.GetBorder())
 				case iy == endy && border:
 					// bottom right corner
-					c.SetRune(ix, iy, theme.BorderRunes.BottomRight, theme.Border)
+					c.SetRune(ix, iy, theme.GetFrame().BottomRight, theme.GetBorder())
 				default:
 					// right border
 					if border {
-						c.SetRune(ix, iy, theme.BorderRunes.Right, theme.Border)
+						c.SetRune(ix, iy, theme.GetFrame().Right, theme.GetBorder())
 					} else if fill {
-						c.SetRune(ix, iy, theme.FillRune, theme.Normal)
+						c.SetRune(ix, iy, theme.GetFillRune(), theme.GetNormal())
 					}
 				} // right column switch
 			default:
@@ -247,14 +251,14 @@ func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme 
 				switch {
 				case iy == pos.Y && border:
 					// top middle
-					c.SetRune(ix, iy, theme.BorderRunes.Top, theme.Border)
+					c.SetRune(ix, iy, theme.GetFrame().Top, theme.GetBorder())
 				case iy == endy && border:
 					// bottom middle
-					c.SetRune(ix, iy, theme.BorderRunes.Bottom, theme.Border)
+					c.SetRune(ix, iy, theme.GetFrame().Bottom, theme.GetBorder())
 				default:
 					// middle middle
 					if fill {
-						c.SetRune(ix, iy, theme.FillRune, theme.Normal)
+						c.SetRune(ix, iy, theme.GetFillRune(), theme.GetNormal())
 					}
 				} // middle columns switch
 			} // draw switch
@@ -273,8 +277,8 @@ func (c *Canvas) FillBorder(dim bool, border bool) {
 	Tracef("c.FillBorder(%v,%v): origin=%v, size=%v", dim, border, c.origin, c.size)
 	s := c.theme
 	if dim {
-		s.Normal = s.Normal.Dim(true)
-		s.Border = s.Border.Dim(true)
+		s.SetNormal(s.GetNormal().Dim(true))
+		s.SetBorder(s.GetBorder().Dim(true))
 	}
 	c.Box(
 		Point2I{0, 0},
@@ -289,8 +293,8 @@ func (c *Canvas) FillBorderTitle(dim bool, title string, justify Justification) 
 	Tracef("c.FillBorderTitle(%v)", dim)
 	s := c.theme
 	if dim {
-		s.Normal = s.Normal.Dim(true)
-		s.Border = s.Border.Dim(true)
+		s.SetNormal(s.GetNormal().Dim(true))
+		s.SetBorder(s.GetBorder().Dim(true))
 	}
 	c.Box(
 		Point2I{0, 0},
@@ -301,5 +305,5 @@ func (c *Canvas) FillBorderTitle(dim bool, title string, justify Justification) 
 	)
 	label := fmt.Sprintf(" %v ", title)
 	pos := Point2I{(c.size.W / 2) - (len(label) / 2), 0}
-	c.DrawSingleLineText(pos, len(label), JUSTIFY_CENTER, c.theme.Normal.Dim(dim), false, label)
+	c.DrawSingleLineText(pos, len(label), JUSTIFY_CENTER, c.theme.GetNormal().Dim(dim), false, label)
 }
