@@ -50,6 +50,10 @@ type DisplayCallbackFn = func(d Display) error
 type Display interface {
 	Object
 
+	GetTitle() string
+	SetTitle(title string)
+
+	Screen() Screen
 	CaptureScreen(ttyPath string)
 	ReleaseScreen()
 
@@ -129,6 +133,18 @@ func (d *CDisplay) Init() (already bool) {
 	d.SetTheme(DefaultColorTheme)
 	d.Emit(SignalDisplayInit, d)
 	return false
+}
+
+func (d *CDisplay) GetTitle() string {
+	return d.title
+}
+
+func (d *CDisplay) SetTitle(title string) {
+	d.title = title
+}
+
+func (d *CDisplay) Screen() Screen {
+	return d.screen
 }
 
 func (d *CDisplay) CaptureScreen(ttyPath string) {
