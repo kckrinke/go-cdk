@@ -27,11 +27,11 @@ import (
 // drawables within viewports render the space
 
 var (
-	CALL_QUEUE_CAP = 16
+	DisplayCallQueueCapacity = 16
 )
 
 const (
-	ITypeDisplay      ITypeTag = "display"
+	TypeDisplay       CTypeTag = "display"
 	SignalDisplayInit Signal   = "display-init"
 	SignalInterrupt   Signal   = "ctrl-c"
 	SignalEvent       Signal   = "event"
@@ -42,7 +42,7 @@ const (
 )
 
 func init() {
-	ITypesManager.AddType(ITypeDisplay)
+	TypesManager.AddType(TypeDisplay)
 }
 
 type DisplayCallbackFn = func(d Display) error
@@ -112,18 +112,19 @@ func NewDisplay(title string, ttyPath string) *CDisplay {
 
 // Initialization
 func (d *CDisplay) Init() (already bool) {
-	d.SetIType(ITypeDisplay)
+	if d.InitTypeItem(TypeDisplay) {
+		return true
+	}
 	if d.CObject.Init() {
 		return true
 	}
-	ITypesManager.AddTypeItem(ITypeDisplay, d)
 
 	d.running = false
 	d.done = make(chan bool)
-	d.queue = make(chan DisplayCallbackFn, CALL_QUEUE_CAP)
-	d.events = make(chan Event, CALL_QUEUE_CAP)
-	d.process = make(chan Event, CALL_QUEUE_CAP)
-	d.requests = make(chan ScreenStateReq, CALL_QUEUE_CAP)
+	d.queue = make(chan DisplayCallbackFn, DisplayCallQueueCapacity)
+	d.events = make(chan Event, DisplayCallQueueCapacity)
+	d.process = make(chan Event, DisplayCallQueueCapacity)
+	d.requests = make(chan ScreenStateReq, DisplayCallQueueCapacity)
 
 	d.windows = []Window{}
 	d.active = -1

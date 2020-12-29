@@ -15,14 +15,14 @@
 package cdk
 
 const (
-	ITypeWindow      ITypeTag = "window"
+	TypeWindow       CTypeTag = "window"
 	SignalDraw       Signal   = "draw"
 	SignalSetTitle   Signal   = "set-title"
 	SignalSetDisplay Signal   = "set-display"
 )
 
 func init() {
-	ITypesManager.AddType(ITypeWindow)
+	TypesManager.AddType(TypeWindow)
 }
 
 // Basic window interface
@@ -49,11 +49,13 @@ type CWindow struct {
 }
 
 func (w *CWindow) Init() bool {
-	w.SetIType(ITypeWindow)
+	if w.InitTypeItem(TypeWindow) {
+		return true
+	}
 	if w.CObject.Init() {
 		return true
 	}
-	ITypesManager.AddTypeItem(ITypeWindow, w)
+	TypesManager.AddTypeItem(TypeWindow, w)
 	return false
 }
 

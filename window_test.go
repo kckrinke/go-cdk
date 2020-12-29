@@ -8,7 +8,7 @@ import (
 
 func TestWindow(t *testing.T) {
 	Convey("Basic Window Features", t, func() {
-		So(ITypesManager.HasType(ITypeWindow), ShouldEqual, true)
+		So(TypesManager.HasType(TypeWindow), ShouldEqual, true)
 		w := &CWindow{}
 		So(w.valid, ShouldEqual, false)
 		So(w.GetTitle(), ShouldEqual, "")

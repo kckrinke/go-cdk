@@ -15,13 +15,13 @@
 package cdk
 
 const (
-	ITypeObject       ITypeTag = "object"
+	TypeObject        CTypeTag = "object"
 	SignalDestroy     Signal   = "destroy"
 	SignalSetProperty Signal   = "set-property"
 )
 
 func init() {
-	ITypesManager.AddType(ITypeObject)
+	TypesManager.AddType(TypeObject)
 }
 
 // Basic object type
@@ -50,7 +50,9 @@ type CObject struct {
 }
 
 func (o *CObject) Init() (already bool) {
-	o.SetIType(ITypeObject)
+	if o.InitTypeItem(TypeObject) {
+		return true
+	}
 	if o.CSignaling.Init() {
 		return true
 	}

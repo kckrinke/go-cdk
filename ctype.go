@@ -24,43 +24,39 @@ import (
 	"sync"
 )
 
-// Imaginary Type Tag
-//
-// Used to denote a concrete type identity
-type ITypeTag string
-
-// Stringer interface implementation
-func (tag ITypeTag) String() string {
-	return string(tag)
-}
-
 // Base ITYPE tags
 const (
 	InvalidITypeID int      = -1
-	ITypeNIL       ITypeTag = ""
+	TypeNil        CTypeTag = ""
 )
 
+type Type interface {
+	Items() []TypeItem
+	Add(item TypeItem) (id int)
+	Remove(item TypeItem) error
+}
+
 type CType struct {
-	tag   ITypeTag
-	items []interface{}
+	tag   TypeTag
+	items []TypeItem
 
 	sync.Mutex
 }
 
-func NewCType(tag ITypeTag) *CType {
+func NewType(tag TypeTag) Type {
 	return &CType{
 		tag:   tag,
-		items: make([]interface{}, 0),
+		items: make([]TypeItem, 0),
 	}
 }
 
-func (t *CType) Items() []interface{} {
+func (t *CType) Items() []TypeItem {
 	t.Lock()
 	defer t.Unlock()
 	return t.items
 }
 
-func (t *CType) Add(item interface{}) (id int) {
+func (t *CType) Add(item TypeItem) (id int) {
 	t.Lock()
 	defer t.Unlock()
 	t.items = append(t.items, item)
@@ -68,20 +64,24 @@ func (t *CType) Add(item interface{}) (id int) {
 	return
 }
 
-func (t *CType) Remove(item interface{}) error {
+func (t *CType) Remove(item TypeItem) error {
 	var idx int
-	var itm interface{}
+	var itm TypeItem
 	for idx, itm = range t.items {
-		if itm == item {
+		if itm.ObjectID() == item.ObjectID() {
 			break
 		}
 	}
-	if idx >= len(t.items) {
+	count := len(t.items)
+	if count > 0 && idx >= count {
 		return fmt.Errorf("item not found")
+	} else if count > 1 {
+		t.items = append(
+			t.items[:idx],
+			t.items[idx+1:]...,
+		)
+	} else {
+		t.items = []TypeItem{}
 	}
-	t.items = append(
-		t.items[:idx],
-		t.items[idx+1:],
-	)
 	return nil
 }

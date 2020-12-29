@@ -21,18 +21,15 @@ import (
 
 type TypeItem interface {
 	Init() (already bool)
-
+	InitTypeItem(tag TypeTag) (already bool)
 	IsValid() bool
 	String() string
-
-	GetIType() ITypeTag
+	GetTypeTag() TypeTag
 	GetName() string
 	SetName(name string)
-
 	ObjectID() int
-	DestroyObject() error
 	ObjectName() string
-
+	DestroyObject() error
 	LogTag() string
 	LogTrace(format string, argv ...interface{})
 	LogDebug(format string, argv ...interface{})
@@ -46,31 +43,42 @@ type TypeItem interface {
 
 type CTypeItem struct {
 	id      int
-	typeTag ITypeTag
+	typeTag CTypeTag
 	name    string
 	valid   bool
 
 	sync.Mutex
 }
 
-func (o *CTypeItem) SetIType(tag ITypeTag) {
-	if o.typeTag == ITypeNIL {
-		o.typeTag = tag
+func NewTypeItem(tag CTypeTag, name string) TypeItem {
+	return &CTypeItem{
+		id:      -1,
+		typeTag: tag,
+		name:    name,
+		valid:   false,
 	}
 }
 
 func (o *CTypeItem) Init() (already bool) {
+	if o.valid {
+		return true
+	}
+	var err error
+	o.id, err = TypesManager.AddTypeItem(o.typeTag, o)
+	if err != nil {
+		Fataldf(1, "AddTypeItem(%v) failed: %v", o.typeTag, err)
+	}
+	o.valid = true
+	return false
+}
+
+func (o *CTypeItem) InitTypeItem(tag TypeTag) (already bool) {
 	o.Lock()
 	defer o.Unlock()
 	if o.valid {
 		return true
 	}
-	var err error
-	o.id, err = ITypesManager.AddTypeItem(o.typeTag, o)
-	if err != nil {
-		Fataldf(1, "AddTypeItem(%v) failed: %v", o.typeTag, err)
-	}
-	o.valid = true
+	o.typeTag = tag.Tag()
 	return false
 }
 
@@ -82,7 +90,7 @@ func (o *CTypeItem) String() string {
 	return o.ObjectName()
 }
 
-func (o *CTypeItem) GetIType() ITypeTag {
+func (o *CTypeItem) GetTypeTag() TypeTag {
 	return o.typeTag
 }
 
@@ -100,18 +108,18 @@ func (o *CTypeItem) ObjectID() int {
 	return o.id
 }
 
-func (o *CTypeItem) DestroyObject() error {
-	o.valid = false
-	o.id = -1
-	return ITypesManager.RemoveTypeItem(o.typeTag, o)
-}
-
-// returns the unique string ITypeObject identity for this object
 func (o *CTypeItem) ObjectName() string {
 	if len(o.name) > 0 {
 		return fmt.Sprintf("%v-%v-%v", o.typeTag, o.ObjectID(), o.name)
 	}
 	return fmt.Sprintf("%v-%v", o.typeTag, o.ObjectID())
+}
+
+func (o *CTypeItem) DestroyObject() error {
+	err := TypesManager.RemoveTypeItem(o.typeTag, o)
+	o.valid = false
+	o.id = -1
+	return err
 }
 
 func (o *CTypeItem) LogTag() string {

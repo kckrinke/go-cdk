@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	ITypeSignaling ITypeTag = "signaling"
+	TypeSignaling CTypeTag = "signaling"
 )
 
 type Signaling interface {
@@ -36,7 +36,7 @@ type Signaling interface {
 }
 
 func init() {
-	ITypesManager.AddType(ITypeSignaling)
+	TypesManager.AddType(TypeSignaling)
 }
 
 type CSignaling struct {
@@ -48,14 +48,16 @@ type CSignaling struct {
 }
 
 func (o *CSignaling) Init() (already bool) {
-	o.SetIType(ITypeSignaling)
+	if o.InitTypeItem(TypeSignaling) {
+		return true
+	}
 	if o.CTypeItem.Init() {
 		return true
 	}
 	o.stopped = []Signal{}
 	o.passed = []Signal{}
 	o.listeners = make(map[Signal][]*CSignalListener)
-	ITypesManager.AddTypeItem(ITypeSignaling, o)
+	TypesManager.AddTypeItem(TypeSignaling, o)
 	return false
 }
 

@@ -20,103 +20,99 @@ import (
 )
 
 var (
-	ITypesManager = NewTypeRegistry()
+	TypesManager = NewTypeRegistry()
 )
 
 type TypeRegistry interface {
-	AddType(tag ITypeTag) error
-	HasType(tag ITypeTag) bool
-	AddTypeItem(tag ITypeTag, item interface{}) (id int, err error)
-	GetTypeItems(tag ITypeTag) []interface{}
-	RemoveTypeItem(tag ITypeTag, item interface{}) error
+	AddType(tag TypeTag) error
+	HasType(tag TypeTag) bool
+	GetType(tag TypeTag) (t Type, found bool)
+	AddTypeItem(tag TypeTag, item TypeItem) (id int, err error)
+	GetTypeItems(tag TypeTag) []TypeItem
+	RemoveTypeItem(tag TypeTag, item TypeItem) error
+
+	sync.Locker
 }
 
 type CTypeRegistry struct {
-	register map[ITypeTag]*CType
-	tracking []interface{}
+	register map[TypeTag]Type
+	tracking CTypeItemList
 
 	sync.Mutex
 }
 
 func NewTypeRegistry() TypeRegistry {
 	r := &CTypeRegistry{}
-	r.register = make(map[ITypeTag]*CType)
+	r.register = make(map[TypeTag]Type)
+	r.tracking = make(CTypeItemList, 0)
 	return r
 }
 
-func (r *CTypeRegistry) AddType(tag ITypeTag) error {
+func (r *CTypeRegistry) AddType(tag TypeTag) error {
 	r.Lock()
 	defer r.Unlock()
-	if tag == ITypeNIL {
-		return fmt.Errorf("cannot add NIL IType")
+	if tag == TypeNil {
+		return fmt.Errorf("cannot add nil type")
 	}
 	if _, ok := r.register[tag]; ok {
-		return fmt.Errorf("existing CType: %v", tag)
+		return fmt.Errorf("type %v exists already", tag)
 	}
-	r.register[tag] = NewCType(tag)
+	r.register[tag] = NewType(tag)
 	return nil
 }
 
-func (r *CTypeRegistry) HasType(tag ITypeTag) (exists bool) {
+func (r *CTypeRegistry) HasType(tag TypeTag) (exists bool) {
 	_, exists = r.register[tag]
 	return
 }
 
-func (r *CTypeRegistry) AddTypeItem(tag ITypeTag, item interface{}) (id int, err error) {
-	r.Lock()
-	defer r.Unlock()
-	if tag == ITypeNIL {
-		id, err = -1, fmt.Errorf("cannot add to NIL IType")
-		return
-	}
-	if _, ok := r.register[tag]; !ok {
-		id, err = -1, fmt.Errorf("unknown CType: %v", tag)
-		return
-	}
-	_ = r.register[tag].Add(item)
-	var ri interface{}
-	for id, ri = range r.tracking {
-		if ri == item {
-			break
-		}
-	}
-	if id == -1 {
-		r.tracking = append(r.tracking, item)
-		id = len(r.tracking) - 1
-	}
+func (r *CTypeRegistry) GetType(tag TypeTag) (t Type, found bool) {
+	t, found = r.register[tag]
 	return
 }
 
-func (r *CTypeRegistry) GetTypeItems(tag ITypeTag) []interface{} {
+func (r *CTypeRegistry) AddTypeItem(tag TypeTag, item TypeItem) (id int, err error) {
 	r.Lock()
 	defer r.Unlock()
-	if tag != ITypeNIL {
-		if t, ok := r.register[tag]; ok {
-			return t.Items()
-		}
+	if tag == TypeNil {
+		id, err = -1, fmt.Errorf("cannot add to nil type")
+		return
+	}
+	if _, ok := r.register[tag]; !ok {
+		id, err = -1, fmt.Errorf("unknown type: %v", tag)
+		return
+	}
+	_ = r.register[tag].Add(item)
+	r.tracking = append(r.tracking, item)
+	id = len(r.tracking) - 1
+	return
+}
+
+func (r *CTypeRegistry) GetTypeItems(tag TypeTag) []TypeItem {
+	r.Lock()
+	defer r.Unlock()
+	if t, ok := r.register[tag]; ok {
+		return t.Items()
 	}
 	return nil
 }
 
-func (r *CTypeRegistry) RemoveTypeItem(tag ITypeTag, item interface{}) error {
+func (r *CTypeRegistry) RemoveTypeItem(tag TypeTag, item TypeItem) error {
 	r.Lock()
 	defer r.Unlock()
-	if _, ok := r.register[tag]; ok {
-		if err := r.register[tag].Remove(item); err != nil {
-			return err
-		}
-		var idx int = -1
-		var itm interface{}
-		for idx, itm = range r.tracking {
-			if itm == item {
-				break
-			}
-		}
-		if idx > -1 {
-			r.tracking[idx] = nil
-			return nil
-		}
-		return fmt.Errorf("tracking CTypeItem not found")
+	if item == nil || !item.IsValid() {
+		return fmt.Errorf("item not valid")
 	}
-	return fmt.Errorf("unknown CType: %v", tag)
+	if _, ok := r.register[tag]; !ok {
+		return fmt.Errorf("unknown type: %v", tag)
+	}
+	idx := r.tracking.Index(item)
+	if idx == -1 {
+		return fmt.Errorf("item not found")
+	}
+	r.tracking[idx] = nil
+	if err := r.register[tag].Remove(item); err != nil {
+		return err
+	}
+	return nil
 }
