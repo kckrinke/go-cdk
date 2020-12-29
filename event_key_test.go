@@ -33,6 +33,7 @@ func TestKey(t *testing.T) {
 		So(ek.Key(), ShouldEqual, KeyRune)
 		So(ek.Rune(), ShouldEqual, ' ')
 		So(ek.Modifiers(), ShouldEqual, ModCtrl)
+		So(ek.Modifiers().Has(ModCtrl), ShouldEqual, true)
 		// escape
 		ek = NewEventKey(KeyRune, 0x1b, ModNone)
 		So(ek.Key(), ShouldEqual, KeyEscape)
