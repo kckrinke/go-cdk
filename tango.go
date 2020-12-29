@@ -190,6 +190,7 @@ func (m *Tango) init() error {
 }
 
 func (m *Tango) parseStyleAttrs(attrs []xml.Attr) (style Style) {
+	style = m.style
 	for _, attr := range attrs {
 		switch attr.Name.Local {
 		case "style":
