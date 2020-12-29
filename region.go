@@ -33,7 +33,11 @@ func NewRegion(x, y, w, h int) *Region {
 }
 
 func (r Region) String() string {
-	return fmt.Sprintf("%v, %v", r.Point2I.String(), r.Rectangle.String())
+	return fmt.Sprintf("%v,%v", r.Point2I.String(), r.Rectangle.String())
+}
+
+func (r *Region) SetRegion(x, y, w, h int) {
+	r.X, r.Y, r.W, r.H = x, y, w, h
 }
 
 func (r Region) HasPoint(pos Point2I) bool {
@@ -47,4 +51,19 @@ func (r Region) HasPoint(pos Point2I) bool {
 		}
 	}
 	return false
+}
+
+func (r Region) Origin() Point2I {
+	return Point2I{r.X, r.Y}
+}
+
+func (r Region) FarPoint() Point2I {
+	return Point2I{
+		r.X + r.W,
+		r.Y + r.H,
+	}
+}
+
+func (r Region) Size() Rectangle {
+	return Rectangle{r.W, r.H}
 }

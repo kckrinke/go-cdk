@@ -32,11 +32,70 @@ func (r Rectangle) String() string {
 	return fmt.Sprintf("w:%v,h:%v", r.W, r.H)
 }
 
-func (r Rectangle) Area() int {
+func (r Rectangle) Volume() int {
 	return r.W * r.H
 }
 
-func (r *Rectangle) Set(w, h int) {
+func (r *Rectangle) SetArea(w, h int) {
 	r.W = w
 	r.H = h
+}
+
+func (r *Rectangle) SetAreaR(size Rectangle) {
+	r.W = size.W
+	r.H = size.H
+}
+
+func (r *Rectangle) AddArea(x, y int) {
+	r.W += x
+	r.H += y
+}
+
+func (r *Rectangle) AddAreaR(size Rectangle) {
+	r.W += size.W
+	r.H += size.H
+}
+
+func (r *Rectangle) SubArea(x, y int) {
+	r.W -= x
+	r.H -= y
+}
+
+func (r *Rectangle) SubAreaR(size Rectangle) {
+	r.W -= size.W
+	r.H -= size.H
+}
+
+func (r *Rectangle) Clamp(region Region) (clamped bool) {
+	clamped = false
+	min, max := region.Origin(), region.FarPoint()
+	// is width within range?
+	if r.W >= min.X && r.W <= max.X {
+		// width is within range, NOP
+	} else {
+		// width is not within range
+		if r.W < min.X {
+			// width is too low, CLAMP
+			r.W = min.X
+		} else {
+			// width is too high, CLAMP
+			r.W = max.X
+		}
+		clamped = true
+	}
+	// is height within range?
+	if r.H >= min.Y && r.H <= max.Y {
+		// height is within range, NOP
+	} else {
+		// height is not within range
+		if r.H < min.Y {
+			// height is too low, CLAMP
+			r.H = min.Y
+		} else {
+			// height is too high, CLAMP
+			r.H = max.Y
+		}
+		clamped = true
+	}
+	return
 }
