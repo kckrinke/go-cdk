@@ -10,6 +10,10 @@ type TypeTag interface {
 // Used to denote a concrete type identity
 type CTypeTag string
 
+func NewTypeTag(tag string) TypeTag {
+	return CTypeTag(tag)
+}
+
 func (tag CTypeTag) Tag() CTypeTag {
 	return tag
 }
