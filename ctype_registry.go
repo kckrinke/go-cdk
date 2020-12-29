@@ -25,6 +25,7 @@ var (
 
 type TypeRegistry interface {
 	AddType(tag ITypeTag) error
+	HasType(tag ITypeTag) bool
 	AddTypeItem(tag ITypeTag, item interface{}) (id int, err error)
 	GetTypeItems(tag ITypeTag) []interface{}
 	RemoveTypeItem(tag ITypeTag, item interface{}) error
@@ -54,6 +55,11 @@ func (r *CTypeRegistry) AddType(tag ITypeTag) error {
 	}
 	r.register[tag] = NewCType(tag)
 	return nil
+}
+
+func (r *CTypeRegistry) HasType(tag ITypeTag) (exists bool) {
+	_, exists = r.register[tag]
+	return
 }
 
 func (r *CTypeRegistry) AddTypeItem(tag ITypeTag, item interface{}) (id int, err error) {
