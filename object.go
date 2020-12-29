@@ -59,8 +59,9 @@ func (o *CObject) Init() (already bool) {
 }
 
 func (o *CObject) Destroy() {
-	o.Emit(SignalDestroy, o)
-	o.DestroyObject()
+	if f := o.Emit(SignalDestroy, o); f == EVENT_PASS {
+		o.DestroyObject()
+	}
 }
 
 func (o *CObject) GetTheme() Theme {
