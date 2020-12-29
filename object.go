@@ -53,9 +53,7 @@ func (o *CObject) Init() (already bool) {
 	if o.InitTypeItem(TypeObject) {
 		return true
 	}
-	if o.CSignaling.Init() {
-		return true
-	}
+	o.CSignaling.Init()
 	o.properties = make(map[string]interface{})
 	return false
 }

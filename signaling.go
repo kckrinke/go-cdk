@@ -51,9 +51,7 @@ func (o *CSignaling) Init() (already bool) {
 	if o.InitTypeItem(TypeSignaling) {
 		return true
 	}
-	if o.CTypeItem.Init() {
-		return true
-	}
+	o.CTypeItem.Init()
 	o.stopped = []Signal{}
 	o.passed = []Signal{}
 	o.listeners = make(map[Signal][]*CSignalListener)

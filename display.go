@@ -115,9 +115,7 @@ func (d *CDisplay) Init() (already bool) {
 	if d.InitTypeItem(TypeDisplay) {
 		return true
 	}
-	if d.CObject.Init() {
-		return true
-	}
+	d.CObject.Init()
 
 	d.running = false
 	d.done = make(chan bool)

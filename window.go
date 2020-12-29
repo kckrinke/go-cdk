@@ -52,9 +52,7 @@ func (w *CWindow) Init() bool {
 	if w.InitTypeItem(TypeWindow) {
 		return true
 	}
-	if w.CObject.Init() {
-		return true
-	}
+	w.CObject.Init()
 	TypesManager.AddTypeItem(TypeWindow, w)
 	return false
 }
