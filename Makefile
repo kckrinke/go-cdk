@@ -32,6 +32,7 @@ clean:
 	@rm -fv mouse        || true
 	@rm -fv unicode      || true
 	@rm -fv go_build_*   || true
+	@rm -fv go_test_*    || true
 	@rm -fv coverage.out || true
 
 demos: clean
