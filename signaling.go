@@ -14,27 +14,19 @@
 
 package cdk
 
+import (
+	"fmt"
+)
+
 const (
 	ITypeSignaling ITypeTag = "signaling"
 )
-
-type SignalCallbackFn func(data []interface{}, argv ...interface{}) EventFlag
-
-type SignalCallbackData []interface{}
-
-type CSignalListener struct {
-	n Signal
-	c SignalCallbackFn
-	d SignalCallbackData
-}
-
-type Signal string
 
 type Signaling interface {
 	TypeItem
 
 	Connect(signal, handle Signal, c SignalCallbackFn, data ...interface{})
-	Disconnect(signal, handle Signal)
+	Disconnect(signal, handle Signal) error
 	Emit(signal Signal, argv ...interface{}) EventFlag
 	StopSignal(signal Signal)
 	IsSignalStopped(signal Signal) bool
@@ -43,10 +35,6 @@ type Signaling interface {
 	ResumeSignal(signal Signal)
 }
 
-var (
-	cdkSignalListeners = make(map[int]map[Signal][]*CSignalListener)
-)
-
 func init() {
 	ITypesManager.AddType(ITypeSignaling)
 }
@@ -54,27 +42,30 @@ func init() {
 type CSignaling struct {
 	CTypeItem
 
-	stopSignals []Signal
-	passSignals []Signal
+	stopped   []Signal
+	passed    []Signal
+	listeners map[Signal][]*CSignalListener
 }
 
 func (o *CSignaling) Init() (already bool) {
- 	o.SetIType(ITypeSignaling)
+	o.SetIType(ITypeSignaling)
 	if o.CTypeItem.Init() {
 		return true
 	}
+	o.stopped = []Signal{}
+	o.passed = []Signal{}
+	o.listeners = make(map[Signal][]*CSignalListener)
 	ITypesManager.AddTypeItem(ITypeSignaling, o)
 	return false
 }
 
 // Connect callback to signal, identified by handle
 func (o *CSignaling) Connect(signal, handle Signal, c SignalCallbackFn, data ...interface{}) {
-	oid := o.ObjectID()
-	if _, ok := cdkSignalListeners[oid]; !ok {
-		cdkSignalListeners[oid] = make(map[Signal][]*CSignalListener)
+	if _, ok := o.listeners[signal]; !ok {
+		o.listeners[signal] = make([]*CSignalListener, 0)
 	}
-	cdkSignalListeners[oid][signal] = append(
-		cdkSignalListeners[oid][signal],
+	o.listeners[signal] = append(
+		o.listeners[signal],
 		&CSignalListener{
 			handle,
 			c,
@@ -84,32 +75,34 @@ func (o *CSignaling) Connect(signal, handle Signal, c SignalCallbackFn, data ...
 }
 
 // Disconnect callback from signal identified by handle
-func (o *CSignaling) Disconnect(signal, handle Signal) {
-	oid := o.ObjectID()
-	id := 0
-	for i, s := range cdkSignalListeners[oid][signal] {
+func (o *CSignaling) Disconnect(signal, handle Signal) error {
+	id := -1
+	for i, s := range o.listeners[signal] {
 		if s.n == handle {
 			id = i
 			break
 		}
 	}
+	if id == -1 {
+		return fmt.Errorf("unknown signal handle: %v", handle)
+	}
 	o.LogDebug("disconnecting(%v) from signal(%v)", handle, signal)
-	cdkSignalListeners[oid][signal] = append(
-		cdkSignalListeners[oid][signal][:id],
-		cdkSignalListeners[oid][signal][id+1:]...,
+	o.listeners[signal] = append(
+		o.listeners[signal][:id],
+		o.listeners[signal][id+1:]...,
 	)
+	return nil
 }
 
 // Emit a signal event to all connected listener callbacks
 func (o *CSignaling) Emit(signal Signal, argv ...interface{}) EventFlag {
-	oid := o.ObjectID()
 	if o.IsSignalStopped(signal) {
 		return EVENT_STOP
 	}
 	if o.IsSignalPassed(signal) {
 		return EVENT_PASS
 	}
-	if listeners, ok := cdkSignalListeners[oid][signal]; ok {
+	if listeners, ok := o.listeners[signal]; ok {
 		for _, s := range listeners {
 			r := s.c(s.d, argv...)
 			if r == EVENT_STOP {
@@ -125,7 +118,7 @@ func (o *CSignaling) Emit(signal Signal, argv ...interface{}) EventFlag {
 func (o *CSignaling) StopSignal(signal Signal) {
 	if !o.IsSignalStopped(signal) {
 		o.LogDebug("stopping signal(%v)", signal)
-		o.stopSignals = append(o.stopSignals, signal)
+		o.stopped = append(o.stopped, signal)
 	}
 }
 
@@ -134,7 +127,7 @@ func (o *CSignaling) IsSignalStopped(signal Signal) bool {
 }
 
 func (o *CSignaling) getSignalStopIndex(signal Signal) int {
-	for idx, stop := range o.stopSignals {
+	for idx, stop := range o.stopped {
 		if signal == stop {
 			return idx
 		}
@@ -145,7 +138,7 @@ func (o *CSignaling) getSignalStopIndex(signal Signal) int {
 func (o *CSignaling) PassSignal(signal Signal) {
 	if !o.IsSignalPassed(signal) {
 		o.LogDebug("passing signal(%v)", signal)
-		o.passSignals = append(o.passSignals, signal)
+		o.passed = append(o.passed, signal)
 	}
 }
 
@@ -154,7 +147,7 @@ func (o *CSignaling) IsSignalPassed(signal Signal) bool {
 }
 
 func (o *CSignaling) getSignalPassIndex(signal Signal) int {
-	for idx, stop := range o.passSignals {
+	for idx, stop := range o.passed {
 		if signal == stop {
 			return idx
 		}
@@ -167,20 +160,24 @@ func (o *CSignaling) ResumeSignal(signal Signal) {
 	id := o.getSignalStopIndex(signal)
 	if id >= 0 {
 		o.LogDebug("resuming signal(%v) from being stopped", signal)
-		o.stopSignals = append(
-			o.stopSignals[:id],
-			o.stopSignals[id+1:]...,
+		o.stopped = append(
+			o.stopped[:id],
+			o.stopped[id+1:]...,
 		)
 		return
 	}
 	id = o.getSignalPassIndex(signal)
 	if id >= 0 {
 		o.LogDebug("resuming signal(%v) from being passed", signal)
-		o.passSignals = append(
-			o.passSignals[:id],
-			o.passSignals[id+1:]...,
+		o.passed = append(
+			o.passed[:id],
+			o.passed[id+1:]...,
 		)
 		return
 	}
-	o.LogWarn("signal(%v) already resumed", signal)
+	if _, ok := o.listeners[signal]; ok {
+		o.LogWarn("signal(%v) already resumed", signal)
+	} else {
+		o.LogError("cannot resume unknown signal: %v", signal)
+	}
 }
