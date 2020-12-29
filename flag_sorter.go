@@ -30,22 +30,17 @@ func (f FlagSorter) Len() int {
 }
 
 func (f FlagSorter) Less(i, j int) bool {
-	if len(f[j].Names()) == 0 {
-		return false
-	} else if len(f[i].Names()) == 0 {
-		return true
-	}
-	i_is_ctk := strings.HasPrefix(f[i].Names()[0], "ctk-")
-	j_is_ctk := strings.HasPrefix(f[j].Names()[0], "ctk-")
-	if i_is_ctk {
-		if j_is_ctk {
-			return !utils.LexicographicLess(f[i].Names()[0], f[j].Names()[0])
+	iIsCdk := strings.HasPrefix(f[i].Names()[0], "cdk-")
+	jIsCdk := strings.HasPrefix(f[j].Names()[0], "cdk-")
+	if iIsCdk {
+		if jIsCdk {
+			return utils.LexicographicLess(f[i].Names()[0], f[j].Names()[0])
 		}
 		return false
-	} else if j_is_ctk {
+	} else if jIsCdk {
 		return true
 	}
-	return utils.LexicographicLess(f[i].Names()[0], f[j].Names()[0])
+	return !utils.LexicographicLess(f[i].Names()[0], f[j].Names()[0])
 }
 
 func (f FlagSorter) Swap(i, j int) {
