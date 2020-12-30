@@ -162,7 +162,7 @@ func (c *Canvas) DrawText(pos Point2I, size Rectangle, justify Justification, si
 }
 
 func (c *Canvas) DrawSingleLineText(pos Point2I, maxChars int, justify Justification, style Style, markup bool, text string) {
-	c.DrawText(pos, Rectangle{H: 1, W: maxChars}, justify, true, WRAP_NONE, style, markup, text)
+	c.DrawText(pos, MakeRectangle(maxChars, 1), justify, true, WRAP_NONE, style, markup, text)
 }
 
 func (c *Canvas) DrawLine(pos Point2I, length int, orient Orientation, style Style) {
@@ -266,7 +266,7 @@ func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme 
 
 func (c *Canvas) Fill(s Theme) {
 	Tracef("c.fill(%v,%v)", s)
-	c.Box(Point2I{0, 0}, c.size, false, true, s)
+	c.Box(MakePoint2I(0, 0), c.size, false, true, s)
 }
 
 func (c *Canvas) FillBorder(dim bool, border bool) {
@@ -277,7 +277,7 @@ func (c *Canvas) FillBorder(dim bool, border bool) {
 		s.Border = s.Border.Dim(true)
 	}
 	c.Box(
-		Point2I{0, 0},
+		MakePoint2I(0, 0),
 		c.size,
 		border,
 		true,
@@ -293,13 +293,13 @@ func (c *Canvas) FillBorderTitle(dim bool, title string, justify Justification) 
 		s.Border = s.Border.Dim(true)
 	}
 	c.Box(
-		Point2I{0, 0},
+		MakePoint2I(0, 0),
 		c.size,
 		true,
 		true,
 		c.theme,
 	)
 	label := fmt.Sprintf(" %v ", title)
-	pos := Point2I{(c.size.W / 2) - (len(label) / 2), 0}
+	pos := MakePoint2I((c.size.W / 2) - (len(label) / 2), 0)
 	c.DrawSingleLineText(pos, len(label), JUSTIFY_CENTER, c.theme.Normal.Dim(dim), false, label)
 }

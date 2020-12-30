@@ -340,7 +340,7 @@ func (d *CDisplay) DrawScreen() EventFlag {
 		return EVENT_PASS
 	}
 	w, h := d.screen.Size()
-	canvas := NewCanvas(Point2I{0, 0}, Rectangle{w, h}, d.GetTheme())
+	canvas := NewCanvas(MakePoint2I(0, 0), MakeRectangle(w, h), d.GetTheme())
 	if f := window.Draw(canvas); f == EVENT_STOP {
 		canvas.Render(d.screen)
 		return EVENT_STOP

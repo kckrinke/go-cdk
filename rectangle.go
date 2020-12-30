@@ -25,7 +25,12 @@ type Rectangle struct {
 }
 
 func NewRectangle(w, h int) *Rectangle {
-	return &Rectangle{w, h}
+	r := MakeRectangle(w, h)
+	return &r
+}
+
+func MakeRectangle(w, h int) Rectangle {
+	return Rectangle{W: w, H: h}
 }
 
 func (r Rectangle) String() string {
@@ -46,9 +51,9 @@ func (r *Rectangle) SetAreaR(size Rectangle) {
 	r.H = size.H
 }
 
-func (r *Rectangle) AddArea(x, y int) {
-	r.W += x
-	r.H += y
+func (r *Rectangle) AddArea(w, h int) {
+	r.W += w
+	r.H += h
 }
 
 func (r *Rectangle) AddAreaR(size Rectangle) {
@@ -56,9 +61,9 @@ func (r *Rectangle) AddAreaR(size Rectangle) {
 	r.H += size.H
 }
 
-func (r *Rectangle) SubArea(x, y int) {
-	r.W -= x
-	r.H -= y
+func (r *Rectangle) SubArea(w, h int) {
+	r.W -= w
+	r.H -= h
 }
 
 func (r *Rectangle) SubAreaR(size Rectangle) {
@@ -66,7 +71,16 @@ func (r *Rectangle) SubAreaR(size Rectangle) {
 	r.H -= size.H
 }
 
-func (r *Rectangle) Clamp(region Region) (clamped bool) {
+func (r *Rectangle) Floor(minWidth, minHeight int) {
+	if r.W < minWidth {
+		r.W = minWidth
+	}
+	if r.H < minHeight {
+		r.H = minHeight
+	}
+}
+
+func (r *Rectangle) ClampRegion(region Region) (clamped bool) {
 	clamped = false
 	min, max := region.Origin(), region.FarPoint()
 	// is width within range?

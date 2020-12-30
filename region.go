@@ -26,9 +26,14 @@ type Region struct {
 }
 
 func NewRegion(x, y, w, h int) *Region {
-	return &Region{
-		Point2I{x, y},
-		Rectangle{w, h},
+	r := MakeRegion(x, y, w, h)
+	return &r
+}
+
+func MakeRegion(x, y, w, h int) Region {
+	return Region{
+		Point2I{X: x, Y: y},
+		Rectangle{W: w, H: h},
 	}
 }
 

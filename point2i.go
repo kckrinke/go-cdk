@@ -15,7 +15,12 @@ type Point2I struct {
 }
 
 func NewPoint2I(x, y int) *Point2I {
-	return &Point2I{x, y}
+	r := MakePoint2I(x, y)
+	return &r
+}
+
+func MakePoint2I(x, y int) Point2I {
+	return Point2I{X: x, Y: y}
 }
 
 func (p Point2I) String() string {

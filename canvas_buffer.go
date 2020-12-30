@@ -30,7 +30,7 @@ type CanvasBuffer struct {
 func NewCanvasBuffer(size Rectangle, style Style) *CanvasBuffer {
 	b := &CanvasBuffer{
 		data: make([][]*CTextCell, size.W),
-		size: Rectangle{0, 0},
+		size: MakeRectangle(0, 0),
 	}
 	b.style = style
 	b.Resize(size)

@@ -39,13 +39,13 @@ func TestRectangle(t *testing.T) {
 		r.SetArea(10, 10)
 		So(r.Volume(), ShouldEqual, 100)
 		region := Region{Point2I{5, 5}, Rectangle{5, 5}}
-		So(r.Clamp(region), ShouldEqual, false)
+		So(r.ClampRegion(region), ShouldEqual, false)
 		So(r.Volume(), ShouldEqual, 100)
 		region.SetRegion(0, 0, 2, 2)
-		So(r.Clamp(region), ShouldEqual, true)
+		So(r.ClampRegion(region), ShouldEqual, true)
 		So(r.Volume(), ShouldEqual, 4)
 		region.SetRegion(5, 5, 2, 2)
-		So(r.Clamp(region), ShouldEqual, true)
+		So(r.ClampRegion(region), ShouldEqual, true)
 		So(r.Volume(), ShouldEqual, 25)
 	})
 }
