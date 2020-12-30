@@ -451,7 +451,7 @@ func (d *CDisplay) Run() error {
 			panic(p)
 		}
 	}()
-	d.events <- NewEventResize(d.screen.Size())
+	d.PostEvent(NewEventResize(d.screen.Size()))
 	for {
 		select {
 		case fn := <-d.queue:
