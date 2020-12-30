@@ -50,26 +50,18 @@ func (c *CTextChar) Set(r rune) {
 }
 
 func (c *CTextChar) SetByte(b []byte) {
-	c.Lock()
-	defer c.Unlock()
 	c.value, c.width = utf8.DecodeRune(b)
 }
 
 func (c CTextChar) Width() int {
-	c.RLock()
-	defer c.RUnlock()
 	return c.width
 }
 
 func (c CTextChar) Value() rune {
-	c.RLock()
-	defer c.RUnlock()
 	return c.value
 }
 
 func (c CTextChar) String() string {
-	c.RLock()
-	defer c.RUnlock()
 	return fmt.Sprintf("%c", c.value)
 }
 
