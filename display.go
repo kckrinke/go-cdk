@@ -31,14 +31,15 @@ var (
 )
 
 const (
-	TypeDisplay       CTypeTag = "display"
-	SignalDisplayInit Signal   = "display-init"
-	SignalInterrupt   Signal   = "ctrl-c"
-	SignalEvent       Signal   = "event"
-	SignalEventError  Signal   = "event-error"
-	SignalEventKey    Signal   = "event-key"
-	SignalEventMouse  Signal   = "event-mouse"
-	SignalEventResize Signal   = "event-resize"
+	TypeDisplay          CTypeTag = "cdk-display"
+	SignalDisplayInit    Signal   = "display-init"
+	SignalScreenCaptured Signal   = "screen-captured"
+	SignalInterrupt      Signal   = "sigint"
+	SignalEvent          Signal   = "event"
+	SignalEventError     Signal   = "event-error"
+	SignalEventKey       Signal   = "event-key"
+	SignalEventMouse     Signal   = "event-mouse"
+	SignalEventResize    Signal   = "event-resize"
 )
 
 func init() {
@@ -57,6 +58,8 @@ type Display interface {
 	ScreenCaptured() bool
 	CaptureScreen(ttyPath string)
 	ReleaseScreen()
+	IsMonochrome() bool
+	Colors() (numberOfColors int)
 
 	CaptureCtrlC()
 	ReleaseCtrlC()
@@ -174,6 +177,7 @@ func (d *CDisplay) CaptureScreen(ttyPath string) {
 	d.screen.Clear()
 	d.SetTheme(d.DefaultTheme())
 	d.captured = true
+	d.Emit(SignalScreenCaptured, d)
 }
 
 func (d *CDisplay) ReleaseScreen() {
@@ -184,6 +188,18 @@ func (d *CDisplay) ReleaseScreen() {
 		d.screen = nil
 	}
 	d.captured = false
+}
+
+func (d *CDisplay) IsMonochrome() bool {
+	return d.Colors() == 0
+}
+
+func (d *CDisplay) Colors() (numberOfColors int) {
+	numberOfColors = 0
+	if d.screen != nil {
+		numberOfColors = d.screen.Colors()
+	}
+	return
 }
 
 func (d *CDisplay) CaptureCtrlC() {

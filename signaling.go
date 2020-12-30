@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	TypeSignaling CTypeTag = "signaling"
+	TypeSignaling       CTypeTag = "cdk-signaling"
+	SignalSignalingInit Signal   = "signaling-init"
 )
 
 type Signaling interface {
@@ -55,7 +56,7 @@ func (o *CSignaling) Init() (already bool) {
 	o.stopped = []Signal{}
 	o.passed = []Signal{}
 	o.listeners = make(map[Signal][]*CSignalListener)
-	TypesManager.AddTypeItem(TypeSignaling, o)
+	o.Emit(SignalSignalingInit)
 	return false
 }
 

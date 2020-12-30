@@ -46,7 +46,7 @@ var (
 		Overlay:     false,
 	}
 	DefaultColorTheme = Theme{
-		Normal:      DefaultColorCdkStyle,
+		Normal:      DefaultColorCdkStyle.Dim(true),
 		Border:      DefaultColorCdkStyle.Dim(true),
 		Focused:     DefaultColorCdkStyle.Dim(false),
 		Active:      DefaultColorCdkStyle.Dim(false).Reverse(true),

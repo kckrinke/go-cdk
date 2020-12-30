@@ -15,9 +15,10 @@
 package cdk
 
 const (
-	TypeObject        CTypeTag = "object"
+	TypeObject        CTypeTag = "cdk-object"
 	SignalDestroy     Signal   = "destroy"
 	SignalSetProperty Signal   = "set-property"
+	SignalObjectInit  Signal   = "object-init"
 )
 
 func init() {
@@ -54,7 +55,9 @@ func (o *CObject) Init() (already bool) {
 		return true
 	}
 	o.CSignaling.Init()
+	o.theme = DefaultColorTheme
 	o.properties = make(map[string]interface{})
+	o.Emit(SignalObjectInit, o)
 	return false
 }
 

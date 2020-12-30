@@ -14,8 +14,12 @@
 
 package cdk
 
+import (
+	"fmt"
+)
+
 const (
-	TypeWindow       CTypeTag = "window"
+	TypeWindow       CTypeTag = "cdk-window"
 	SignalDraw       Signal   = "draw"
 	SignalSetTitle   Signal   = "set-title"
 	SignalSetDisplay Signal   = "set-display"
@@ -28,6 +32,8 @@ func init() {
 // Basic window interface
 type Window interface {
 	Object
+
+	ScreenCaptured(data []interface{}, argv ...interface{}) EventFlag
 
 	GetTitle() string
 	SetTitle(title string)
@@ -43,9 +49,17 @@ type Window interface {
 type CWindow struct {
 	CObject
 
-	title string
-
+	title   string
 	display Display
+}
+
+func NewWindow(title string, d Display) Window {
+	w := &CWindow{
+		title:   title,
+		display: d,
+	}
+	w.Init()
+	return w
 }
 
 func (w *CWindow) Init() bool {
@@ -53,8 +67,22 @@ func (w *CWindow) Init() bool {
 		return true
 	}
 	w.CObject.Init()
-	TypesManager.AddTypeItem(TypeWindow, w)
+	if w.display != nil {
+		handle := fmt.Sprintf("cdk-window-%d", w.ObjectID())
+		w.display.Connect(SignalScreenCaptured, Signal(handle), w.ScreenCaptured)
+	}
 	return false
+}
+
+func (w *CWindow) ScreenCaptured(data []interface{}, argv ...interface{}) EventFlag {
+	if w.display != nil {
+		if w.display.IsMonochrome() {
+			w.SetTheme(DefaultMonoTheme)
+		} else {
+			w.SetTheme(DefaultColorTheme)
+		}
+	}
+	return EVENT_PASS
 }
 
 func (w *CWindow) SetTitle(title string) {
