@@ -35,10 +35,12 @@ var (
 )
 
 var (
-	DefaultNilTheme = Theme{}
+	DefaultNilTheme  = Theme{}
 	DefaultMonoTheme = Theme{
 		Normal:      DefaultMonoCdkStyle,
 		Border:      DefaultMonoCdkStyle.Dim(true),
+		Focused:     DefaultMonoCdkStyle.Dim(false),
+		Active:      DefaultMonoCdkStyle.Dim(false).Reverse(true),
 		FillRune:    DefaultFillRune,
 		BorderRunes: DefaultBorderRune,
 		Overlay:     false,
@@ -46,6 +48,8 @@ var (
 	DefaultColorTheme = Theme{
 		Normal:      DefaultColorCdkStyle,
 		Border:      DefaultColorCdkStyle.Dim(true),
+		Focused:     DefaultColorCdkStyle.Dim(false),
+		Active:      DefaultColorCdkStyle.Dim(false).Reverse(true),
 		FillRune:    DefaultFillRune,
 		BorderRunes: DefaultBorderRune,
 		Overlay:     false,
@@ -80,6 +84,8 @@ func (b BorderRune) String() string {
 type Theme struct {
 	Normal      Style
 	Border      Style
+	Focused     Style
+	Active      Style
 	FillRune    rune
 	BorderRunes BorderRune
 	Overlay     bool // keep existing background
@@ -87,9 +93,11 @@ type Theme struct {
 
 func (t Theme) String() string {
 	return fmt.Sprintf(
-		"{Normal=%v,Border=%v,FillRune=%v,BorderRunes:%v,Overlay=%v}",
+		"{Normal=%v,Border=%v,Focused=%v,Active=%v,FillRune=%v,BorderRunes=%v,Overlay=%v}",
 		t.Normal,
 		t.Border,
+		t.Focused,
+		t.Active,
 		t.FillRune,
 		t.BorderRunes,
 		t.Overlay,
