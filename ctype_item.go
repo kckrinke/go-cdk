@@ -63,6 +63,9 @@ func (o *CTypeItem) Init() (already bool) {
 	if o.valid {
 		return true
 	}
+	if o.typeTag == TypeNil {
+		Fataldf(1, "invalid object type: nil")
+	}
 	var err error
 	o.id, err = TypesManager.AddTypeItem(o.typeTag, o)
 	if err != nil {
@@ -78,7 +81,9 @@ func (o *CTypeItem) InitTypeItem(tag TypeTag) (already bool) {
 	if o.valid {
 		return true
 	}
-	o.typeTag = tag.Tag()
+	if o.typeTag == TypeNil {
+		o.typeTag = tag.Tag()
+	}
 	return false
 }
 
