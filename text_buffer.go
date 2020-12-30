@@ -220,12 +220,14 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		x := 0
 		for x < maxChars-delta {
 			for _, word := range b.lines[forLine].words {
+				var lastBg Color
 				for _, char := range word.characters {
+					_, lastBg, _ = char.Style().Decompose()
 					canvas.SetRune(x+delta, atLine, char.Value(), char.Style())
 					x++
 				}
 				if x < maxChars-delta {
-					canvas.SetRune(x, atLine, ' ', b.style)
+					canvas.SetRune(x, atLine, ' ', b.style.Background(lastBg))
 					x++
 				}
 			}
@@ -238,12 +240,14 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		x := 0
 		for x < count {
 			for _, word := range b.lines[forLine].words {
+				var lastBg Color
 				for _, char := range word.characters {
+					_, lastBg, _ = char.Style().Decompose()
 					canvas.SetRune(x+delta, atLine, char.Value(), char.Style())
 					x++
 				}
 				if x < count {
-					canvas.SetRune(x+delta, atLine, ' ', b.style)
+					canvas.SetRune(x+delta, atLine, ' ', b.style.Background(lastBg))
 					x++
 				}
 			}
@@ -289,13 +293,15 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		x := 0
 		for x < len(s) {
 			for wid, word := range b.lines[forLine].words {
+				var lastBg Color
 				for _, char := range word.characters {
+					_, lastBg, _ = char.Style().Decompose()
 					canvas.SetRune(x, atLine, char.Value(), char.Style())
 					x++
 				}
 				if len(gaps) > wid && x < len(s) {
 					for i := 0; i < len(gaps[wid]); i++ {
-						canvas.SetRune(x, atLine, ' ', b.style)
+						canvas.SetRune(x, atLine, ' ', b.style.Background(lastBg))
 						x++
 					}
 				}
@@ -307,12 +313,14 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		x := 0
 		count := b.lines[forLine].LetterCount(true)
 		for _, word := range b.lines[forLine].words {
+			var lastBg Color
 			for _, char := range word.characters {
+				_, lastBg, _ = char.Style().Decompose()
 				canvas.SetRune(x, atLine, char.Value(), char.Style())
 				x++
 			}
 			if x < count {
-				canvas.SetRune(x, atLine, ' ', b.style)
+				canvas.SetRune(x, atLine, ' ', b.style.Background(lastBg))
 				x++
 			}
 		}
