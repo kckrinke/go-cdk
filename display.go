@@ -395,14 +395,14 @@ func (d *CDisplay) PostEvent(evt Event) error {
 	return nil
 }
 
-func (d *CDisplay) runPollEventThread() {
+func (d *CDisplay) pollEventWorker() {
 	for d.running {
 		d.process <- d.screen.PollEvent()
 	}
 	d.done <- true
 }
 
-func (d *CDisplay) runProcessEventThread() {
+func (d *CDisplay) processEventWorker() {
 	for d.running {
 		if evt := <-d.process; evt != nil {
 			if f := d.ProcessEvent(evt); f == EVENT_STOP {
@@ -412,7 +412,7 @@ func (d *CDisplay) runProcessEventThread() {
 		}
 	}
 }
-func (d *CDisplay) runRequestThread() {
+func (d *CDisplay) screenRequestWorker() {
 	if d.running {
 		d.RequestDraw()
 		d.RequestSync()
@@ -438,12 +438,13 @@ func (d *CDisplay) runRequestThread() {
 		}
 	}
 }
+
 func (d *CDisplay) Run() error {
 	d.CaptureScreen(d.ttyPath)
 	d.running = true
-	go d.runPollEventThread()
-	go d.runProcessEventThread()
-	go d.runRequestThread()
+	go d.pollEventWorker()
+	go d.processEventWorker()
+	go d.screenRequestWorker()
 	defer func() {
 		if p := recover(); p != nil {
 			d.ReleaseScreen()
