@@ -238,14 +238,12 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		x := 0
 		for x < count {
 			for _, word := range b.lines[forLine].words {
-				var lastStyle Style
 				for _, char := range word.characters {
 					canvas.SetRune(x+delta, atLine, char.Value(), char.Style())
-					lastStyle = char.Style()
 					x++
 				}
 				if x < count {
-					canvas.SetRune(x+delta, atLine, ' ', lastStyle)
+					canvas.SetRune(x+delta, atLine, ' ', b.style)
 					x++
 				}
 			}
@@ -291,15 +289,13 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		x := 0
 		for x < len(s) {
 			for wid, word := range b.lines[forLine].words {
-				var lastStyle Style
 				for _, char := range word.characters {
 					canvas.SetRune(x, atLine, char.Value(), char.Style())
-					lastStyle = char.Style()
 					x++
 				}
 				if len(gaps) > wid && x < len(s) {
 					for i := 0; i < len(gaps[wid]); i++ {
-						canvas.SetRune(x, atLine, ' ', lastStyle)
+						canvas.SetRune(x, atLine, ' ', b.style)
 						x++
 					}
 				}
@@ -311,14 +307,12 @@ func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wor
 		x := 0
 		count := b.lines[forLine].LetterCount(true)
 		for _, word := range b.lines[forLine].words {
-			var lastStyle Style
 			for _, char := range word.characters {
 				canvas.SetRune(x, atLine, char.Value(), char.Style())
-				lastStyle = char.Style()
 				x++
 			}
 			if x < count {
-				canvas.SetRune(x, atLine, ' ', lastStyle)
+				canvas.SetRune(x, atLine, ' ', b.style)
 				x++
 			}
 		}
