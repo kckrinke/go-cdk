@@ -54,6 +54,7 @@ type Display interface {
 	SetTitle(title string)
 
 	Screen() Screen
+	ScreenCaptured() bool
 	CaptureScreen(ttyPath string)
 	ReleaseScreen()
 
@@ -94,9 +95,10 @@ type CDisplay struct {
 	active  int
 	windows []Window
 
-	app     *CApp
-	ttyPath string
-	screen  Screen
+	app      *CApp
+	ttyPath  string
+	screen   Screen
+	captured bool
 
 	running  bool
 	done     chan bool
@@ -121,6 +123,7 @@ func (d *CDisplay) Init() (already bool) {
 	}
 	d.CObject.Init()
 
+	d.captured = false
 	d.running = false
 	d.done = make(chan bool)
 	d.queue = make(chan DisplayCallbackFn, DisplayCallQueueCapacity)
@@ -147,6 +150,10 @@ func (d *CDisplay) Screen() Screen {
 	return d.screen
 }
 
+func (d *CDisplay) ScreenCaptured() bool {
+	return d.screen != nil && d.captured
+}
+
 func (d *CDisplay) CaptureScreen(ttyPath string) {
 	d.Lock()
 	defer d.Unlock()
@@ -166,6 +173,7 @@ func (d *CDisplay) CaptureScreen(ttyPath string) {
 	d.screen.EnablePaste()
 	d.screen.Clear()
 	d.SetTheme(d.DefaultTheme())
+	d.captured = true
 }
 
 func (d *CDisplay) ReleaseScreen() {
@@ -175,6 +183,7 @@ func (d *CDisplay) ReleaseScreen() {
 		d.screen.Close()
 		d.screen = nil
 	}
+	d.captured = false
 }
 
 func (d *CDisplay) CaptureCtrlC() {
