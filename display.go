@@ -413,6 +413,9 @@ func (d *CDisplay) processEventWorker() {
 	}
 }
 func (d *CDisplay) screenRequestWorker() {
+	if err := d.app.InitUI(d.app.context); err != nil {
+		Fataldf(1, "%v", err)
+	}
 	if d.running {
 		d.RequestDraw()
 		d.RequestSync()

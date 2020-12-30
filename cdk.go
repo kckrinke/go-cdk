@@ -194,8 +194,5 @@ func (app *CApp) MainActionFn(c *cli.Context) error {
 	ReloadLogging()
 	defer StopLogging()
 	app.context = c
-	if err := app.InitUI(c); err != nil {
-		return err
-	}
 	return app.Display().Run()
 }
