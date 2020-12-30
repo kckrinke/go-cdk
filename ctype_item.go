@@ -69,7 +69,7 @@ func (o *CTypeItem) Init() (already bool) {
 	var err error
 	o.id, err = TypesManager.AddTypeItem(o.typeTag, o)
 	if err != nil {
-		Fataldf(1, "AddTypeItem(%v) failed: %v", o.typeTag, err)
+		Fataldf(1, "failed to add self to \"%v\" type: %v", o.typeTag, err)
 	}
 	o.valid = true
 	return false

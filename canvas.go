@@ -192,7 +192,7 @@ func (c *Canvas) DrawVerticalLine(pos Point2I, length int, style Style) {
 }
 
 func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme Theme) {
-	Tracef("c.Box(%v,%v,%v,%v)", pos, size, border, theme)
+	Tracedf(1, "c.Box(%v,%v,%v,%v)", pos, size, border, theme)
 	endx := pos.X + size.W - 1
 	endy := pos.Y + size.H - 1
 	// for each column
