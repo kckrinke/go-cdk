@@ -54,7 +54,6 @@ func (o *CObject) Init() (already bool) {
 		return true
 	}
 	o.CSignaling.Init()
-	o.SetTheme(DefaultNilTheme)
 	o.properties = make(map[string]interface{})
 	return false
 }
