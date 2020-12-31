@@ -330,8 +330,8 @@ func (d *CDisplay) ProcessEvent(evt Event) EventFlag {
 func (d *CDisplay) DrawScreen() EventFlag {
 	d.Lock()
 	defer d.Unlock()
-	if d.screen == nil {
-		d.LogError("display missing screen")
+	if !d.captured || d.screen == nil {
+		d.LogError("screen not captured or otherwise missing")
 		return EVENT_PASS
 	}
 	var window Window
