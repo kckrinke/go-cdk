@@ -39,3 +39,28 @@ func CeilF2I(v float64) int {
 	}
 	return int(v)
 }
+
+func Distribute(total, parts int) (values []int) {
+	if parts > 0 && total > 0 {
+		values = make([]int, parts)
+		front := false
+		last := parts - 1
+		fid, bid := 0, last
+		for SumInts(values) < total {
+			if front {
+				values[fid]++
+				fid++
+				if fid >= last {
+					fid = 0
+				}
+			} else {
+				values[bid]++
+				bid--
+				if bid < 0 {
+					bid = last
+				}
+			}
+		}
+	}
+	return
+}
