@@ -380,7 +380,7 @@ func (b *CTextBuffer) joinGaps(line *WordLine, gaps []string) string {
 	output := ""
 	last_idx := len(line.words) - 1
 	for idx, word := range line.words {
-		output += word.String()
+		output += word.Value()
 		if idx < last_idx {
 			output += gaps[idx]
 		}
