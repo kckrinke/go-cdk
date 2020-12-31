@@ -59,6 +59,16 @@ func NewTypeItem(tag CTypeTag, name string) TypeItem {
 	}
 }
 
+func (o *CTypeItem) InitTypeItem(tag TypeTag) (already bool) {
+	o.Lock()
+	defer o.Unlock()
+	already = o.valid
+	if !already && o.typeTag == TypeNil {
+		o.typeTag = tag.Tag()
+	}
+	return
+}
+
 func (o *CTypeItem) Init() (already bool) {
 	if o.valid {
 		return true
@@ -72,18 +82,6 @@ func (o *CTypeItem) Init() (already bool) {
 		Fataldf(1, "failed to add self to \"%v\" type: %v", o.typeTag, err)
 	}
 	o.valid = true
-	return false
-}
-
-func (o *CTypeItem) InitTypeItem(tag TypeTag) (already bool) {
-	o.Lock()
-	defer o.Unlock()
-	if o.valid {
-		return true
-	}
-	if o.typeTag == TypeNil {
-		o.typeTag = tag.Tag()
-	}
 	return false
 }
 
