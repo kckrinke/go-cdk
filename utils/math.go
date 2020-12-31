@@ -1,15 +1,20 @@
 package utils
 
-func ClampI(v, min, max int) int {
-	if v < min && v <= max {
-		return v
+// Returns the `value` given unless it's smaller than `min` or greater than
+// `max`. If it's less than `min`, `min` is returned and if it's greater than
+// `max` it returns max.
+func ClampI(value, min, max int) int {
+	if value >= min && value <= max {
+		return value
 	}
-	if v > max {
+	if value > max {
 		return max
 	}
 	return min
 }
 
+// Returns the `value` given unless it's less than `min`, in which case it
+// returns `min`.
 func FloorI(v, min int) int {
 	if v < min {
 		return min
@@ -17,9 +22,20 @@ func FloorI(v, min int) int {
 	return v
 }
 
+// Add the given list of integers up and return the result.
 func SumInts(ints []int) (sum int) {
 	for _, v := range ints {
 		sum += v
 	}
 	return
+}
+
+// Round the given floating point number to the nearest larger integer and
+// return that as an integer.
+func CeilF2I(v float64) int {
+	delta := v - float64(int(v))
+	if delta > 0 {
+		return int(v) + 1
+	}
+	return int(v)
 }
