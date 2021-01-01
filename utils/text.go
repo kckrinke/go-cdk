@@ -1,11 +1,8 @@
 package utils
 
-func SolveIncrements(nChildren, spaceAvailable int) (increment, remainder int) {
-	fSpace, fBoxes := float64(spaceAvailable), float64(nChildren)
-	fVal := fSpace / fBoxes
-	dVal := fSpace - (fVal * fBoxes)
-	increment = int(fVal)     // round down
-	remainder = CeilF2I(dVal) // round up
+func SolveIncrements(nChildren, nSpace int) (increment, remainder int) {
+	remainder = nSpace % nChildren
+	increment = (nSpace-remainder) / nChildren
 	return
 }
 
