@@ -40,9 +40,19 @@ func CeilF2I(v float64) int {
 	return int(v)
 }
 
-func Distribute(total, parts int) (values []int) {
-	if parts > 0 && total > 0 {
-		values = make([]int, parts)
+func Distribute(total, parts, nChildren, spacing int) (values, gaps []int) {
+	numGaps := nChildren - 1
+	if numGaps > 0 {
+		gaps = make([]int, numGaps)
+		for i:=0; i < numGaps; i++ {
+			gaps[i] = spacing
+		}
+	} else {
+		gaps = make([]int, 0)
+	}
+	total -= SumInts(gaps)
+	values = make([]int, parts)
+	if parts > 0 {
 		front := false
 		last := parts - 1
 		fid, bid := 0, last

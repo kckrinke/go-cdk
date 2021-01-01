@@ -2,16 +2,17 @@ package utils
 
 func SolveSpaceAlloc(nChildren, nSpace, minSpacing int) (increment int, gaps []int) {
 	numGaps := nChildren - 1
-	availableSpace := nSpace - (minSpacing * numGaps)
+	totalMinSpacing := minSpacing * numGaps
+	availableSpace := nSpace - totalMinSpacing
 	remainder := availableSpace % nChildren
 	increment = (availableSpace - remainder) / nChildren
-	extra := (minSpacing * numGaps) + remainder
-	for i := 0; i <= numGaps; i++ {
+	extra := totalMinSpacing + remainder
+	for i := 0; i < numGaps; i++ {
 		gaps = append(gaps, minSpacing)
 	}
 	front := true
-	first, last := 0, numGaps
-	fw, bw := 0, numGaps
+	first, last := 0, numGaps - 1
+	fw, bw := 0, last
 	for SumInts(gaps) < extra {
 		if front {
 			gaps[fw]++
