@@ -312,7 +312,5 @@ func (c *Canvas) FillBorderTitle(dim bool, title string, justify Justification) 
 		true,
 		c.theme,
 	)
-	label := fmt.Sprintf(" %v ", title)
-	pos := MakePoint2I((c.size.W / 2) - (len(label) / 2), 0)
-	c.DrawSingleLineText(pos, len(label), JUSTIFY_CENTER, c.theme.Normal.Dim(dim), false, label)
+	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W - 2, justify, c.theme.Normal.Dim(dim), false, title)
 }
