@@ -152,12 +152,14 @@ func (b *CTextBuffer) wrapSort(maxChars int, wordWrap WrapMode) []*WordLine {
 			// attempt wrap word, if no spaces, fallback to char
 			if utils.HasSpace(line.String()) {
 				for _, word := range line.words {
-					if sorted[lid].LetterCount(true)+1+word.Len() < maxChars {
-						sorted[lid].words = append(sorted[lid].words, word)
-					} else {
-						lid++
-						sorted = append(sorted, NewWordLine("", b.style))
-						sorted[lid].words = append(sorted[lid].words, word)
+					if len(sorted) < lid {
+						if sorted[lid].LetterCount(true)+1+word.Len() < maxChars {
+							sorted[lid].words = append(sorted[lid].words, word)
+						} else {
+							lid++
+							sorted = append(sorted, NewWordLine("", b.style))
+							sorted[lid].words = append(sorted[lid].words, word)
+						}
 					}
 				}
 				break
@@ -165,21 +167,23 @@ func (b *CTextBuffer) wrapSort(maxChars int, wordWrap WrapMode) []*WordLine {
 			fallthrough
 		case WRAP_CHAR:
 			for _, word := range line.words {
-				if wid >= len(sorted[lid].words) {
-					sorted[lid].words = append(sorted[lid].words, &WordCell{})
-				}
-				for _, char := range word.characters {
-					if sorted[lid].LetterCount(true)+1+1 < maxChars {
-						sorted[lid].words[wid].characters = append(sorted[lid].words[wid].characters, char)
-					} else {
-						lid++
-						sorted = append(sorted, NewWordLine("", b.style))
-						wid = 0
-						if len(sorted[lid].words) < wid {
-							word, _ := NewWordCell("", b.style)
-							sorted[lid].words = append(sorted[lid].words, word)
+				if len(sorted) < lid {
+					if wid >= len(sorted[lid].words) {
+						sorted[lid].words = append(sorted[lid].words, &WordCell{})
+					}
+					for _, char := range word.characters {
+						if sorted[lid].LetterCount(true)+1+1 < maxChars {
+							sorted[lid].words[wid].characters = append(sorted[lid].words[wid].characters, char)
+						} else {
+							lid++
+							sorted = append(sorted, NewWordLine("", b.style))
+							wid = 0
+							if len(sorted[lid].words) < wid {
+								word, _ := NewWordCell("", b.style)
+								sorted[lid].words = append(sorted[lid].words, word)
+							}
+							sorted[lid].words[wid].characters = append(sorted[lid].words[wid].characters, char)
 						}
-						sorted[lid].words[wid].characters = append(sorted[lid].words[wid].characters, char)
 					}
 				}
 				wid++
