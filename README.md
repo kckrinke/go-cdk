@@ -1,6 +1,6 @@
 [![codecov](https://codecov.io/gh/kckrinke/go-cdk/branch/trunk/graph/badge.svg?token=8AVBADVD1S)](https://codecov.io/gh/kckrinke/go-cdk)
 
-# CDK - Curses Display Kit
+# CDK - Curses Development Kit
 
 This package provides the GDK equivalent for [CTK](https://github.com/kckrinke/go-ctk). This is not intended to be a parity of GDK in any way, rather this package simply fulfills the terminal drawing and basic event systems required by CTK.
 
@@ -29,23 +29,11 @@ usage: make {help|test|clean|demos}
 
 While CDK is not intended for direct usage, there are some simple demonstration applications provided.
 
-### Boxes
+### CDK Demo
 
-Simple demostration of rendering randomly sized and positioned rectangles on the screen. Pressing ESC will exit the application and inform you of the total number of boxes drawn and the average time for each box's rendering.
+A formal CDK application demonstrating the typical boilerplate setup.
 
-* See: [boxes.go](_demos/boxes.go)
-
-### Mouse
-
-Displays an information box and provides a drawing area for testing and demonstrating the mouse interaction events.
-
-* See: [mouse.go](_demos/mouse.go)
-
-### Unicode
-
-Somewhat complicated code demonstration of working with advanced unicode characters. The actual application simply renders a bunch of non-ASCII characters of various widths and encoding.
-
-* See: [unicode.go](_demos/unicode.go)
+* See: [cdk-demo.go](_demos/cdk-demo.go)
 
 ## Running the tests
 
