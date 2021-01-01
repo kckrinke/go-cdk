@@ -4,6 +4,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/kckrinke/go-cdk"
 )
@@ -24,7 +25,9 @@ func (w *CdkDemoWindow) Draw(canvas *cdk.Canvas) cdk.EventFlag {
 	theme := w.GetDisplay().DefaultTheme()
 	size := canvas.GetSize()
 	canvas.Box(cdk.Point2I{0, 0}, size, true, true, theme)
-	content := "<b><u>H</u><span foreground=\"gold\">ello</span> <i>W</i><span foreground=\"brown\">orld</span></b>\n<span foreground=\"grey\" background=\"cyan\">(press CTRL+c to exit)</span>"
+	content := "<b><u>H</u><span foreground=\"gold\">ello</span> <i>W</i><span foreground=\"brown\">orld</span></b>\n"
+	content += "<span foreground=\"grey\" background=\"cyan\">(press CTRL+c to exit)</span>\n"
+	content += "<span foreground=\"silver\" background=\"darkblue\">"+time.Now().Format("2006-01-02 15:04:05")+"</span>"
 	textPoint := cdk.Point2I{
 		X: size.W / 2 / 2,
 		Y: size.H/2 - 1,
@@ -56,6 +59,11 @@ func main() {
 			w := &CdkDemoWindow{}
 			w.Init()
 			d.SetActiveWindow(w)
+			cdk.AddTimeout(time.Second, func() cdk.EventFlag {
+				d.RequestDraw()
+				d.RequestShow()
+				return cdk.EVENT_PASS // keep looping every second
+			})
 			return nil
 		},
 	)
