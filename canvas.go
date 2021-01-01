@@ -191,6 +191,19 @@ func (c *Canvas) DrawVerticalLine(pos Point2I, length int, style Style) {
 	}
 }
 
+func (c *Canvas) DebugBox(color Color, text string) {
+	bs := DefaultMonoTheme
+	bs.Border = bs.Border.Foreground(color)
+	c.Box(
+		MakePoint2I(0, 0),
+		c.size,
+		true,
+		false,
+		bs,
+	)
+	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, JUSTIFY_LEFT, bs.Border, false, text)
+}
+
 func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme Theme) {
 	Tracedf(1, "c.Box(%v,%v,%v,%v)", pos, size, border, theme)
 	endx := pos.X + size.W - 1
