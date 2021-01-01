@@ -191,7 +191,8 @@ func (c *Canvas) DrawVerticalLine(pos Point2I, length int, style Style) {
 	}
 }
 
-func (c *Canvas) DebugBox(color Color, text string) {
+func (c *Canvas) DebugBox(color Color, format string, argv ...interface{}) {
+	text := fmt.Sprintf(format, argv...)
 	bs := DefaultMonoTheme
 	bs.Border = bs.Border.Foreground(color)
 	c.Box(
