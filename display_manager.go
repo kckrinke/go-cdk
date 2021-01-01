@@ -477,7 +477,6 @@ func (d *CDisplay) Run() error {
 			return nil
 		}
 	}
-	return nil
 }
 
 func (d *CDisplay) IsRunning() bool {

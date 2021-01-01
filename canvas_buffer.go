@@ -37,7 +37,7 @@ func NewCanvasBuffer(size Rectangle, style Style) *CanvasBuffer {
 	return b
 }
 
-func (b CanvasBuffer) String() string {
+func (b *CanvasBuffer) String() string {
 	return fmt.Sprintf(
 		"{Size=%s,Style=%s}",
 		b.size,

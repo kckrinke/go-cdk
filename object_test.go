@@ -13,7 +13,7 @@ func TestObject(t *testing.T) {
 		So(o.Init(), ShouldEqual, false)
 		So(o.Init(), ShouldEqual, true)
 		// normal testing
-		So(o.GetTheme().String(), ShouldEqual, DefaultNilTheme.String())
+		So(o.GetTheme().String(), ShouldEqual, DefaultColorTheme.String())
 		o.SetTheme(DefaultMonoTheme)
 		So(o.GetTheme().String(), ShouldEqual, DefaultMonoTheme.String())
 		o.SetProperty("testing", nil)
