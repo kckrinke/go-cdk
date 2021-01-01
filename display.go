@@ -27,7 +27,8 @@ import (
 // drawables within viewports render the space
 
 var (
-	DisplayCallQueueCapacity = 16
+	DisplayCallQueueCapacity         = 16
+	MainDisplay              Display = nil
 )
 
 const (
@@ -124,6 +125,10 @@ func (d *CDisplay) Init() (already bool) {
 	if d.InitTypeItem(TypeDisplay) {
 		return true
 	}
+	check := TypesManager.GetTypeItems(TypeDisplay)
+	if len(check) > 0 {
+		Fatalf("only one display permitted at a time")
+	}
 	d.CObject.Init()
 
 	d.captured = false
@@ -137,6 +142,7 @@ func (d *CDisplay) Init() (already bool) {
 	d.windows = []Window{}
 	d.active = -1
 	d.SetTheme(DefaultColorTheme)
+	MainDisplay = d
 	d.Emit(SignalDisplayInit, d)
 	return false
 }
