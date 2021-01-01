@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"unicode"
 )
 
@@ -50,6 +51,34 @@ func HasSpace(text string) bool {
 		if unicode.IsSpace(c) {
 			return true
 		}
+	}
+	return false
+}
+
+func IsTrue(text string) bool {
+	switch strings.ToLower(text) {
+	case "1":
+		fallthrough
+	case "on":
+		fallthrough
+	case "yes":
+		fallthrough
+	case "true":
+		return true
+	}
+	return false
+}
+
+func IsFalse(text string) bool {
+	switch strings.ToLower(text) {
+	case "0":
+		fallthrough
+	case "off":
+		fallthrough
+	case "no":
+		fallthrough
+	case "false":
+		return true
 	}
 	return false
 }
