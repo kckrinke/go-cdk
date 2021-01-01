@@ -16,8 +16,8 @@
 
 package cdk
 
-// NewConsoleScreen returns a console based screen.  This platform
+// NewConsoleDisplay returns a console based screen.  This platform
 // doesn't have support for any, so it returns nil and a suitable error.
-func NewConsoleScreen() (Screen, error) {
-	return nil, ErrNoScreen
+func NewConsoleDisplay() (Display, error) {
+	return nil, ErrNoDisplay
 }

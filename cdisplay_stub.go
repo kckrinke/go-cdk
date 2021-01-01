@@ -20,17 +20,17 @@ package cdk
 
 type termiosPrivate struct{}
 
-func (t *tScreen) termioInit(ttyPath string) error {
-	return ErrNoScreen
+func (t *cDisplay) termioInit(ttyPath string) error {
+	return ErrNoDisplay
 }
 
-func (t *tScreen) termioClose() {
+func (t *cDisplay) termioClose() {
 }
 
-func (t *tScreen) getWinSize() (int, int, error) {
-	return 0, 0, ErrNoScreen
+func (t *cDisplay) getWinSize() (int, int, error) {
+	return 0, 0, ErrNoDisplay
 }
 
-func (t *tScreen) Beep() error {
-	return ErrNoScreen
+func (t *cDisplay) Beep() error {
+	return ErrNoDisplay
 }

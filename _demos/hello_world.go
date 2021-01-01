@@ -26,7 +26,7 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
-func emitStr(s cdk.Screen, x, y int, style cdk.Style, str string) {
+func emitStr(s cdk.Display, x, y int, style cdk.Style, str string) {
 	for _, c := range str {
 		var comb []rune
 		w := runewidth.RuneWidth(c)
@@ -40,7 +40,7 @@ func emitStr(s cdk.Screen, x, y int, style cdk.Style, str string) {
 	}
 }
 
-func displayHelloWorld(s cdk.Screen) {
+func displayHelloWorld(s cdk.Display) {
 	w, h := s.Size()
 	s.Clear()
 	emitStr(s, w/2-7, h/2, cdk.StyleDefault, "Hello, World!")
@@ -52,7 +52,7 @@ func displayHelloWorld(s cdk.Screen) {
 func main() {
 	encoding.Register()
 
-	s, e := cdk.NewScreen()
+	s, e := cdk.NewDisplay()
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
 		os.Exit(1)

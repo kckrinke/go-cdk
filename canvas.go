@@ -125,7 +125,7 @@ func (c *Canvas) Composite(v *Canvas) error {
 	return nil
 }
 
-func (c *Canvas) Render(screen Screen) error {
+func (c *Canvas) Render(screen Display) error {
 	for x := 0; x < c.size.W; x++ {
 		for y := 0; y < c.size.H; y++ {
 			cell := c.buffer.Cell(x, y)

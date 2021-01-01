@@ -155,7 +155,7 @@ func TestEventMouseDrag(t *testing.T) {
 	})
 }
 
-func eventLoop(s SimulationScreen, evch chan Event) {
+func eventLoop(s DisplaySimulation, evch chan Event) {
 	for {
 		ev := s.PollEvent()
 		if ev == nil {

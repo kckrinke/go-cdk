@@ -31,7 +31,7 @@ import (
 
 var defStyle cdk.Style
 
-func emitStr(s cdk.Screen, x, y int, style cdk.Style, str string) {
+func emitStr(s cdk.Display, x, y int, style cdk.Style, str string) {
 	for _, c := range str {
 		var comb []rune
 		w := runewidth.RuneWidth(c)
@@ -45,7 +45,7 @@ func emitStr(s cdk.Screen, x, y int, style cdk.Style, str string) {
 	}
 }
 
-func drawBox(s cdk.Screen, x1, y1, x2, y2 int, style cdk.Style, r rune) {
+func drawBox(s cdk.Display, x1, y1, x2, y2 int, style cdk.Style, r rune) {
 	if y2 < y1 {
 		y1, y2 = y2, y1
 	}
@@ -75,7 +75,7 @@ func drawBox(s cdk.Screen, x1, y1, x2, y2 int, style cdk.Style, r rune) {
 	}
 }
 
-func drawSelect(s cdk.Screen, x1, y1, x2, y2 int, sel bool) {
+func drawSelect(s cdk.Display, x1, y1, x2, y2 int, sel bool) {
 
 	if y2 < y1 {
 		y1, y2 = y2, y1
@@ -102,7 +102,7 @@ func main() {
 
 	encoding.Register()
 
-	s, e := cdk.NewScreen()
+	s, e := cdk.NewDisplay()
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
 		os.Exit(1)

@@ -27,7 +27,7 @@ import (
 	"unsafe"
 )
 
-type cScreen struct {
+type cConsoleDisplay struct {
 	in         syscall.Handle
 	out        syscall.Handle
 	cancelflag syscall.Handle
@@ -117,11 +117,11 @@ var (
 	procSetConsoleCursorPosition   = k32.NewProc("SetConsoleCursorPosition")
 	procSetConsoleMode             = k32.NewProc("SetConsoleMode")
 	procGetConsoleMode             = k32.NewProc("GetConsoleMode")
-	procGetConsoleScreenBufferInfo = k32.NewProc("GetConsoleScreenBufferInfo")
+	procGetConsoleDisplayBufferInfo = k32.NewProc("GetConsoleDisplayBufferInfo")
 	procFillConsoleOutputAttribute = k32.NewProc("FillConsoleOutputAttribute")
 	procFillConsoleOutputCharacter = k32.NewProc("FillConsoleOutputCharacterW")
 	procSetConsoleWindowInfo       = k32.NewProc("SetConsoleWindowInfo")
-	procSetConsoleScreenBufferSize = k32.NewProc("SetConsoleScreenBufferSize")
+	procSetConsoleDisplayBufferSize = k32.NewProc("SetConsoleDisplayBufferSize")
 	procSetConsoleTextAttribute    = k32.NewProc("SetConsoleTextAttribute")
 	procMessageBeep                = u32.NewProc("MessageBeep")
 )
@@ -147,14 +147,14 @@ const (
 	vtSetBgRGB   = "\x1b[48;2;%d;%d;%dm" // RGB
 )
 
-// NewConsoleScreen returns a Screen for the Windows console associated
-// with the current process.  The Screen makes use of the Windows Console
+// NewConsoleDisplay returns a Display for the Windows console associated
+// with the current process.  The Display makes use of the Windows Console
 // API to display content and read events.
-func NewConsoleScreen() (Screen, error) {
-	return &cScreen{}, nil
+func NewConsoleDisplay() (Display, error) {
+	return &cConsoleDisplay{}, nil
 }
 
-func (s *cScreen) Init() error {
+func (s *cConsoleDisplay) Init() error {
 	s.evch = make(chan Event, 10)
 	s.quit = make(chan struct{})
 	s.scandone = make(chan struct{})
@@ -230,7 +230,7 @@ func (s *cScreen) Init() error {
 		s.setOutMode(0)
 	}
 
-	s.clearScreen(s.style)
+	s.clearDisplay(s.style)
 	s.hideCursor()
 	s.Unlock()
 	go s.scanInput()
@@ -238,28 +238,28 @@ func (s *cScreen) Init() error {
 	return nil
 }
 
-func (s *cScreen) CharacterSet() string {
+func (s *cConsoleDisplay) CharacterSet() string {
 	// We are always UTF-16LE on Windows
 	return "UTF-16LE"
 }
 
-func (s *cScreen) EnableMouse() {
+func (s *cConsoleDisplay) EnableMouse() {
 	s.setInMode(modeResizeEn | modeMouseEn | modeExtndFlg)
 }
 
-func (s *cScreen) DisableMouse() {
+func (s *cConsoleDisplay) DisableMouse() {
 	s.setInMode(modeResizeEn | modeExtndFlg)
 }
 
-func (s *cScreen) EnablePaste() {}
+func (s *cConsoleDisplay) EnablePaste() {}
 
-func (s *cScreen) DisablePaste() {}
+func (s *cConsoleDisplay) DisablePaste() {}
 
-func (s *cScreen) Close() {
+func (s *cConsoleDisplay) Close() {
 	s.finiOnce.Do(s.finish)
 }
 
-func (s *cScreen) finish() {
+func (s *cConsoleDisplay) finish() {
 	s.Lock()
 	s.style = StyleDefault
 	s.curx = -1
@@ -272,7 +272,7 @@ func (s *cScreen) finish() {
 	s.setInMode(s.oimode)
 	s.setOutMode(s.oomode)
 	s.setBufferSize(int(s.oscreen.size.x), int(s.oscreen.size.y))
-	s.clearScreen(StyleDefault)
+	s.clearDisplay(StyleDefault)
 	s.setCursorPos(0, 0)
 	procSetConsoleTextAttribute.Call(
 		uintptr(s.out),
@@ -287,11 +287,11 @@ func (s *cScreen) finish() {
 	syscall.Close(s.out)
 }
 
-func (s *cScreen) PostEventWait(ev Event) {
+func (s *cConsoleDisplay) PostEventWait(ev Event) {
 	s.evch <- ev
 }
 
-func (s *cScreen) PostEvent(ev Event) error {
+func (s *cConsoleDisplay) PostEvent(ev Event) error {
 	select {
 	case s.evch <- ev:
 		return nil
@@ -300,7 +300,7 @@ func (s *cScreen) PostEvent(ev Event) error {
 	}
 }
 
-func (s *cScreen) PollEvent() Event {
+func (s *cConsoleDisplay) PollEvent() Event {
 	select {
 	case <-s.quit:
 		return nil
@@ -331,12 +331,12 @@ type rect struct {
 	bottom int16
 }
 
-func (s *cScreen) emitVtString(vs string) {
+func (s *cConsoleDisplay) emitVtString(vs string) {
 	esc := utf16.Encode([]rune(vs))
 	syscall.WriteConsole(s.out, &esc[0], uint32(len(esc)), nil, nil)
 }
 
-func (s *cScreen) showCursor() {
+func (s *cConsoleDisplay) showCursor() {
 	if s.vten {
 		s.emitVtString(vtShowCursor)
 	} else {
@@ -344,7 +344,7 @@ func (s *cScreen) showCursor() {
 	}
 }
 
-func (s *cScreen) hideCursor() {
+func (s *cConsoleDisplay) hideCursor() {
 	if s.vten {
 		s.emitVtString(vtHideCursor)
 	} else {
@@ -352,7 +352,7 @@ func (s *cScreen) hideCursor() {
 	}
 }
 
-func (s *cScreen) ShowCursor(x, y int) {
+func (s *cConsoleDisplay) ShowCursor(x, y int) {
 	s.Lock()
 	if !s.fini {
 		s.curx = x
@@ -362,7 +362,7 @@ func (s *cScreen) ShowCursor(x, y int) {
 	s.Unlock()
 }
 
-func (s *cScreen) doCursor() {
+func (s *cConsoleDisplay) doCursor() {
 	x, y := s.curx, s.cury
 
 	if x < 0 || y < 0 || x >= s.w || y >= s.h {
@@ -373,7 +373,7 @@ func (s *cScreen) doCursor() {
 	}
 }
 
-func (s *cScreen) HideCursor() {
+func (s *cConsoleDisplay) HideCursor() {
 	s.ShowCursor(-1, -1)
 }
 
@@ -594,7 +594,7 @@ func mrec2btns(mbtns, flags uint32) ButtonMask {
 	return btns
 }
 
-func (s *cScreen) getConsoleInput() error {
+func (s *cConsoleDisplay) getConsoleInput() error {
 	// cancelFlag comes first as WaitForMultipleObjects returns the lowest index
 	// in the event that both events are signalled.
 	waitObjects := []syscall.Handle{s.cancelflag, s.in}
@@ -692,7 +692,7 @@ func (s *cScreen) getConsoleInput() error {
 	return nil
 }
 
-func (s *cScreen) scanInput() {
+func (s *cConsoleDisplay) scanInput() {
 	for {
 		if e := s.getConsoleInput(); e != nil {
 			close(s.scandone)
@@ -702,7 +702,7 @@ func (s *cScreen) scanInput() {
 }
 
 // Windows console can display 8 characters, in either low or high intensity
-func (s *cScreen) Colors() int {
+func (s *cConsoleDisplay) Colors() int {
 	if s.vten {
 		return 1 << 24
 	}
@@ -747,7 +747,7 @@ func mapColor2RGB(c Color) uint16 {
 }
 
 // Map a cdk style to Windows attributes
-func (s *cScreen) mapStyle(style Style) uint16 {
+func (s *cConsoleDisplay) mapStyle(style Style) uint16 {
 	f, b, a := style.Decompose()
 	fa := s.oscreen.attrs & 0xf
 	ba := (s.oscreen.attrs) >> 4 & 0xf
@@ -782,7 +782,7 @@ func (s *cScreen) mapStyle(style Style) uint16 {
 	return attr
 }
 
-func (s *cScreen) SetCell(x, y int, style Style, ch ...rune) {
+func (s *cConsoleDisplay) SetCell(x, y int, style Style, ch ...rune) {
 	if len(ch) > 0 {
 		s.SetContent(x, y, ch[0], ch[1:], style)
 	} else {
@@ -790,7 +790,7 @@ func (s *cScreen) SetCell(x, y int, style Style, ch ...rune) {
 	}
 }
 
-func (s *cScreen) SetContent(x, y int, mainc rune, combc []rune, style Style) {
+func (s *cConsoleDisplay) SetContent(x, y int, mainc rune, combc []rune, style Style) {
 	s.Lock()
 	if !s.fini {
 		s.cells.SetContent(x, y, mainc, combc, style)
@@ -798,14 +798,14 @@ func (s *cScreen) SetContent(x, y int, mainc rune, combc []rune, style Style) {
 	s.Unlock()
 }
 
-func (s *cScreen) GetContent(x, y int) (rune, []rune, Style, int) {
+func (s *cConsoleDisplay) GetContent(x, y int) (rune, []rune, Style, int) {
 	s.Lock()
 	mainc, combc, style, width := s.cells.GetContent(x, y)
 	s.Unlock()
 	return mainc, combc, style, width
 }
 
-func (s *cScreen) sendVtStyle(style Style) {
+func (s *cConsoleDisplay) sendVtStyle(style Style) {
 	esc := &strings.Builder{}
 
 	fg, bg, attrs := style.Decompose()
@@ -839,7 +839,7 @@ func (s *cScreen) sendVtStyle(style Style) {
 	s.emitVtString(esc.String())
 }
 
-func (s *cScreen) writeString(x, y int, style Style, ch []uint16) {
+func (s *cConsoleDisplay) writeString(x, y int, style Style, ch []uint16) {
 	// we assume the caller has hidden the cursor
 	if len(ch) == 0 {
 		return
@@ -856,11 +856,11 @@ func (s *cScreen) writeString(x, y int, style Style, ch []uint16) {
 	syscall.WriteConsole(s.out, &ch[0], uint32(len(ch)), nil, nil)
 }
 
-func (s *cScreen) draw() {
+func (s *cConsoleDisplay) draw() {
 	// allocate a scratch line bit enough for no combining chars.
 	// if you have combining characters, you may pay for extra allocs.
 	if s.clear {
-		s.clearScreen(s.style)
+		s.clearDisplay(s.style)
 		s.clear = false
 		s.cells.Invalidate()
 	}
@@ -916,7 +916,7 @@ func (s *cScreen) draw() {
 	}
 }
 
-func (s *cScreen) Show() {
+func (s *cConsoleDisplay) Show() {
 	s.Lock()
 	if !s.fini {
 		s.hideCursor()
@@ -927,7 +927,7 @@ func (s *cScreen) Show() {
 	s.Unlock()
 }
 
-func (s *cScreen) Sync() {
+func (s *cConsoleDisplay) Sync() {
 	s.Lock()
 	if !s.fini {
 		s.cells.Invalidate()
@@ -947,26 +947,26 @@ type consoleInfo struct {
 	maxsz coord
 }
 
-func (s *cScreen) getConsoleInfo(info *consoleInfo) {
-	procGetConsoleScreenBufferInfo.Call(
+func (s *cConsoleDisplay) getConsoleInfo(info *consoleInfo) {
+	procGetConsoleDisplayBufferInfo.Call(
 		uintptr(s.out),
 		uintptr(unsafe.Pointer(info)))
 }
 
-func (s *cScreen) getCursorInfo(info *cursorInfo) {
+func (s *cConsoleDisplay) getCursorInfo(info *cursorInfo) {
 	procGetConsoleCursorInfo.Call(
 		uintptr(s.out),
 		uintptr(unsafe.Pointer(info)))
 }
 
-func (s *cScreen) setCursorInfo(info *cursorInfo) {
+func (s *cConsoleDisplay) setCursorInfo(info *cursorInfo) {
 	procSetConsoleCursorInfo.Call(
 		uintptr(s.out),
 		uintptr(unsafe.Pointer(info)))
 
 }
 
-func (s *cScreen) setCursorPos(x, y int) {
+func (s *cConsoleDisplay) setCursorPos(x, y int) {
 	if s.vten {
 		// Note that the string is Y first.  Origin is 1,1.
 		s.emitVtString(fmt.Sprintf(vtCursorPos, y+1, x+1))
@@ -977,20 +977,20 @@ func (s *cScreen) setCursorPos(x, y int) {
 	}
 }
 
-func (s *cScreen) setBufferSize(x, y int) {
-	procSetConsoleScreenBufferSize.Call(
+func (s *cConsoleDisplay) setBufferSize(x, y int) {
+	procSetConsoleDisplayBufferSize.Call(
 		uintptr(s.out),
 		coord{int16(x), int16(y)}.uintptr())
 }
 
-func (s *cScreen) Size() (w, h int) {
+func (s *cConsoleDisplay) Size() (w, h int) {
 	s.Lock()
 	w, h = s.w, s.h
 	s.Unlock()
 	return
 }
 
-func (s *cScreen) resize() {
+func (s *cConsoleDisplay) resize() {
 	info := consoleInfo{}
 	s.getConsoleInfo(&info)
 
@@ -1015,11 +1015,11 @@ func (s *cScreen) resize() {
 	s.PostEvent(NewEventResize(w, h))
 }
 
-func (s *cScreen) Clear() {
+func (s *cConsoleDisplay) Clear() {
 	s.Fill(' ', s.style)
 }
 
-func (s *cScreen) Fill(r rune, style Style) {
+func (s *cConsoleDisplay) Fill(r rune, style Style) {
 	s.Lock()
 	if !s.fini {
 		s.cells.Fill(r, style)
@@ -1028,7 +1028,7 @@ func (s *cScreen) Fill(r rune, style Style) {
 	s.Unlock()
 }
 
-func (s *cScreen) clearScreen(style Style) {
+func (s *cConsoleDisplay) clearDisplay(style Style) {
 	if s.vten {
 		s.sendVtStyle(style)
 		row := strings.Repeat(" ", s.w)
@@ -1075,7 +1075,7 @@ const (
 	modeNoAutoNL         = 0x0008
 )
 
-func (s *cScreen) setInMode(mode uint32) error {
+func (s *cConsoleDisplay) setInMode(mode uint32) error {
 	rv, _, err := procSetConsoleMode.Call(
 		uintptr(s.in),
 		uintptr(mode))
@@ -1085,7 +1085,7 @@ func (s *cScreen) setInMode(mode uint32) error {
 	return nil
 }
 
-func (s *cScreen) setOutMode(mode uint32) error {
+func (s *cConsoleDisplay) setOutMode(mode uint32) error {
 	rv, _, err := procSetConsoleMode.Call(
 		uintptr(s.out),
 		uintptr(mode))
@@ -1095,19 +1095,19 @@ func (s *cScreen) setOutMode(mode uint32) error {
 	return nil
 }
 
-func (s *cScreen) getInMode(v *uint32) {
+func (s *cConsoleDisplay) getInMode(v *uint32) {
 	procGetConsoleMode.Call(
 		uintptr(s.in),
 		uintptr(unsafe.Pointer(v)))
 }
 
-func (s *cScreen) getOutMode(v *uint32) {
+func (s *cConsoleDisplay) getOutMode(v *uint32) {
 	procGetConsoleMode.Call(
 		uintptr(s.out),
 		uintptr(unsafe.Pointer(v)))
 }
 
-func (s *cScreen) SetStyle(style Style) {
+func (s *cConsoleDisplay) SetStyle(style Style) {
 	s.Lock()
 	s.style = style
 	s.Unlock()
@@ -1115,26 +1115,26 @@ func (s *cScreen) SetStyle(style Style) {
 
 // No fallback rune support, since we have Unicode.  Yay!
 
-func (s *cScreen) RegisterRuneFallback(r rune, subst string) {
+func (s *cConsoleDisplay) RegisterRuneFallback(r rune, subst string) {
 }
 
-func (s *cScreen) UnregisterRuneFallback(r rune) {
+func (s *cConsoleDisplay) UnregisterRuneFallback(r rune) {
 }
 
-func (s *cScreen) CanDisplay(r rune, checkFallbacks bool) bool {
+func (s *cConsoleDisplay) CanDisplay(r rune, checkFallbacks bool) bool {
 	// We presume we can display anything -- we're Unicode.
 	// (Sadly this not precisely true.  Combinings are especially
 	// poorly supported under Windows.)
 	return true
 }
 
-func (s *cScreen) HasMouse() bool {
+func (s *cConsoleDisplay) HasMouse() bool {
 	return true
 }
 
-func (s *cScreen) Resize(int, int, int, int) {}
+func (s *cConsoleDisplay) Resize(int, int, int, int) {}
 
-func (s *cScreen) HasKey(k Key) bool {
+func (s *cConsoleDisplay) HasKey(k Key) bool {
 	// Microsoft has codes for some keys, but they are unusual,
 	// so we don't include them.  We include all the typical
 	// 101, 105 key layout keys.
@@ -1173,7 +1173,7 @@ func (s *cScreen) HasKey(k Key) bool {
 	return valid[k]
 }
 
-func (s *cScreen) Beep() error {
+func (s *cConsoleDisplay) Beep() error {
 	// A simple beep. If the sound card is not available, the sound is generated
 	// using the speaker.
 	//

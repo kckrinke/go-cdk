@@ -21,24 +21,24 @@ package cdk
 // this all work nicely with both cygwin and Windows console, so we
 // decline to do so here.
 
-func (t *tScreen) termioInit(ttyPath string) error {
-	return ErrNoScreen
+func (t *cDisplay) termioInit(ttyPath string) error {
+	return ErrNoDisplay
 }
 
-func (t *tScreen) termioClose() {
+func (t *cDisplay) termioClose() {
 	return
 }
 
-func (t *tScreen) getWinSize() (int, int, error) {
-	return 0, 0, ErrNoScreen
+func (t *cDisplay) getWinSize() (int, int, error) {
+	return 0, 0, ErrNoDisplay
 }
 
-func (t *tScreen) getCharset() string {
+func (t *cDisplay) getCharset() string {
 	return "UTF-16LE"
 }
 
-func (t *tScreen) Beep() error {
-	return ErrNoScreen
+func (t *cDisplay) Beep() error {
+	return ErrNoDisplay
 }
 
 type termiosPrivate struct{}

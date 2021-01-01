@@ -42,7 +42,7 @@ import (
 
 type termiosPrivate syscall.Termios
 
-func (t *tScreen) termioInit(ttyPath string) error {
+func (t *cDisplay) termioInit(ttyPath string) error {
 	if ttyPath == "" {
 		ttyPath = "/dev/tty"
 	}
@@ -58,7 +58,7 @@ func (t *tScreen) termioInit(ttyPath string) error {
 	return nil
 }
 
-func (t *tScreen) termioClose() {
+func (t *cDisplay) termioClose() {
 
 	signal.Stop(t.sigwinch)
 
@@ -71,7 +71,7 @@ func (t *tScreen) termioClose() {
 	}
 }
 
-func (t *tScreen) getWinSize() (w, h int, err error) {
+func (t *cDisplay) getWinSize() (w, h int, err error) {
 	w, h, err = t.term.Winsz()
 	if err != nil {
 		w, h = -1, -1
@@ -102,7 +102,7 @@ func (t *tScreen) getWinSize() (w, h int, err error) {
 	return
 }
 
-func (t *tScreen) Beep() error {
+func (t *cDisplay) Beep() error {
 	t.writeString(string(byte(7)))
 	return nil
 }

@@ -1,4 +1,4 @@
-// Copyright 2020 The CDK Authors
+// Copyright 2016 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use file except in compliance with the License.
@@ -14,472 +14,212 @@
 
 package cdk
 
-import (
-	"fmt"
-)
-
-// display is really a wrapper around Screen
-// and Simulation screens
-
-// basically a wrapper around Screen()
-// manages one or more windows backed by viewports
-// viewports manage the allocation of space
-// drawables within viewports render the space
-
-var (
-	DisplayCallQueueCapacity         = 16
-	MainDisplay              Display = nil
-)
-
-const (
-	TypeDisplay          CTypeTag = "cdk-display"
-	SignalDisplayInit    Signal   = "display-init"
-	SignalScreenCaptured Signal   = "screen-captured"
-	SignalInterrupt      Signal   = "sigint"
-	SignalEvent          Signal   = "event"
-	SignalEventError     Signal   = "event-error"
-	SignalEventKey       Signal   = "event-key"
-	SignalEventMouse     Signal   = "event-mouse"
-	SignalEventResize    Signal   = "event-resize"
-)
-
-func init() {
-	TypesManager.AddType(TypeDisplay)
-}
-
-type DisplayCallbackFn = func(d Display) error
-
+// Display represents the physical (or emulated) screen.
+// This can be a terminal window or a physical console.  Platforms implement
+// this differerently.
 type Display interface {
-	Object
+	// Init initializes the screen for use.
+	Init() error
 
-	GetTitle() string
-	SetTitle(title string)
+	// Init with a non-standard tty path (default: /dev/tty)
+	InitWithTty(ttyPath string) error
 
-	Screen() Screen
-	ScreenCaptured() bool
-	CaptureScreen(ttyPath string)
-	ReleaseScreen()
-	IsMonochrome() bool
-	Colors() (numberOfColors int)
+	// Close finalizes the screen also releasing resources.
+	Close()
 
-	CaptureCtrlC()
-	ReleaseCtrlC()
+	// Clear erases the screen.  The contents of any screen buffers
+	// will also be cleared.  This has the logical effect of
+	// filling the screen with spaces, using the global default style.
+	Clear()
 
-	DefaultTheme() Theme
+	// Fill fills the screen with the given character and style.
+	Fill(rune, Style)
 
-	ActiveWindow() Window
-	SetActiveWindow(w Window)
-	AddWindow(w Window) int
-	GetWindows() []Window
+	// SetCell is an older API, and will be removed.  Please use
+	// SetContent instead; SetCell is implemented in terms of SetContent.
+	SetCell(x int, y int, style Style, ch ...rune)
 
-	App() *CApp
-	ProcessEvent(evt Event) EventFlag
-	DrawScreen() EventFlag
+	// GetContent returns the contents at the given location.  If the
+	// coordinates are out of range, then the values will be 0, nil,
+	// StyleDefault.  Note that the contents returned are logical contents
+	// and may not actually be what is displayed, but rather are what will
+	// be displayed if Show() or Sync() is called.  The width is the width
+	// in screen cells; most often this will be 1, but some East Asian
+	// characters require two cells.
+	GetContent(x, y int) (mainc rune, combc []rune, style Style, width int)
 
-	RequestDraw()
-	RequestShow()
-	RequestSync()
-	RequestQuit()
-	PostEvent(evt Event) error
-	AsyncCall(fn DisplayCallbackFn) error
-	AwaitCall(fn DisplayCallbackFn) error
+	// SetContent sets the contents of the given cell location.  If
+	// the coordinates are out of range, then the operation is ignored.
+	//
+	// The first rune is the primary non-zero width rune.  The array
+	// that follows is a possible list of combining characters to append,
+	// and will usually be nil (no combining characters.)
+	//
+	// The results are not displayd until Show() or Sync() is called.
+	//
+	// Note that wide (East Asian full width) runes occupy two cells,
+	// and attempts to place character at next cell to the right will have
+	// undefined effects.  Wide runes that are printed in the
+	// last column will be replaced with a single width space on output.
+	SetContent(x int, y int, mainc rune, combc []rune, style Style)
 
-	IsRunning() bool
-	Run() error
+	// SetStyle sets the default style to use when clearing the screen
+	// or when StyleDefault is specified.  If it is also StyleDefault,
+	// then whatever system/terminal default is relevant will be used.
+	SetStyle(style Style)
+
+	// ShowCursor is used to display the cursor at a given location.
+	// If the coordinates -1, -1 are given or are otherwise outside the
+	// dimensions of the screen, the cursor will be hidden.
+	ShowCursor(x int, y int)
+
+	// HideCursor is used to hide the cursor.  Its an alias for
+	// ShowCursor(-1, -1).
+	HideCursor()
+
+	// Size returns the screen size as width, height.  This changes in
+	// response to a call to Clear or Flush.
+	Size() (w, h int)
+
+	// PollEvent waits for events to arrive.  Main application loops
+	// must spin on this to prevent the application from stalling.
+	// Furthermore, this will return nil if the Display is finalized.
+	PollEvent() Event
+
+	// PostEvent tries to post an event into the event stream.  This
+	// can fail if the event queue is full.  In that case, the event
+	// is dropped, and ErrEventQFull is returned.
+	PostEvent(ev Event) error
+
+	// PostEventWait is like PostEvent, but if the queue is full, it
+	// blocks until there is space in the queue, making delivery
+	// reliable.  However, it is VERY important that this function
+	// never be called from within whatever event loop is polling
+	// with PollEvent(), otherwise a deadlock may arise.
+	//
+	// For this reason, when using this function, the use of a
+	// Goroutine is recommended to ensure no deadlock can occur.
+	PostEventWait(ev Event)
+
+	// EnableMouse enables the mouse.  (If your terminal supports it.)
+	EnableMouse()
+
+	// DisableMouse disables the mouse.
+	DisableMouse()
+
+	// EnablePaste enables bracketed paste mode, if supported.
+	EnablePaste()
+
+	// DisablePaste() disables bracketed paste mode.
+	DisablePaste()
+
+	// HasMouse returns true if the terminal (apparently) supports a
+	// mouse.  Note that the a return value of true doesn't guarantee that
+	// a mouse/pointing device is present; a false return definitely
+	// indicates no mouse support is available.
+	HasMouse() bool
+
+	// Colors returns the number of colors.  All colors are assumed to
+	// use the ANSI color map.  If a terminal is monochrome, it will
+	// return 0.
+	Colors() int
+
+	// Show makes all the content changes made using SetContent() visible
+	// on the display.
+	//
+	// It does so in the most efficient and least visually disruptive
+	// manner possible.
+	Show()
+
+	// Sync works like Show(), but it updates every visible cell on the
+	// physical display, assuming that it is not synchronized with any
+	// internal model.  This may be both expensive and visually jarring,
+	// so it should only be used when believed to actually be necessary.
+	//
+	// Typically this is called as a result of a user-requested redraw
+	// (e.g. to clear up on screen corruption caused by some other program),
+	// or during a resize event.
+	Sync()
+
+	// CharacterSet returns information about the character set.
+	// This isn't the full locale, but it does give us the input/output
+	// character set.  Note that this is just for diagnostic purposes,
+	// we normally translate input/output to/from UTF-8, regardless of
+	// what the user's environment is.
+	CharacterSet() string
+
+	// RegisterRuneFallback adds a fallback for runes that are not
+	// part of the character set -- for example one coudld register
+	// o as a fallback for ø.  This should be done cautiously for
+	// characters that might be displayed ordinarily in language
+	// specific text -- characters that could change the meaning of
+	// of written text would be dangerous.  The intention here is to
+	// facilitate fallback characters in pseudo-graphical applications.
+	//
+	// If the terminal has fallbacks already in place via an alternate
+	// character set, those are used in preference.  Also, standard
+	// fallbacks for graphical characters in the ACSC terminfo string
+	// are registered implicitly.
+
+	// The display string should be the same width as original rune.
+	// This makes it possible to register two character replacements
+	// for full width East Asian characters, for example.
+	//
+	// It is recommended that replacement strings consist only of
+	// 7-bit ASCII, since other characters may not display everywhere.
+	RegisterRuneFallback(r rune, subst string)
+
+	// UnregisterRuneFallback unmaps a replacement.  It will unmap
+	// the implicit ASCII replacements for alternate characters as well.
+	// When an unmapped char needs to be displayed, but no suitable
+	// glyph is available, '?' is emitted instead.  It is not possible
+	// to "disable" the use of alternate characters that are supported
+	// by your terminal except by changing the terminal database.
+	UnregisterRuneFallback(r rune)
+
+	// CanDisplay returns true if the given rune can be displayed on
+	// this screen.  Note that this is a best guess effort -- whether
+	// your fonts support the character or not may be questionable.
+	// Mostly this is for folks who work outside of Unicode.
+	//
+	// If checkFallbacks is true, then if any (possibly imperfect)
+	// fallbacks are registered, this will return true.  This will
+	// also return true if the terminal can replace the glyph with
+	// one that is visually indistinguishable from the one requested.
+	CanDisplay(r rune, checkFallbacks bool) bool
+
+	// Resize does nothing, since its generally not possible to
+	// ask a screen to resize, but it allows the Display to implement
+	// the View interface.
+	Resize(int, int, int, int)
+
+	// HasKey returns true if the keyboard is believed to have the
+	// key.  In some cases a keyboard may have keys with this name
+	// but no support for them, while in others a key may be reported
+	// as supported but not actually be usable (such as some emulators
+	// that hijack certain keys).  Its best not to depend to strictly
+	// on this function, but it can be used for hinting when building
+	// menus, displayed hot-keys, etc.  Note that KeyRune (literal
+	// runes) is always true.
+	HasKey(Key) bool
+
+	// Beep attempts to sound an OS-dependent audible alert and returns an error
+	// when unsuccessful.
+	Beep() error
+
+	Export() *CellBuffer
+	Import(cb *CellBuffer)
 }
 
-// Basic display type
-type CDisplay struct {
-	CObject
-
-	title string
-
-	captureCtrlC bool
-
-	active  int
-	windows []Window
-
-	app      *CApp
-	ttyPath  string
-	screen   Screen
-	captured bool
-
-	running  bool
-	done     chan bool
-	queue    chan DisplayCallbackFn
-	events   chan Event
-	process  chan Event
-	requests chan ScreenStateReq
-}
-
-func NewDisplay(title string, ttyPath string) *CDisplay {
-	d := new(CDisplay)
-	d.title = title
-	d.ttyPath = ttyPath
-	d.Init()
-	return d
-}
-
-// Initialization
-func (d *CDisplay) Init() (already bool) {
-	if d.InitTypeItem(TypeDisplay) {
-		return true
+// NewDisplay returns a default Display suitable for the user's terminal
+// environment.
+func NewDisplay() (Display, error) {
+	// Windows is happier if we try for a console screen first.
+	if s, _ := NewConsoleDisplay(); s != nil {
+		return s, nil
+	} else if s, e := NewTerminfoDisplay(); s != nil {
+		return s, nil
+	} else {
+		return nil, e
 	}
-	check := TypesManager.GetTypeItems(TypeDisplay)
-	if len(check) > 0 {
-		Fatalf("only one display permitted at a time")
-	}
-	d.CObject.Init()
-
-	d.captured = false
-	d.running = false
-	d.done = make(chan bool)
-	d.queue = make(chan DisplayCallbackFn, DisplayCallQueueCapacity)
-	d.events = make(chan Event, DisplayCallQueueCapacity)
-	d.process = make(chan Event, DisplayCallQueueCapacity)
-	d.requests = make(chan ScreenStateReq, DisplayCallQueueCapacity)
-
-	d.windows = []Window{}
-	d.active = -1
-	d.SetTheme(DefaultColorTheme)
-	MainDisplay = d
-	d.Emit(SignalDisplayInit, d)
-	return false
-}
-
-func (d *CDisplay) GetTitle() string {
-	return d.title
-}
-
-func (d *CDisplay) SetTitle(title string) {
-	d.title = title
-}
-
-func (d *CDisplay) Screen() Screen {
-	return d.screen
-}
-
-func (d *CDisplay) ScreenCaptured() bool {
-	return d.screen != nil && d.captured
-}
-
-func (d *CDisplay) CaptureScreen(ttyPath string) {
-	d.Lock()
-	defer d.Unlock()
-	var err error
-	d.screen, err = NewScreen()
-	if err != nil {
-		Fatalf("error getting new screen: %v", err)
-	}
-	if err = d.screen.InitWithTty(ttyPath); err != nil {
-		Fatalf("error initializing new screen: %v", err)
-	}
-	defStyle := StyleDefault.
-		Background(ColorReset).
-		Foreground(ColorReset)
-	d.screen.SetStyle(defStyle)
-	d.screen.EnableMouse()
-	d.screen.EnablePaste()
-	d.screen.Clear()
-	if CurrentTheme == DefaultNilTheme {
-		CurrentTheme = d.DefaultTheme()
-	}
-	d.SetTheme(CurrentTheme)
-	d.captured = true
-	d.Emit(SignalScreenCaptured, d)
-}
-
-func (d *CDisplay) ReleaseScreen() {
-	d.Lock()
-	defer d.Unlock()
-	if d.screen != nil {
-		d.screen.Close()
-		d.screen = nil
-	}
-	d.captured = false
-}
-
-func (d *CDisplay) IsMonochrome() bool {
-	return d.Colors() == 0
-}
-
-func (d *CDisplay) Colors() (numberOfColors int) {
-	numberOfColors = 0
-	if d.screen != nil {
-		numberOfColors = d.screen.Colors()
-	}
-	return
-}
-
-func (d *CDisplay) CaptureCtrlC() {
-	d.Lock()
-	defer d.Unlock()
-	d.captureCtrlC = true
-}
-
-func (d *CDisplay) ReleaseCtrlC() {
-	d.Lock()
-	defer d.Unlock()
-	d.captureCtrlC = false
-}
-
-func (d *CDisplay) DefaultTheme() Theme {
-	if d.screen != nil && d.screen.Colors() > 0 {
-		return DefaultColorTheme
-	}
-	return DefaultMonoTheme
-}
-
-func (d *CDisplay) ActiveWindow() Window {
-	if len(d.windows) > d.active && d.active >= 0 {
-		return d.windows[d.active]
-	}
-	if len(d.windows) == 0 {
-		return nil
-	}
-	d.active = 0
-	return d.windows[0]
-}
-
-func (d *CDisplay) SetActiveWindow(w Window) {
-	d.Lock()
-	var id int = -1
-	var window Window
-	for id, window = range d.windows {
-		if window == w {
-			break
-		}
-	}
-	if id > -1 {
-		d.active = id
-		d.Unlock()
-		return
-	}
-	d.Unlock()
-	d.active = d.AddWindow(w)
-}
-
-func (d *CDisplay) AddWindow(w Window) int {
-	d.Lock()
-	defer d.Unlock()
-	var id int = -1
-	var window Window
-	for id, window = range d.windows {
-		if window == w {
-			break
-		}
-	}
-	if id > -1 {
-		d.LogError("display has window already: %v", w)
-		return id
-	}
-	d.windows = append(d.windows, w)
-	w.SetDisplay(d)
-	return len(d.windows) - 1
-}
-
-func (d *CDisplay) GetWindows() []Window {
-	return d.windows
-}
-
-func (d *CDisplay) App() *CApp {
-	return d.app
-}
-
-func (d *CDisplay) ProcessEvent(evt Event) EventFlag {
-	switch e := evt.(type) {
-	case *EventError:
-		d.LogErr(e)
-		if w := d.ActiveWindow(); w != nil {
-			if f := w.ProcessEvent(evt); f == EVENT_STOP {
-				return EVENT_STOP
-			}
-		}
-		return d.Emit(SignalEventError, d, e)
-	case *EventKey:
-		if d.captureCtrlC {
-			switch e.Key() {
-			case KeyCtrlC:
-				d.LogTrace("display captured CtrlC")
-				if f := d.Emit(SignalInterrupt, d); f == EVENT_STOP {
-					return EVENT_STOP
-				}
-				d.RequestQuit()
-			}
-		}
-		if w := d.ActiveWindow(); w != nil {
-			if f := w.ProcessEvent(evt); f == EVENT_STOP {
-				return EVENT_STOP
-			}
-		}
-		return d.Emit(SignalEventKey, d, e)
-	case *EventMouse:
-		if w := d.ActiveWindow(); w != nil {
-			if f := w.ProcessEvent(evt); f == EVENT_STOP {
-				return EVENT_STOP
-			}
-		}
-		return d.Emit(SignalEventMouse, d, e)
-	case *EventResize:
-		if w := d.ActiveWindow(); w != nil {
-			if f := w.ProcessEvent(evt); f == EVENT_STOP {
-				return EVENT_STOP
-			}
-		}
-		return d.Emit(SignalEventResize, d, e)
-	}
-	if w := d.ActiveWindow(); w != nil {
-		if f := w.ProcessEvent(evt); f == EVENT_STOP {
-			return EVENT_STOP
-		}
-	}
-	return d.Emit(SignalEvent, d, evt)
-}
-
-func (d *CDisplay) DrawScreen() EventFlag {
-	d.Lock()
-	defer d.Unlock()
-	if !d.captured || d.screen == nil {
-		d.LogError("screen not captured or otherwise missing")
-		return EVENT_PASS
-	}
-	var window Window
-	if window = d.ActiveWindow(); window == nil {
-		d.LogDebug("cannot draw the screen, display missing a window")
-		return EVENT_PASS
-	}
-	w, h := d.screen.Size()
-	canvas := NewCanvas(MakePoint2I(0, 0), MakeRectangle(w, h), d.GetTheme())
-	if f := window.Draw(canvas); f == EVENT_STOP {
-		canvas.Render(d.screen)
-		return EVENT_STOP
-	}
-	return EVENT_PASS
-}
-
-func (d *CDisplay) RequestDraw() {
-	d.requests <- DrawRequest
-}
-
-func (d *CDisplay) RequestShow() {
-	d.requests <- ShowRequest
-}
-
-func (d *CDisplay) RequestSync() {
-	d.requests <- SyncRequest
-}
-
-func (d *CDisplay) RequestQuit() {
-	d.requests <- QuitRequest
-}
-
-func (d *CDisplay) AsyncCall(fn DisplayCallbackFn) error {
-	if !d.running {
-		return fmt.Errorf("application not running")
-	}
-	d.queue <- fn
-	return nil
-}
-
-func (d *CDisplay) AwaitCall(fn DisplayCallbackFn) error {
-	if !d.running {
-		return fmt.Errorf("application not running")
-	}
-	var err error
-	done := make(chan bool)
-	d.queue <- func(d Display) error {
-		err = fn(d)
-		done <- true
-		return nil
-	}
-	<-done
-	return err
-}
-
-func (d *CDisplay) PostEvent(evt Event) error {
-	if !d.running {
-		return fmt.Errorf("application not running")
-	}
-	d.events <- evt
-	return nil
-}
-
-func (d *CDisplay) pollEventWorker() {
-	for d.running {
-		d.process <- d.screen.PollEvent()
-	}
-	d.done <- true
-}
-
-func (d *CDisplay) processEventWorker() {
-	for d.running {
-		if evt := <-d.process; evt != nil {
-			if f := d.ProcessEvent(evt); f == EVENT_STOP {
-				d.RequestDraw()
-				d.RequestShow()
-			}
-		}
-	}
-}
-func (d *CDisplay) screenRequestWorker() {
-	if d.running {
-		if err := d.app.InitUI(d.app.context); err != nil {
-			Fataldf(1, "%v", err)
-		}
-		d.RequestDraw()
-		d.RequestSync()
-	}
-	for d.running {
-		switch <-d.requests {
-		case DrawRequest:
-			if d.screen != nil {
-				d.DrawScreen()
-			}
-		case ShowRequest:
-			if d.screen != nil {
-				d.screen.Show()
-			}
-		case SyncRequest:
-			if d.screen != nil {
-				d.screen.Sync()
-			}
-		case QuitRequest:
-			d.running = false
-			d.process <- nil
-			d.done <- true
-		}
-	}
-}
-
-func (d *CDisplay) Run() error {
-	d.CaptureScreen(d.ttyPath)
-	d.running = true
-	go d.pollEventWorker()
-	go d.processEventWorker()
-	go d.screenRequestWorker()
-	defer func() {
-		if p := recover(); p != nil {
-			d.ReleaseScreen()
-			panic(p)
-		}
-	}()
-	d.PostEvent(NewEventResize(d.screen.Size()))
-	for {
-		select {
-		case fn := <-d.queue:
-			if err := fn(d); err != nil {
-				return err
-			}
-		case evt := <-d.events:
-			d.screen.PostEvent(evt)
-		case <-d.done:
-			d.ReleaseScreen()
-			return nil
-		}
-	}
-	return nil
-}
-
-func (d *CDisplay) IsRunning() bool {
-	return d.running
 }

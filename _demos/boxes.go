@@ -25,7 +25,7 @@ import (
 	"github.com/kckrinke/go-cdk"
 )
 
-func makebox(s cdk.Screen) {
+func makebox(s cdk.Display) {
 	w, h := s.Size()
 
 	if w == 0 || h == 0 {
@@ -61,7 +61,7 @@ func makebox(s cdk.Screen) {
 func main() {
 
 	cdk.SetEncodingFallback(cdk.EncodingFallbackASCII)
-	s, e := cdk.NewScreen()
+	s, e := cdk.NewDisplay()
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
 		os.Exit(1)

@@ -14,10 +14,6 @@
 
 package cdk
 
-import (
-	"fmt"
-)
-
 const (
 	TypeWindow       CTypeTag = "cdk-window"
 	SignalDraw       Signal   = "draw"
@@ -33,13 +29,11 @@ func init() {
 type Window interface {
 	Object
 
-	ScreenCaptured(data []interface{}, argv ...interface{}) EventFlag
-
 	GetTitle() string
 	SetTitle(title string)
 
-	GetDisplay() Display
-	SetDisplay(d Display)
+	GetDisplay() DisplayManager
+	SetDisplay(d DisplayManager)
 
 	Draw(canvas *Canvas) EventFlag
 	ProcessEvent(evt Event) EventFlag
@@ -50,10 +44,10 @@ type CWindow struct {
 	CObject
 
 	title   string
-	display Display
+	display DisplayManager
 }
 
-func NewWindow(title string, d Display) Window {
+func NewWindow(title string, d DisplayManager) Window {
 	w := &CWindow{
 		title:   title,
 		display: d,
@@ -67,18 +61,7 @@ func (w *CWindow) Init() bool {
 		return true
 	}
 	w.CObject.Init()
-	if w.display != nil {
-		handle := fmt.Sprintf("cdk-window-%d", w.ObjectID())
-		w.display.Connect(SignalScreenCaptured, Signal(handle), w.ScreenCaptured)
-	}
 	return false
-}
-
-func (w *CWindow) ScreenCaptured(data []interface{}, argv ...interface{}) EventFlag {
-	if w.display != nil {
-		w.SetTheme(w.display.GetTheme())
-	}
-	return EVENT_PASS
 }
 
 func (w *CWindow) SetTitle(title string) {
@@ -91,11 +74,11 @@ func (w *CWindow) GetTitle() string {
 	return w.title
 }
 
-func (w *CWindow) GetDisplay() Display {
+func (w *CWindow) GetDisplay() DisplayManager {
 	return w.display
 }
 
-func (w *CWindow) SetDisplay(d Display) {
+func (w *CWindow) SetDisplay(d DisplayManager) {
 	if f := w.Emit(SignalSetDisplay, w, d); f == EVENT_PASS {
 		w.display = d
 	}

@@ -27,7 +27,7 @@ import (
 
 func main() {
 	cdk.SetEncodingFallback(cdk.EncodingFallbackASCII)
-	s, e := cdk.NewScreen()
+	s, e := cdk.NewDisplay()
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
 		os.Exit(1)
@@ -62,7 +62,7 @@ func main() {
 	s.Close()
 }
 
-func beep(s cdk.Screen, quit <-chan struct{}) {
+func beep(s cdk.Display, quit <-chan struct{}) {
 	t := time.NewTicker(time.Second)
 	for {
 		select {

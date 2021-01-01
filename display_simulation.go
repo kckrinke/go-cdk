@@ -22,8 +22,8 @@ import (
 	"golang.org/x/text/transform"
 )
 
-func MakeSimulationScreen(charset string) (SimulationScreen, error) {
-	s := NewSimulationScreen(charset)
+func MakeDisplaySimulation(charset string) (DisplaySimulation, error) {
+	s := NewDisplaySimulation(charset)
 	if s == nil {
 		return nil, fmt.Errorf("failed to get simulation screen")
 	}
@@ -33,20 +33,20 @@ func MakeSimulationScreen(charset string) (SimulationScreen, error) {
 	return s, nil
 }
 
-// NewSimulationScreen returns a SimulationScreen.  Note that
-// SimulationScreen is also a Screen.
-func NewSimulationScreen(charset string) SimulationScreen {
+// NewDisplaySimulation returns a DisplaySimulation.  Note that
+// DisplaySimulation is also a Display.
+func NewDisplaySimulation(charset string) DisplaySimulation {
 	if charset == "" {
 		charset = "UTF-8"
 	}
-	s := &simscreen{charset: charset}
+	s := &cDisplaySimulation{charset: charset}
 	return s
 }
 
-// SimulationScreen represents a screen simulation.  This is intended to
+// DisplaySimulation represents a screen simulation.  This is intended to
 // be a superset of normal Screens, but also adds some important interfaces
 // for testing.
-type SimulationScreen interface {
+type DisplaySimulation interface {
 	// InjectKeyBytes injects a stream of bytes corresponding to
 	// the native encoding (see charset).  It turns true if the entire
 	// set of bytes were processed and delivered as KeyEvents, false
@@ -77,7 +77,7 @@ type SimulationScreen interface {
 	// GetCursor returns the cursor details.
 	GetCursor() (x int, y int, visible bool)
 
-	Screen
+	Display
 }
 
 // SimCell represents a simulated screen cell.  The purpose of this
@@ -94,7 +94,7 @@ type SimCell struct {
 	Runes []rune
 }
 
-type simscreen struct {
+type cDisplaySimulation struct {
 	physw int
 	physh int
 	fini  bool
@@ -120,11 +120,11 @@ type simscreen struct {
 	sync.Mutex
 }
 
-func (s *simscreen) Init() error {
+func (s *cDisplaySimulation) Init() error {
 	return s.InitWithTty("")
 }
 
-func (s *simscreen) InitWithTty(ttyPath string) error {
+func (s *cDisplaySimulation) InitWithTty(ttyPath string) error {
 	s.evch = make(chan Event, 10)
 	s.quit = make(chan struct{})
 	s.fillchar = 'X'
@@ -155,7 +155,7 @@ func (s *simscreen) InitWithTty(ttyPath string) error {
 	return nil
 }
 
-func (s *simscreen) Close() {
+func (s *cDisplaySimulation) Close() {
 	s.fini = true
 	s.back.Resize(0, 0)
 	if s.quit != nil {
@@ -166,19 +166,19 @@ func (s *simscreen) Close() {
 	s.front = nil
 }
 
-func (s *simscreen) SetStyle(style Style) {
+func (s *cDisplaySimulation) SetStyle(style Style) {
 	s.style = style
 }
 
-func (s *simscreen) Clear() {
+func (s *cDisplaySimulation) Clear() {
 	s.Fill(' ', s.style)
 }
 
-func (s *simscreen) Fill(r rune, style Style) {
+func (s *cDisplaySimulation) Fill(r rune, style Style) {
 	s.back.Fill(r, style)
 }
 
-func (s *simscreen) SetCell(x, y int, style Style, ch ...rune) {
+func (s *cDisplaySimulation) SetCell(x, y int, style Style, ch ...rune) {
 	if len(ch) > 0 {
 		s.SetContent(x, y, ch[0], ch[1:], style)
 	} else {
@@ -186,11 +186,11 @@ func (s *simscreen) SetCell(x, y int, style Style, ch ...rune) {
 	}
 }
 
-func (s *simscreen) SetContent(x, y int, mainc rune, combc []rune, st Style) {
+func (s *cDisplaySimulation) SetContent(x, y int, mainc rune, combc []rune, st Style) {
 	s.back.SetContent(x, y, mainc, combc, st)
 }
 
-func (s *simscreen) GetContent(x, y int) (rune, []rune, Style, int) {
+func (s *cDisplaySimulation) GetContent(x, y int) (rune, []rune, Style, int) {
 	var mainc rune
 	var combc []rune
 	var style Style
@@ -199,7 +199,7 @@ func (s *simscreen) GetContent(x, y int) (rune, []rune, Style, int) {
 	return mainc, combc, style, width
 }
 
-func (s *simscreen) drawCell(x, y int) int {
+func (s *cDisplaySimulation) drawCell(x, y int) int {
 
 	mainc, combc, style, width := s.back.GetContent(x, y)
 	if !s.back.Dirty(x, y) {
@@ -260,16 +260,16 @@ func (s *simscreen) drawCell(x, y int) int {
 	return width
 }
 
-func (s *simscreen) ShowCursor(x, y int) {
+func (s *cDisplaySimulation) ShowCursor(x, y int) {
 	s.cursorx, s.cursory = x, y
 	s.showCursor()
 }
 
-func (s *simscreen) HideCursor() {
+func (s *cDisplaySimulation) HideCursor() {
 	s.ShowCursor(-1, -1)
 }
 
-func (s *simscreen) showCursor() {
+func (s *cDisplaySimulation) showCursor() {
 
 	x, y := s.cursorx, s.cursory
 	if x < 0 || y < 0 || x >= s.physw || y >= s.physh {
@@ -279,17 +279,17 @@ func (s *simscreen) showCursor() {
 	}
 }
 
-func (s *simscreen) hideCursor() {
+func (s *cDisplaySimulation) hideCursor() {
 	// does not update cursor position
 	s.cursorvis = false
 }
 
-func (s *simscreen) Show() {
+func (s *cDisplaySimulation) Show() {
 	s.resize()
 	s.draw()
 }
 
-func (s *simscreen) clearScreen() {
+func (s *cDisplaySimulation) clearScreen() {
 	// We emulate a hardware clear by filling with a specific pattern
 	for i := range s.front {
 		s.front[i].Style = s.fillstyle
@@ -299,7 +299,7 @@ func (s *simscreen) clearScreen() {
 	s.clear = false
 }
 
-func (s *simscreen) draw() {
+func (s *cDisplaySimulation) draw() {
 	s.hideCursor()
 	if s.clear {
 		s.clearScreen()
@@ -315,28 +315,28 @@ func (s *simscreen) draw() {
 	s.showCursor()
 }
 
-func (s *simscreen) EnableMouse() {
+func (s *cDisplaySimulation) EnableMouse() {
 	s.mouse = true
 }
 
-func (s *simscreen) DisableMouse() {
+func (s *cDisplaySimulation) DisableMouse() {
 	s.mouse = false
 }
 
-func (s *simscreen) EnablePaste() {
+func (s *cDisplaySimulation) EnablePaste() {
 	s.paste = true
 }
 
-func (s *simscreen) DisablePaste() {
+func (s *cDisplaySimulation) DisablePaste() {
 	s.paste = false
 }
 
-func (s *simscreen) Size() (w, h int) {
+func (s *cDisplaySimulation) Size() (w, h int) {
 	w, h = s.back.Size()
 	return
 }
 
-func (s *simscreen) resize() {
+func (s *cDisplaySimulation) resize() {
 	w, h := s.physw, s.physh
 	ow, oh := s.back.Size()
 	if w != ow || h != oh {
@@ -346,11 +346,11 @@ func (s *simscreen) resize() {
 	}
 }
 
-func (s *simscreen) Colors() int {
+func (s *cDisplaySimulation) Colors() int {
 	return 256
 }
 
-func (s *simscreen) PollEvent() Event {
+func (s *cDisplaySimulation) PollEvent() Event {
 	select {
 	case <-s.quit:
 		return nil
@@ -359,11 +359,11 @@ func (s *simscreen) PollEvent() Event {
 	}
 }
 
-func (s *simscreen) PostEventWait(ev Event) {
+func (s *cDisplaySimulation) PostEventWait(ev Event) {
 	s.evch <- ev
 }
 
-func (s *simscreen) PostEvent(ev Event) error {
+func (s *cDisplaySimulation) PostEvent(ev Event) error {
 	select {
 	case s.evch <- ev:
 		return nil
@@ -372,17 +372,17 @@ func (s *simscreen) PostEvent(ev Event) error {
 	}
 }
 
-func (s *simscreen) InjectMouse(x, y int, buttons ButtonMask, mod ModMask) {
+func (s *cDisplaySimulation) InjectMouse(x, y int, buttons ButtonMask, mod ModMask) {
 	ev := NewEventMouse(x, y, buttons, mod)
 	s.PostEvent(ev)
 }
 
-func (s *simscreen) InjectKey(key Key, r rune, mod ModMask) {
+func (s *cDisplaySimulation) InjectKey(key Key, r rune, mod ModMask) {
 	ev := NewEventKey(key, r, mod)
 	s.PostEvent(ev)
 }
 
-func (s *simscreen) InjectKeyBytes(b []byte) bool {
+func (s *cDisplaySimulation) InjectKeyBytes(b []byte) bool {
 	failed := false
 
 outer:
@@ -430,18 +430,18 @@ outer:
 	return !failed
 }
 
-func (s *simscreen) Sync() {
+func (s *cDisplaySimulation) Sync() {
 	s.clear = true
 	s.resize()
 	s.back.Invalidate()
 	s.draw()
 }
 
-func (s *simscreen) CharacterSet() string {
+func (s *cDisplaySimulation) CharacterSet() string {
 	return s.charset
 }
 
-func (s *simscreen) SetSize(w, h int) {
+func (s *cDisplaySimulation) SetSize(w, h int) {
 	newc := make([]SimCell, w*h)
 	for row := 0; row < h && row < s.physh; row++ {
 		for col := 0; col < w && col < s.physw; col++ {
@@ -454,25 +454,25 @@ func (s *simscreen) SetSize(w, h int) {
 	s.back.Resize(w, h)
 }
 
-func (s *simscreen) GetContents() ([]SimCell, int, int) {
+func (s *cDisplaySimulation) GetContents() ([]SimCell, int, int) {
 	cells, w, h := s.front, s.physw, s.physh
 	return cells, w, h
 }
 
-func (s *simscreen) GetCursor() (int, int, bool) {
+func (s *cDisplaySimulation) GetCursor() (int, int, bool) {
 	x, y, vis := s.cursorx, s.cursory, s.cursorvis
 	return x, y, vis
 }
 
-func (s *simscreen) RegisterRuneFallback(r rune, subst string) {
+func (s *cDisplaySimulation) RegisterRuneFallback(r rune, subst string) {
 	s.fallback[r] = subst
 }
 
-func (s *simscreen) UnregisterRuneFallback(r rune) {
+func (s *cDisplaySimulation) UnregisterRuneFallback(r rune) {
 	delete(s.fallback, r)
 }
 
-func (s *simscreen) CanDisplay(r rune, checkFallbacks bool) bool {
+func (s *cDisplaySimulation) CanDisplay(r rune, checkFallbacks bool) bool {
 	if enc := s.encoder; enc != nil {
 		nb := make([]byte, 6)
 		ob := make([]byte, 6)
@@ -493,21 +493,21 @@ func (s *simscreen) CanDisplay(r rune, checkFallbacks bool) bool {
 	return false
 }
 
-func (s *simscreen) HasMouse() bool {
+func (s *cDisplaySimulation) HasMouse() bool {
 	return false
 }
 
-func (s *simscreen) Resize(int, int, int, int) {}
+func (s *cDisplaySimulation) Resize(int, int, int, int) {}
 
-func (s *simscreen) HasKey(Key) bool {
+func (s *cDisplaySimulation) HasKey(Key) bool {
 	return true
 }
 
-func (s *simscreen) Beep() error {
+func (s *cDisplaySimulation) Beep() error {
 	return nil
 }
 
-func (t *simscreen) Export() *CellBuffer {
+func (t *cDisplaySimulation) Export() *CellBuffer {
 	t.Lock()
 	defer t.Unlock()
 	cb := NewCellBuffer()
@@ -519,7 +519,7 @@ func (t *simscreen) Export() *CellBuffer {
 	return cb
 }
 
-func (t *simscreen) Import(cb *CellBuffer) {
+func (t *cDisplaySimulation) Import(cb *CellBuffer) {
 	t.Lock()
 	defer t.Unlock()
 	w, h := cb.Size()

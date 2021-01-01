@@ -18,8 +18,8 @@ import (
 	"testing"
 )
 
-func mkTestScreen(t *testing.T, charset string) SimulationScreen {
-	s, err := MakeSimulationScreen(charset)
+func mkTestScreen(t *testing.T, charset string) DisplaySimulation {
+	s, err := MakeDisplaySimulation(charset)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestResize(t *testing.T) {
 	s.Show()
 	b2, x2, y2 := s.GetContents()
 	if len(b2) == len(b) || x2 == x || y2 == y {
-		t.Errorf("Screen parameters should not match")
+		t.Errorf("Display parameters should not match")
 	}
 
 	cell2 := &b[5*80+2]

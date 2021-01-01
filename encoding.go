@@ -115,7 +115,7 @@ func SetEncodingFallback(fb EncodingFallback) {
 	encodingLk.Unlock()
 }
 
-// GetEncoding is used by Screen implementors who want to locate an encoding
+// GetEncoding is used by Display implementors who want to locate an encoding
 // for the given character set name.  Note that this will return nil for
 // either the Unicode (UTF-8) or ASCII encodings, since we don't use
 // encodings for them but instead have our own native methods.

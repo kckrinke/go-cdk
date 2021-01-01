@@ -39,7 +39,7 @@ var redi = int32(inc)
 var grni = int32(inc)
 var blui = int32(inc)
 
-func makebox(s cdk.Screen) {
+func makebox(s cdk.Display) {
 	w, h := s.Size()
 
 	if w == 0 || h == 0 {
@@ -97,7 +97,7 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 	cdk.SetEncodingFallback(cdk.EncodingFallbackASCII)
-	s, e := cdk.NewScreen()
+	s, e := cdk.NewDisplay()
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
 		os.Exit(1)

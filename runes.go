@@ -67,8 +67,8 @@ const (
 // to do so a glyph representing the country China.
 //
 // Programs that desire richer fallbacks may register additional ones,
-// or change or even remove these mappings with Screen.RegisterRuneFallback
-// Screen.UnregisterRuneFallback methods.
+// or change or even remove these mappings with Display.RegisterRuneFallback
+// Display.UnregisterRuneFallback methods.
 //
 // Note that Unicode is presumed to be able to display all glyphs.
 // This is a pretty poor assumption, but there is no easy way to

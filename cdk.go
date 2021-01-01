@@ -43,14 +43,14 @@ var (
 
 type goProfileFn = func(p *profile.Profile)
 
-type DisplayInitFn = func(d Display) error
+type DisplayInitFn = func(d DisplayManager) error
 
 type App interface {
 	GetContext() *cli.Context
 	Tag() string
 	Title() string
 	Name() string
-	Display() Display
+	Display() DisplayManager
 	CLI() *cli.App
 	Version() string
 	InitUI(c *cli.Context) error
@@ -89,7 +89,7 @@ func NewApp(name, usage, version, tag, title, ttyPath string, initFn DisplayInit
 }
 
 func (app *CApp) init() {
-	app.display = NewDisplay(app.title, app.ttyPath)
+	app.display = NewDisplayManager(app.title, app.ttyPath)
 	app.display.app = app
 	app.cli = &cli.App{
 		Name:     app.name,
@@ -129,7 +129,7 @@ func (app *CApp) Name() string {
 	return app.name
 }
 
-func (app *CApp) Display() Display {
+func (app *CApp) Display() DisplayManager {
 	return app.display
 }
 

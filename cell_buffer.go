@@ -7,7 +7,7 @@ import (
 )
 
 // CellBuffer represents a two dimensional array of character cells.
-// This is primarily intended for use by Screen implementors; it
+// This is primarily intended for use by Display implementors; it
 // contains much of the common code they need.  To create one, just
 // declare a variable of its type; no explicit initialization is necessary.
 //

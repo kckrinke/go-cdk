@@ -28,13 +28,13 @@ import (
 var row = 0
 var style = cdk.StyleDefault
 
-func putln(s cdk.Screen, str string) {
+func putln(s cdk.Display, str string) {
 
 	puts(s, style, 1, row, str)
 	row++
 }
 
-func puts(s cdk.Screen, style cdk.Style, x, y int, str string) {
+func puts(s cdk.Display, style cdk.Style, x, y int, str string) {
 	i := 0
 	var deferred []rune
 	dwidth := 0
@@ -85,7 +85,7 @@ func puts(s cdk.Screen, style cdk.Style, x, y int, str string) {
 
 func main() {
 
-	s, e := cdk.NewScreen()
+	s, e := cdk.NewDisplay()
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
 		os.Exit(1)

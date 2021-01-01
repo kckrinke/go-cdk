@@ -315,7 +315,7 @@ func main() {
 		"mouse",
 		"CDK Mouse",
 		"/dev/tty",
-		func(d cdk.Display) error {
+		func(d cdk.DisplayManager) error {
 			cdk.Debugf("cdk-mouse initFn hit")
 			d.CaptureCtrlC()
 			w := &CdkMouseWindow{}
