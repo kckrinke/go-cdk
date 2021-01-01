@@ -80,6 +80,21 @@ func (r *Rectangle) Floor(minWidth, minHeight int) {
 	}
 }
 
+func (r *Rectangle) Clamp(minWidth, minHeight, maxWidth, maxHeight int) {
+	if r.W < minWidth {
+		r.W = minWidth
+	}
+	if r.H < minHeight {
+		r.H = minHeight
+	}
+	if r.W > maxWidth {
+		r.W = maxWidth
+	}
+	if r.H > maxHeight {
+		r.H = maxHeight
+	}
+}
+
 func (r *Rectangle) ClampRegion(region Region) (clamped bool) {
 	clamped = false
 	min, max := region.Origin(), region.FarPoint()
