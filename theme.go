@@ -54,6 +54,7 @@ var (
 		BorderRunes: DefaultBorderRune,
 		Overlay:     false,
 	}
+	CurrentTheme = DefaultNilTheme
 )
 
 type BorderRune struct {

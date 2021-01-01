@@ -76,11 +76,7 @@ func (w *CWindow) Init() bool {
 
 func (w *CWindow) ScreenCaptured(data []interface{}, argv ...interface{}) EventFlag {
 	if w.display != nil {
-		if w.display.IsMonochrome() {
-			w.SetTheme(DefaultMonoTheme)
-		} else {
-			w.SetTheme(DefaultColorTheme)
-		}
+		w.SetTheme(w.display.GetTheme())
 	}
 	return EVENT_PASS
 }

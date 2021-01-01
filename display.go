@@ -175,7 +175,10 @@ func (d *CDisplay) CaptureScreen(ttyPath string) {
 	d.screen.EnableMouse()
 	d.screen.EnablePaste()
 	d.screen.Clear()
-	d.SetTheme(d.DefaultTheme())
+	if CurrentTheme == DefaultNilTheme {
+		CurrentTheme = d.DefaultTheme()
+	}
+	d.SetTheme(CurrentTheme)
 	d.captured = true
 	d.Emit(SignalScreenCaptured, d)
 }
