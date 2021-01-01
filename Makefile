@@ -12,10 +12,18 @@ help:
 	@echo "  demos: builds the boxes, mouse and unicode demos"
 	@echo
 
-test:
+vet:
 	@echo -n "vetting cdk ..."
 	@go vet && echo " done"
+
+test: vet
 	@echo "testing cdk ..."
+	@go test -cover -coverprofile=coverage.out ./...
+	@echo "test coverage ..."
+	@go tool cover -html=coverage.out
+
+coverage:
+	@echo "testing cdk (with coverage) ..."
 	@go test -cover -coverprofile=coverage.out ./...
 	@echo "test coverage ..."
 	@go tool cover -html=coverage.out
