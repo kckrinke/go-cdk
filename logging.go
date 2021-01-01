@@ -63,12 +63,16 @@ var (
 	DEFAULT_LOG_PATH        = os.TempDir() + string(os.PathSeparator) + "cdk.log"
 )
 
+const (
+	DefaultLogTimestampFormat = "2006-01-02T15:04:05.000"
+)
+
 func ReloadLogging() error {
 	disable_timestamp := true
 	if v := envy.Get("GO_CDK_LOG_TIMESTAMPS", "false"); v == "true" {
 		disable_timestamp = false
 	}
-	timestamp_format := "2006-01-02T15:04:05.000"
+	timestamp_format := DefaultLogTimestampFormat
 	if v := envy.Get("GO_CDK_LOG_TIMESTAMP_FORMAT", ""); v != "" {
 		timestamp_format = v
 	}

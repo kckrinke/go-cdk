@@ -50,9 +50,9 @@ var (
 	cdkLogTimestampFormatFlag = &cli.StringFlag{
 		Name:        "cdk-log-timestamp-format",
 		EnvVars:     []string{"GO_CDK_LOG_TIMESTAMP_FORMAT"},
-		Value:       "2006-01-02T15:04:05.000",
+		Value:       DefaultLogTimestampFormat,
 		Usage:       "timestamp format",
-		DefaultText: "2006-01-02T15:04:05.000",
+		DefaultText: DefaultLogTimestampFormat,
 	}
 	cdkLogFullPaths = &cli.BoolFlag{
 		Name:        "cdk-log-full-paths",
