@@ -1,32 +1,31 @@
 package utils
 
-func SolveIncrements(nChildren, nSpace int) (increment, remainder int) {
-	remainder = nSpace % nChildren
-	increment = (nSpace-remainder) / nChildren
-	return
-}
-
-func SolveGaps(n, max int) (gaps []int) {
-	// for n gaps, arrange max space
-	for i := 0; i < n; i++ {
-		gaps = append(gaps, 0)
+func SolveSpaceAlloc(nChildren, nSpace, minSpacing int) (increment int, gaps []int) {
+	numGaps := nChildren - 1
+	availableSpace := nSpace - (minSpacing * numGaps)
+	remainder := availableSpace % nChildren
+	increment = (availableSpace - remainder) / nChildren
+	extra := (minSpacing * numGaps) + remainder
+	for i := 0; i <= numGaps; i++ {
+		gaps = append(gaps, minSpacing)
 	}
-	front := false
-	fw, bw := 0, n-1
-	for SumInts(gaps) < max {
+	front := true
+	first, last := 0, numGaps
+	fw, bw := 0, numGaps
+	for SumInts(gaps) < extra {
 		if front {
 			gaps[fw]++
 			front = false
 			fw++
-			if fw > n-1 {
-				fw = 0
+			if fw > last || fw == bw {
+				fw = first
 			}
 		} else {
 			gaps[bw]++
 			front = true
 			bw--
-			if bw < 1 {
-				bw = n - 1
+			if bw < first || bw == fw {
+				bw = last
 			}
 		}
 	}
