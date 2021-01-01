@@ -14,8 +14,6 @@
 
 package cdk
 
-// cli, flags, timers, threading, logging
-
 import (
 	"fmt"
 	"os"
@@ -94,51 +92,10 @@ func (app *CApp) init() {
 	app.display = NewDisplay(app.title, app.ttyPath)
 	app.display.app = app
 	app.cli = &cli.App{
-		Name:    app.name,
-		Usage:   app.usage,
-		Version: app.version,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "cdk-profile",
-				EnvVars:     []string{"GO_CDK_PROFILE"},
-				Value:       "",
-				Usage:       "profile one of: none, block, cpu, goroutine, mem, mutex, thread or trace",
-				DefaultText: "none",
-			},
-			&cli.StringFlag{
-				Name:        "cdk-profile-path",
-				EnvVars:     []string{"GO_CDK_PROFILE_PATH"},
-				Value:       "",
-				Usage:       "specify the directory path to store the profile data",
-				DefaultText: DefaultGoProfilePath,
-			},
-			&cli.StringFlag{
-				Name:        "cdk-log-file",
-				EnvVars:     []string{"GO_CDK_LOG_FILE"},
-				Value:       "",
-				Usage:       "path to log file",
-				DefaultText: DEFAULT_LOG_PATH,
-			},
-			&cli.StringFlag{
-				Name:        "cdk-log-level",
-				EnvVars:     []string{"GO_CDK_LOG_LEVEL"},
-				Value:       "error",
-				Usage:       "highest level of verbosity",
-				DefaultText: "error",
-			},
-			&cli.StringFlag{
-				Name:        "cdk-log-format",
-				EnvVars:     []string{"GO_CDK_LOG_FORMAT"},
-				Value:       "pretty",
-				Usage:       "json, text or pretty",
-				DefaultText: "pretty",
-			},
-			&cli.BoolFlag{
-				Name:  "cdk-log-levels",
-				Value: false,
-				Usage: "list the levels of logging verbosity",
-			},
-		},
+		Name:     app.name,
+		Usage:    app.usage,
+		Version:  app.version,
+		Flags:    getCdkCliFlags(),
 		Commands: []*cli.Command{},
 		Action:   app.MainActionFn,
 	}
@@ -204,57 +161,67 @@ func (app *CApp) Run(args []string) error {
 
 func (app *CApp) MainActionFn(c *cli.Context) error {
 	app.context = c
-	if c.Bool("ctk-log-levels") {
-		for i := len(LOG_LEVELS) - 1; i >= 0; i-- {
-			fmt.Printf("%s\n", LOG_LEVELS[i])
+	if Build.LogLevel {
+		if v := c.String("cdk-log-level"); !utils.IsEmpty(v) {
+			envy.Set("GO_CDK_LOG_LEVEL", v)
 		}
-		return nil
-	}
-	if v := c.String("cdk-log-file"); !utils.IsEmpty(v) {
-		envy.Set("GO_CDK_LOG_OUTPUT", "file")
-		envy.Set("GO_CDK_LOG_FILE", v)
-	}
-	if v := c.String("cdk-log-level"); !utils.IsEmpty(v) {
-		envy.Set("GO_CDK_LOG_LEVEL", v)
-	}
-	profilePath := DefaultGoProfilePath
-	if v := c.String("cdk-profile-path"); !utils.IsEmpty(v) {
-		if !utils.IsDir(v) {
-			if err := utils.MakeDir(v, 0770); err != nil {
-				Fatal(err)
+		if Build.LogLevels {
+			if c.Bool("ctk-log-levels") {
+				for i := len(LOG_LEVELS) - 1; i >= 0; i-- {
+					fmt.Printf("%s\n", LOG_LEVELS[i])
+				}
+				return nil
 			}
 		}
-		envy.Set("GO_CDK_PROFILE_PATH", v)
-		profilePath = v
+	}
+	if Build.LogFile {
+		if v := c.String("cdk-log-file"); !utils.IsEmpty(v) {
+			envy.Set("GO_CDK_LOG_OUTPUT", "file")
+			envy.Set("GO_CDK_LOG_FILE", v)
+		}
+	}
+	profilePath := DefaultGoProfilePath
+	if Build.Profiling {
+		if v := c.String("cdk-profile-path"); !utils.IsEmpty(v) {
+			if !utils.IsDir(v) {
+				if err := utils.MakeDir(v, 0770); err != nil {
+					Fatal(err)
+				}
+			}
+			envy.Set("GO_CDK_PROFILE_PATH", v)
+			profilePath = v
+		}
 	}
 	ReloadLogging()
 	defer StopLogging()
-	if v := c.String("cdk-profile"); !utils.IsEmpty(v) {
-		v = strings.ToLower(v)
-		var p goProfileFn
-		envy.Set("GO_CDK_PROFILE", v)
-		// none, block, cpu, goroutine, mem, mutex, thread or trace
-		switch v {
-		case "block":
-			p = profile.BlockProfile
-		case "cpu":
-			p = profile.CPUProfile
-		case "goroutine":
-			p = profile.GoroutineProfile
-		case "mem":
-			p = profile.MemProfile
-		case "mutex":
-			p = profile.MutexProfile
-		case "thread":
-			p = profile.ThreadcreationProfile
-		case "trace":
-			p = profile.TraceProfile
-		default:
-			p = nil
-		}
-		if p != nil {
-			Debugf("starting profile of \"%v\" to path: %v", v, profilePath)
-			defer profile.Start(p, profile.ProfilePath(profilePath)).Stop()
+	if Build.Profiling {
+		if v := c.String("cdk-profile"); !utils.IsEmpty(v) {
+			v = strings.ToLower(v)
+			var p goProfileFn
+			envy.Set("GO_CDK_PROFILE", v)
+			// none, block, cpu, goroutine, mem, mutex, thread or trace
+			switch v {
+			case "block":
+				p = profile.BlockProfile
+			case "cpu":
+				p = profile.CPUProfile
+			case "goroutine":
+				p = profile.GoroutineProfile
+			case "mem":
+				p = profile.MemProfile
+			case "mutex":
+				p = profile.MutexProfile
+			case "thread":
+				p = profile.ThreadcreationProfile
+			case "trace":
+				p = profile.TraceProfile
+			default:
+				p = nil
+			}
+			if p != nil {
+				Debugf("starting profile of \"%v\" to path: %v", v, profilePath)
+				defer profile.Start(p, profile.ProfilePath(profilePath)).Stop()
+			}
 		}
 	}
 	return app.Display().Run()

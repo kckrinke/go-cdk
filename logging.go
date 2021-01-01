@@ -72,7 +72,7 @@ func ReloadLogging() error {
 	if v := envy.Get("GO_CDK_LOG_TIMESTAMP_FORMAT", ""); v != "" {
 		timestamp_format = v
 	}
-	switch envy.Get("GO_CDK_LOG_FULLPATHS", "false") {
+	switch envy.Get("GO_CDK_LOG_FULL_PATHS", "false") {
 	case "true":
 		_cdk_log_fullpaths = true
 	default:
