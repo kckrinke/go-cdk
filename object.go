@@ -59,6 +59,7 @@ func (o *CObject) Init() (already bool) {
 	}
 	o.CSignaling.Init()
 	o.theme = DefaultColorTheme
+	o.allocation = MakeRectangle(0, 0)
 	o.properties = make(map[string]interface{})
 	o.Emit(SignalObjectInit, o)
 	return false
@@ -77,8 +78,8 @@ func (o *CObject) SetAllocation(size Rectangle) {
 	o.allocation.Floor(0, 0)
 }
 
-func (w *CObject) GetAllocation() Rectangle {
-	return w.allocation
+func (o *CObject) GetAllocation() Rectangle {
+	return o.allocation
 }
 
 func (o *CObject) GetTheme() Theme {
