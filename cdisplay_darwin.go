@@ -25,7 +25,7 @@ package cdk
 // So instead, we do a best effort, and simply try to do the close in the
 // background.  Probably this will cause a leak of two goroutines and
 // maybe also the file descriptor, meaning that applications on Darwin
-// can't reinitialize the screen, but that's probably a very rare behavior,
+// can't reinitialize the display, but that's probably a very rare behavior,
 // and accepting that is the best of some very poor alternative options.
 //
 // Maybe someday Apple will fix there tty driver, but its been broken for

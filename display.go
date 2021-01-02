@@ -14,25 +14,25 @@
 
 package cdk
 
-// Display represents the physical (or emulated) screen.
+// Display represents the physical (or emulated) display.
 // This can be a terminal window or a physical console.  Platforms implement
 // this differerently.
 type Display interface {
-	// Init initializes the screen for use.
+	// Init initializes the display for use.
 	Init() error
 
 	// Init with a non-standard tty path (default: /dev/tty)
 	InitWithTty(ttyPath string) error
 
-	// Close finalizes the screen also releasing resources.
+	// Close finalizes the display also releasing resources.
 	Close()
 
-	// Clear erases the screen.  The contents of any screen buffers
+	// Clear erases the display.  The contents of any display buffers
 	// will also be cleared.  This has the logical effect of
-	// filling the screen with spaces, using the global default style.
+	// filling the display with spaces, using the global default style.
 	Clear()
 
-	// Fill fills the screen with the given character and style.
+	// Fill fills the display with the given character and style.
 	Fill(rune, Style)
 
 	// SetCell is an older API, and will be removed.  Please use
@@ -44,7 +44,7 @@ type Display interface {
 	// StyleDefault.  Note that the contents returned are logical contents
 	// and may not actually be what is displayed, but rather are what will
 	// be displayed if Show() or Sync() is called.  The width is the width
-	// in screen cells; most often this will be 1, but some East Asian
+	// in display cells; most often this will be 1, but some East Asian
 	// characters require two cells.
 	GetContent(x, y int) (mainc rune, combc []rune, style Style, width int)
 
@@ -63,21 +63,21 @@ type Display interface {
 	// last column will be replaced with a single width space on output.
 	SetContent(x int, y int, mainc rune, combc []rune, style Style)
 
-	// SetStyle sets the default style to use when clearing the screen
+	// SetStyle sets the default style to use when clearing the display
 	// or when StyleDefault is specified.  If it is also StyleDefault,
 	// then whatever system/terminal default is relevant will be used.
 	SetStyle(style Style)
 
 	// ShowCursor is used to display the cursor at a given location.
 	// If the coordinates -1, -1 are given or are otherwise outside the
-	// dimensions of the screen, the cursor will be hidden.
+	// dimensions of the display, the cursor will be hidden.
 	ShowCursor(x int, y int)
 
 	// HideCursor is used to hide the cursor.  Its an alias for
 	// ShowCursor(-1, -1).
 	HideCursor()
 
-	// Size returns the screen size as width, height.  This changes in
+	// Size returns the display size as width, height.  This changes in
 	// response to a call to Clear or Flush.
 	Size() (w, h int)
 
@@ -137,7 +137,7 @@ type Display interface {
 	// so it should only be used when believed to actually be necessary.
 	//
 	// Typically this is called as a result of a user-requested redraw
-	// (e.g. to clear up on screen corruption caused by some other program),
+	// (e.g. to clear up on display corruption caused by some other program),
 	// or during a resize event.
 	Sync()
 
@@ -178,7 +178,7 @@ type Display interface {
 	UnregisterRuneFallback(r rune)
 
 	// CanDisplay returns true if the given rune can be displayed on
-	// this screen.  Note that this is a best guess effort -- whether
+	// this display.  Note that this is a best guess effort -- whether
 	// your fonts support the character or not may be questionable.
 	// Mostly this is for folks who work outside of Unicode.
 	//
@@ -189,7 +189,7 @@ type Display interface {
 	CanDisplay(r rune, checkFallbacks bool) bool
 
 	// Resize does nothing, since its generally not possible to
-	// ask a screen to resize, but it allows the Display to implement
+	// ask a display to resize, but it allows the Display to implement
 	// the View interface.
 	Resize(int, int, int, int)
 
@@ -214,7 +214,7 @@ type Display interface {
 // NewDisplay returns a default Display suitable for the user's terminal
 // environment.
 func NewDisplay() (Display, error) {
-	// Windows is happier if we try for a console screen first.
+	// Windows is happier if we try for a console display first.
 	if s, _ := NewConsoleDisplay(); s != nil {
 		return s, nil
 	} else if s, e := NewTerminfoDisplay(); s != nil {

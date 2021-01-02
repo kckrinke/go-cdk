@@ -68,7 +68,7 @@ var (
 )
 
 // NewEventMouse is used to create a new mouse event.  Applications
-// shouldn't need to use this; its mostly for screen implementors.
+// shouldn't need to use this; its mostly for display implementors.
 func NewEventMouse(x, y int, btn ButtonMask, mod ModMask) *EventMouse {
 	em := &EventMouse{
 		t:   time.Now(),

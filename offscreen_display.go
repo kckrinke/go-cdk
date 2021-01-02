@@ -25,10 +25,10 @@ import (
 func MakeOffscreenDisplay(charset string) (OffscreenDisplay, error) {
 	s := NewOffscreenDisplay(charset)
 	if s == nil {
-		return nil, fmt.Errorf("failed to get simulation screen")
+		return nil, fmt.Errorf("failed to get simulation display")
 	}
 	if e := s.Init(); e != nil {
-		return nil, fmt.Errorf("failed to initialize screen: %v", e)
+		return nil, fmt.Errorf("failed to initialize display: %v", e)
 	}
 	return s, nil
 }
@@ -43,7 +43,7 @@ func NewOffscreenDisplay(charset string) OffscreenDisplay {
 	return s
 }
 
-// OffscreenDisplay represents a screen simulation.  This is intended to
+// OffscreenDisplay represents a display simulation.  This is intended to
 // be a superset of normal Screens, but also adds some important interfaces
 // for testing.
 type OffscreenDisplay interface {
@@ -61,14 +61,14 @@ type OffscreenDisplay interface {
 	// InjectMouse injects a mouse event.
 	InjectMouse(x, y int, buttons ButtonMask, mod ModMask)
 
-	// SetSize resizes the underlying physical screen.  It also causes
+	// SetSize resizes the underlying physical display.  It also causes
 	// a resize event to be injected during the next Show() or Sync().
 	// A new physical contents array will be allocated (with data from
 	// the old copied), so any prior value obtained with GetContents
 	// won't be used anymore
 	SetSize(width, height int)
 
-	// GetContents returns screen contents as an array of
+	// GetContents returns display contents as an array of
 	// cells, along with the physical width & height.   Note that the
 	// physical contents will be used until the next time SetSize()
 	// is called.
@@ -80,8 +80,8 @@ type OffscreenDisplay interface {
 	Display
 }
 
-// OffscreenCell represents a simulated screen cell.  The purpose of this
-// is to track on screen content.
+// OffscreenCell represents a simulated display cell.  The purpose of this
+// is to track on display content.
 type OffscreenCell struct {
 	// Bytes is the actual character bytes.  Normally this is
 	// rune data, but it could be be data in another encoding system.

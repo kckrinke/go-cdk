@@ -101,7 +101,7 @@ type CDisplayManager struct {
 
 	app      *CApp
 	ttyPath  string
-	screen   Display
+	display  Display
 	captured bool
 
 	running  bool
@@ -156,11 +156,11 @@ func (d *CDisplayManager) SetTitle(title string) {
 }
 
 func (d *CDisplayManager) Display() Display {
-	return d.screen
+	return d.display
 }
 
 func (d *CDisplayManager) DisplayCaptured() bool {
-	return d.screen != nil && d.captured
+	return d.display != nil && d.captured
 }
 
 func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
@@ -177,10 +177,10 @@ func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
 	defStyle := StyleDefault.
 		Background(ColorReset).
 		Foreground(ColorReset)
-	d.screen.SetStyle(defStyle)
-	d.screen.EnableMouse()
-	d.screen.EnablePaste()
-	d.screen.Clear()
+	d.display.SetStyle(defStyle)
+	d.display.EnableMouse()
+	d.display.EnablePaste()
+	d.display.Clear()
 	if CurrentTheme == DefaultNilTheme {
 		CurrentTheme = d.DefaultTheme()
 	}
@@ -192,9 +192,9 @@ func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
 func (d *CDisplayManager) ReleaseDisplay() {
 	d.Lock()
 	defer d.Unlock()
-	if d.screen != nil {
-		d.screen.Close()
-		d.screen = nil
+	if d.display != nil {
+		d.display.Close()
+		d.display = nil
 	}
 	d.captured = false
 }
@@ -205,8 +205,8 @@ func (d *CDisplayManager) IsMonochrome() bool {
 
 func (d *CDisplayManager) Colors() (numberOfColors int) {
 	numberOfColors = 0
-	if d.screen != nil {
-		numberOfColors = d.screen.Colors()
+	if d.display != nil {
+		numberOfColors = d.display.Colors()
 	}
 	return
 }
@@ -224,7 +224,7 @@ func (d *CDisplayManager) ReleaseCtrlC() {
 }
 
 func (d *CDisplayManager) DefaultTheme() Theme {
-	if d.screen != nil && d.screen.Colors() > 0 {
+	if d.display != nil && d.display.Colors() > 0 {
 		return DefaultColorTheme
 	}
 	return DefaultMonoTheme
@@ -340,19 +340,19 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 func (d *CDisplayManager) DrawScreen() EventFlag {
 	d.Lock()
 	defer d.Unlock()
-	if !d.captured || d.screen == nil {
-		d.LogError("screen not captured or otherwise missing")
+	if !d.captured || d.display == nil {
+		d.LogError("display not captured or otherwise missing")
 		return EVENT_PASS
 	}
 	var window Window
 	if window = d.ActiveWindow(); window == nil {
-		d.LogDebug("cannot draw the screen, display missing a window")
+		d.LogDebug("cannot draw the display, display missing a window")
 		return EVENT_PASS
 	}
-	w, h := d.screen.Size()
+	w, h := d.display.Size()
 	canvas := NewCanvas(MakePoint2I(0, 0), MakeRectangle(w, h), d.GetTheme())
 	if f := window.Draw(canvas); f == EVENT_STOP {
-		if err := canvas.Render(d.screen); err != nil {
+		if err := canvas.Render(d.display); err != nil {
 			d.LogErr(err)
 		}
 		return EVENT_STOP
@@ -409,7 +409,7 @@ func (d *CDisplayManager) PostEvent(evt Event) error {
 
 func (d *CDisplayManager) pollEventWorker() {
 	for d.running {
-		d.process <- d.screen.PollEvent()
+		d.process <- d.display.PollEvent()
 	}
 	d.done <- true
 }
@@ -435,16 +435,16 @@ func (d *CDisplayManager) screenRequestWorker() {
 	for d.running {
 		switch <-d.requests {
 		case DrawRequest:
-			if d.screen != nil {
+			if d.display != nil {
 				d.DrawScreen()
 			}
 		case ShowRequest:
-			if d.screen != nil {
-				d.screen.Show()
+			if d.display != nil {
+				d.display.Show()
 			}
 		case SyncRequest:
-			if d.screen != nil {
-				d.screen.Sync()
+			if d.display != nil {
+				d.display.Sync()
 			}
 		case QuitRequest:
 			d.running = false
@@ -466,7 +466,7 @@ func (d *CDisplayManager) Run() error {
 			panic(p)
 		}
 	}()
-	if err := d.PostEvent(NewEventResize(d.screen.Size())); err != nil {
+	if err := d.PostEvent(NewEventResize(d.display.Size())); err != nil {
 		Error(err)
 	}
 	for {
@@ -476,7 +476,7 @@ func (d *CDisplayManager) Run() error {
 				return err
 			}
 		case evt := <-d.events:
-			if err := d.screen.PostEvent(evt); err != nil {
+			if err := d.display.PostEvent(evt); err != nil {
 				Error(err)
 			}
 		case <-d.done:

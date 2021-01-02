@@ -81,7 +81,7 @@ type tKeyCode struct {
 	mod ModMask
 }
 
-// cDisplay represents a screen backed by a terminfo implementation.
+// cDisplay represents a display backed by a terminfo implementation.
 type cDisplay struct {
 	ti           *terminfo.Terminfo
 	h            int
@@ -759,7 +759,7 @@ func (t *cDisplay) showCursor() {
 // writeString sends a string to the terminal. The string is sent as-is and
 // this function does not expand inline padding indications (of the form
 // $<[delay]> where [delay] is msec). In order to have these expanded, use
-// TPuts. If the screen is "buffering", the string is collected in a buffer,
+// TPuts. If the display is "buffering", the string is collected in a buffer,
 // with the intention that the entire buffer be sent to the terminal in one
 // write operation at some point later.
 func (t *cDisplay) writeString(s string) {
@@ -801,7 +801,7 @@ func (t *cDisplay) hideCursor() {
 		t.TPuts(t.ti.HideCursor)
 	} else {
 		// No way to hide cursor, stick it
-		// at bottom right of screen
+		// at bottom right of display
 		t.cx, t.cy = t.cells.Size()
 		t.TPuts(t.ti.TGoto(t.cx, t.cy))
 	}
@@ -1009,7 +1009,7 @@ func (t *cDisplay) clip(x, y int) (int, int) {
 }
 
 // buildMouseEvent returns an event based on the supplied coordinates and button
-// state. Note that the screen's mouse button state is updated based on the
+// state. Note that the display's mouse button state is updated based on the
 // input to this function (i.e. it mutates the receiver).
 func (t *cDisplay) buildMouseEvent(x, y, btn int) *EventMouse {
 
@@ -1063,8 +1063,8 @@ func (t *cDisplay) buildMouseEvent(x, y, btn int) *EventMouse {
 	}
 
 	// Some terminals will report mouse coordinates outside the
-	// screen, especially with click-drag events.  Clip the coordinates
-	// to the screen in that case.
+	// display, especially with click-drag events.  Clip the coordinates
+	// to the display in that case.
 	x, y = t.clip(x, y)
 
 	return NewEventMouse(x, y, button, mod)
@@ -1338,7 +1338,7 @@ func (t *cDisplay) scanInput(buf *bytes.Buffer, expire bool) {
 }
 
 // Return an array of Events extracted from the supplied buffer. This is done
-// while holding the screen's lock - the events can then be queued for
+// while holding the display's lock - the events can then be queued for
 // application processing with the lock released.
 func (t *cDisplay) collectEventsFromInput(buf *bytes.Buffer, expire bool) []Event {
 

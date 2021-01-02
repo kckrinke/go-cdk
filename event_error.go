@@ -31,13 +31,13 @@ var (
 	// occurs most often with "dumb".
 	ErrTermNotFound = terminfo.ErrTermNotFound
 
-	// ErrNoDisplay indicates that no suitable screen could be found.
+	// ErrNoDisplay indicates that no suitable display could be found.
 	// This may result from attempting to run on a platform where there
 	// is no support for either termios or console I/O (such as nacl),
 	// or from running in an environment where there is no access to
 	// a suitable console/terminal device.  (For example, running on
 	// without a controlling TTY or with no /dev/tty on POSIX platforms.)
-	ErrNoDisplay = errors.New("no suitable screen available")
+	ErrNoDisplay = errors.New("no suitable display available")
 
 	// ErrNoCharset indicates that the locale environment the
 	// program is not supported by the program, because no suitable

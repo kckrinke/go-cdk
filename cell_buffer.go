@@ -185,7 +185,7 @@ func (cb *CellBuffer) Resize(w, h int) {
 }
 
 // Fill fills the entire cell buffer array with the specified character
-// and style.  Normally choose ' ' to clear the screen.  This API doesn't
+// and style.  Normally choose ' ' to clear the display.  This API doesn't
 // support combining characters, or characters with a width larger than one.
 func (cb *CellBuffer) Fill(r rune, style Style) {
 	TraceF("rune=%v, style=%v", r, style)

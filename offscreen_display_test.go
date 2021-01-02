@@ -119,13 +119,13 @@ func TestBeep(t *testing.T) {
 
 	b1, x1, y1 := s.GetContents()
 	if x0 != x1 {
-		t.Fatalf("screen width changed unexpectedly from %d to %d", x0, x1)
+		t.Fatalf("display width changed unexpectedly from %d to %d", x0, x1)
 	}
 	if y0 != y1 {
-		t.Fatalf("screen height changed unexpectedly from %d to %d", y0, y1)
+		t.Fatalf("display height changed unexpectedly from %d to %d", y0, y1)
 	}
 	if len(b0) != len(b1) {
-		t.Fatalf("screen size changed unexpectedly (had %d cells, has %d cells)",
+		t.Fatalf("display size changed unexpectedly (had %d cells, has %d cells)",
 			len(b0), len(b1))
 	}
 	for i := 0; i < len(b0); i++ {
