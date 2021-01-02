@@ -21,7 +21,7 @@ import (
 	"strings"
 )
 
-func getCharset() string {
+func GetCharset() string {
 	// Determine the character set.  This can help us later.
 	// Per POSIX, we search for LC_ALL first, then LC_CTYPE, and
 	// finally LANG.  First one set wins.

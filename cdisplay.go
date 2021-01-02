@@ -135,10 +135,9 @@ func (t *cDisplay) InitWithTty(ttyPath string) error {
 	t.indoneq = make(chan struct{})
 	t.keychan = make(chan []byte, EVENT_KEY_QUEUE_SIZE)
 	t.keytimer = time.NewTimer(EVENT_KEY_TIMING)
-	t.charset = "UTF-8"
 	t.cells = NewCellBuffer()
 
-	t.charset = getCharset()
+	t.charset = GetCharset()
 	if enc := GetEncoding(t.charset); enc != nil {
 		t.encoder = enc.NewEncoder()
 		t.decoder = enc.NewDecoder()

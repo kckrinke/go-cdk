@@ -45,7 +45,7 @@ type COffscreenWindow struct {
 }
 
 func NewOffscreenWindow(title string) Window {
-	d, err := MakeOffscreenDisplay("UTF-8")
+	d, err := MakeOffscreenDisplay(GetCharset())
 	if err != nil {
 		Fatal(err)
 	}

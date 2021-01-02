@@ -36,8 +36,8 @@ func MakeOffscreenDisplay(charset string) (OffscreenDisplay, error) {
 // NewOffscreenDisplay returns a OffscreenDisplay.  Note that
 // OffscreenDisplay is also a Display.
 func NewOffscreenDisplay(charset string) OffscreenDisplay {
-	if charset == "" {
-		charset = "UTF-8"
+	if utils.IsEmpty(charset) {
+		charset = GetCharset()
 	}
 	s := &COffscreenDisplay{charset: charset}
 	return s
