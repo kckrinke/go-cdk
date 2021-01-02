@@ -33,13 +33,13 @@ func getCdkCliFlags() (flags []cli.Flag) {
 		flags = append(flags, cdkLogFormatFlag)
 	}
 	if Build.LogFullPaths {
-		flags = append(flags, cdkLogFullPaths)
+		flags = append(flags, cdkLogFullPathsFlag)
 	}
 	if Build.LogLevel {
 		flags = append(flags, cdkLogLevel)
 	}
 	if Build.LogLevels {
-		flags = append(flags, cdkLogLevels)
+		flags = append(flags, cdkLogLevelsFlag)
 	}
 	if Build.LogTimestampFormat {
 		flags = append(flags, cdkLogTimestampFormatFlag)
@@ -48,7 +48,7 @@ func getCdkCliFlags() (flags []cli.Flag) {
 		flags = append(flags, cdkLogTimestampsFlag)
 	}
 	if Build.LogOutput {
-		flags = append(flags, cdkLogOutput)
+		flags = append(flags, cdkLogOutputFlag)
 	}
 	return
 }

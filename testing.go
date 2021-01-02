@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	_cdk__prev_exit    = _cdk_logger.ExitFunc
+	_cdk__prev_exit    = cdkLogger.ExitFunc
 	_cdk__fake_exited      int = -1
 	_cdk__last_fake_logged    = ""
 	_cdk__last_fake_exited    = -1
@@ -29,8 +29,8 @@ var (
 
 func FakeExiting() {
 	ResetFakeExited()
-	_cdk__prev_exit = _cdk_logger.ExitFunc
-	_cdk_logger.ExitFunc = func(code int) {
+	_cdk__prev_exit = cdkLogger.ExitFunc
+	cdkLogger.ExitFunc = func(code int) {
 		_cdk__fake_exited = code
 	}
 }
@@ -44,7 +44,7 @@ func ResetFakeExited() {
 }
 
 func RestoreExiting() {
-	_cdk_logger.ExitFunc = _cdk__prev_exit
+	cdkLogger.ExitFunc = _cdk__prev_exit
 	_cdk__prev_exit = nil
 	_cdk__fake_exited = -1
 }

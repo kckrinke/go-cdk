@@ -38,7 +38,7 @@ func TestLoggingInit(t *testing.T) {
 			return nil
 		})
 		So(err, ShouldBeNil)
-		So(_cdk_logger.Formatter, ShouldHaveSameTypeAs, &prefixed.TextFormatter{})
+		So(cdkLogger.Formatter, ShouldHaveSameTypeAs, &prefixed.TextFormatter{})
 		So(logged, ShouldStartWith, "ERROR")
 		So(logged, ShouldEndWith, "testing\n")
 		logged, _, err = DoWithFakeIO(func() error {
@@ -48,7 +48,7 @@ func TestLoggingInit(t *testing.T) {
 			return nil
 		})
 		So(err, ShouldBeNil)
-		So(_cdk_logger.Formatter, ShouldHaveSameTypeAs, &prefixed.TextFormatter{})
+		So(cdkLogger.Formatter, ShouldHaveSameTypeAs, &prefixed.TextFormatter{})
 		So(logged, ShouldStartWith, "ERROR")
 		So(logged, ShouldEndWith, "testing\n")
 	})
@@ -84,7 +84,7 @@ func TestLoggingFormatter(t *testing.T) {
 			return nil
 		})
 		So(err, ShouldBeNil)
-		So(_cdk_logger.Formatter, ShouldHaveSameTypeAs, &log.JSONFormatter{})
+		So(cdkLogger.Formatter, ShouldHaveSameTypeAs, &log.JSONFormatter{})
 		decoded := make(map[string]interface{})
 		err = ejson.Unmarshal([]byte(logged), &decoded)
 		So(err, ShouldBeNil)
@@ -103,7 +103,7 @@ func TestLoggingFormatter(t *testing.T) {
 			return nil
 		})
 		So(err, ShouldBeNil)
-		So(_cdk_logger.Formatter, ShouldHaveSameTypeAs, &log.TextFormatter{})
+		So(cdkLogger.Formatter, ShouldHaveSameTypeAs, &log.TextFormatter{})
 		So(logged, ShouldStartWith, "level=error")
 		So(logged, ShouldEndWith, "testing\"\n")
 	})
@@ -183,7 +183,7 @@ func TestLoggingLevel(t *testing.T) {
 			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
 			envy.Set("GO_CDK_LOG_LEVEL", "error")
 			ReloadLogging()
-			_cdk_logger.ExitFunc = func(int) { fatal = true }
+			cdkLogger.ExitFunc = func(int) { fatal = true }
 			FatalF("testing")
 			return nil
 		})
@@ -191,41 +191,41 @@ func TestLoggingLevel(t *testing.T) {
 		So(fatal, ShouldEqual, true)
 		So(logged, ShouldStartWith, "FATAL")
 		So(logged, ShouldEndWith, "testing\n")
-		_cdk_logger.ExitFunc = nil
-		prefix := get_log_prefix(99)
+		cdkLogger.ExitFunc = nil
+		prefix := getLogPrefix(99)
 		So(prefix, ShouldEqual, "(missing caller metadata)")
 	})
 }
 
 func TestLoggingToFiles(t *testing.T) {
 	Convey("Logging file checks", t, func() {
-		So(_cdk_logfh, ShouldBeNil)
-		if _, err := os.Stat(DEFAULT_LOG_PATH); err == nil {
-			os.Remove(DEFAULT_LOG_PATH)
+		So(cdkLogFH, ShouldBeNil)
+		if _, err := os.Stat(DefaultLogPath); err == nil {
+			os.Remove(DefaultLogPath)
 		}
 		envy.Set("GO_CDK_LOG_OUTPUT", "file")
 		envy.Set("GO_CDK_LOG_FORMAT", "pretty")
 		envy.Set("GO_CDK_LOG_LEVEL", "error")
-		envy.Set("GO_CDK_LOG_FILE", DEFAULT_LOG_PATH)
+		envy.Set("GO_CDK_LOG_FILE", DefaultLogPath)
 		ReloadLogging()
-		So(_cdk_logfh, ShouldNotBeNil)
+		So(cdkLogFH, ShouldNotBeNil)
 		ErrorF("testing")
 		found_file := false
-		if _, err := os.Stat(DEFAULT_LOG_PATH); err == nil {
+		if _, err := os.Stat(DefaultLogPath); err == nil {
 			found_file = true
 		}
 		So(found_file, ShouldEqual, true)
-		logged, err := ioutil.ReadFile(DEFAULT_LOG_PATH)
+		logged, err := ioutil.ReadFile(DefaultLogPath)
 		So(err, ShouldBeNil)
 		So(string(logged), ShouldEndWith, "testing\n")
-		_cdk_logfh.Close()
-		os.Remove(DEFAULT_LOG_PATH)
+		cdkLogFH.Close()
+		os.Remove(DefaultLogPath)
 		envy.Set("GO_CDK_LOG_FILE", "/dev/null")
 		err = ReloadLogging()
 		So(err, ShouldBeNil)
 		ErrorF("testing")
 		found_file = false
-		if _, err := os.Stat(DEFAULT_LOG_PATH); err == nil {
+		if _, err := os.Stat(DefaultLogPath); err == nil {
 			found_file = true
 		}
 		So(found_file, ShouldEqual, false)
@@ -242,9 +242,9 @@ func TestLoggingToFiles(t *testing.T) {
 		logged, err = ioutil.ReadFile(tmp_log)
 		So(err, ShouldBeNil)
 		So(string(logged), ShouldEndWith, "testing\n")
-		So(_cdk_logfh, ShouldNotBeNil)
+		So(cdkLogFH, ShouldNotBeNil)
 		StopLogging()
-		So(_cdk_logfh, ShouldBeNil)
+		So(cdkLogFH, ShouldBeNil)
 		os.Chmod(tmp_log, 0000)
 		err = ReloadLogging()
 		So(err, ShouldNotBeNil)

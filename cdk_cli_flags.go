@@ -24,7 +24,7 @@ var (
 		EnvVars:     []string{"GO_CDK_LOG_FILE"},
 		Value:       "",
 		Usage:       "path to log file",
-		DefaultText: DEFAULT_LOG_PATH,
+		DefaultText: DefaultLogPath,
 	}
 	cdkLogLevel = &cli.StringFlag{
 		Name:        "cdk-log-level",
@@ -54,21 +54,21 @@ var (
 		Usage:       "timestamp format",
 		DefaultText: DefaultLogTimestampFormat,
 	}
-	cdkLogFullPaths = &cli.BoolFlag{
+	cdkLogFullPathsFlag = &cli.BoolFlag{
 		Name:        "cdk-log-full-paths",
 		EnvVars:     []string{"GO_CDK_LOG_FULL_PATHS"},
 		Value:       false,
 		Usage:       "log the full paths of source files",
 		DefaultText: "false",
 	}
-	cdkLogOutput = &cli.StringFlag{
+	cdkLogOutputFlag = &cli.StringFlag{
 		Name:        "cdk-log-output",
 		EnvVars:     []string{"GO_CDK_LOG_OUTPUT"},
 		Value:       "file",
 		Usage:       "logging output type: stdout, stderr or file",
 		DefaultText: "file",
 	}
-	cdkLogLevels = &cli.BoolFlag{
+	cdkLogLevelsFlag = &cli.BoolFlag{
 		Name:  "cdk-log-levels",
 		Value: false,
 		Usage: "list the levels of logging verbosity",

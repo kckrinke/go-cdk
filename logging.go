@@ -29,38 +29,38 @@ import (
 )
 
 const (
-	LEVEL_ERROR string = "error"
-	LEVEL_WARN  string = "warn"
-	LEVEL_INFO  string = "info"
-	LEVEL_DEBUG string = "debug"
-	LEVEL_TRACE string = "trace"
+	LevelError string = "error"
+	LevelWarn  string = "warn"
+	LevelInfo  string = "info"
+	LevelDebug string = "debug"
+	LevelTrace string = "trace"
 )
 
-var LOG_LEVELS = []string{
-	LEVEL_ERROR,
-	LEVEL_WARN,
-	LEVEL_INFO,
-	LEVEL_DEBUG,
-	LEVEL_TRACE,
+var LogLevels = []string{
+	LevelError,
+	LevelWarn,
+	LevelInfo,
+	LevelDebug,
+	LevelTrace,
 }
 
 const (
-	FORMAT_PRETTY string = "pretty"
-	FORMAT_TEXT   string = "text"
-	FORMAT_JSON   string = "json"
+	FormatPretty string = "pretty"
+	FormatText   string = "text"
+	FormatJson   string = "json"
 )
 
 const (
-	OUTPUT_STDERR string = "stderr"
-	OUTPUT_STDOUT string = "stdout"
-	OUTPUT_FILE   string = "file"
+	OutputStderr string = "stderr"
+	OutputStdout string = "stdout"
+	OutputFile   string = "file"
 )
 
 var (
-	_cdk_logger        *log.Logger = log.New()
-	_cdk_logfh         *os.File
-	_cdk_log_fullpaths bool = false
-	DEFAULT_LOG_PATH        = os.TempDir() + string(os.PathSeparator) + "cdk.log"
+	cdkLogger       = log.New()
+	cdkLogFH        *os.File
+	cdkLogFullPaths = false
+	DefaultLogPath  = os.TempDir() + string(os.PathSeparator) + "cdk.log"
 )
 
 const (

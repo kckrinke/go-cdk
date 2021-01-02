@@ -167,8 +167,8 @@ func (app *CApp) MainActionFn(c *cli.Context) error {
 		}
 		if Build.LogLevels {
 			if c.Bool("ctk-log-levels") {
-				for i := len(LOG_LEVELS) - 1; i >= 0; i-- {
-					fmt.Printf("%s\n", LOG_LEVELS[i])
+				for i := len(LogLevels) - 1; i >= 0; i-- {
+					fmt.Printf("%s\n", LogLevels[i])
 				}
 				return nil
 			}
