@@ -67,7 +67,7 @@ type CApp struct {
 	tag     string
 	title   string
 	ttyPath string
-	display *CDisplay
+	display *CDisplayManager
 	context *cli.Context
 	cli     *cli.App
 	initFn  DisplayInitFn

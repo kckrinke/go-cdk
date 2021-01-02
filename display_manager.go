@@ -89,7 +89,7 @@ type DisplayManager interface {
 }
 
 // Basic display type
-type CDisplay struct {
+type CDisplayManager struct {
 	CObject
 
 	title string
@@ -112,8 +112,8 @@ type CDisplay struct {
 	requests chan ScreenStateReq
 }
 
-func NewDisplayManager(title string, ttyPath string) *CDisplay {
-	d := new(CDisplay)
+func NewDisplayManager(title string, ttyPath string) *CDisplayManager {
+	d := new(CDisplayManager)
 	d.title = title
 	d.ttyPath = ttyPath
 	d.Init()
@@ -121,7 +121,7 @@ func NewDisplayManager(title string, ttyPath string) *CDisplay {
 }
 
 // Initialization
-func (d *CDisplay) Init() (already bool) {
+func (d *CDisplayManager) Init() (already bool) {
 	if d.InitTypeItem(TypeDisplayManager) {
 		return true
 	}
@@ -147,23 +147,23 @@ func (d *CDisplay) Init() (already bool) {
 	return false
 }
 
-func (d *CDisplay) GetTitle() string {
+func (d *CDisplayManager) GetTitle() string {
 	return d.title
 }
 
-func (d *CDisplay) SetTitle(title string) {
+func (d *CDisplayManager) SetTitle(title string) {
 	d.title = title
 }
 
-func (d *CDisplay) Display() Display {
+func (d *CDisplayManager) Display() Display {
 	return d.screen
 }
 
-func (d *CDisplay) DisplayCaptured() bool {
+func (d *CDisplayManager) DisplayCaptured() bool {
 	return d.screen != nil && d.captured
 }
 
-func (d *CDisplay) CaptureDisplay(ttyPath string) {
+func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
 	d.Lock()
 	defer d.Unlock()
 	var err error
@@ -189,7 +189,7 @@ func (d *CDisplay) CaptureDisplay(ttyPath string) {
 	d.Emit(SignalDisplayCaptured, d)
 }
 
-func (d *CDisplay) ReleaseDisplay() {
+func (d *CDisplayManager) ReleaseDisplay() {
 	d.Lock()
 	defer d.Unlock()
 	if d.screen != nil {
@@ -199,11 +199,11 @@ func (d *CDisplay) ReleaseDisplay() {
 	d.captured = false
 }
 
-func (d *CDisplay) IsMonochrome() bool {
+func (d *CDisplayManager) IsMonochrome() bool {
 	return d.Colors() == 0
 }
 
-func (d *CDisplay) Colors() (numberOfColors int) {
+func (d *CDisplayManager) Colors() (numberOfColors int) {
 	numberOfColors = 0
 	if d.screen != nil {
 		numberOfColors = d.screen.Colors()
@@ -211,26 +211,26 @@ func (d *CDisplay) Colors() (numberOfColors int) {
 	return
 }
 
-func (d *CDisplay) CaptureCtrlC() {
+func (d *CDisplayManager) CaptureCtrlC() {
 	d.Lock()
 	defer d.Unlock()
 	d.captureCtrlC = true
 }
 
-func (d *CDisplay) ReleaseCtrlC() {
+func (d *CDisplayManager) ReleaseCtrlC() {
 	d.Lock()
 	defer d.Unlock()
 	d.captureCtrlC = false
 }
 
-func (d *CDisplay) DefaultTheme() Theme {
+func (d *CDisplayManager) DefaultTheme() Theme {
 	if d.screen != nil && d.screen.Colors() > 0 {
 		return DefaultColorTheme
 	}
 	return DefaultMonoTheme
 }
 
-func (d *CDisplay) ActiveWindow() Window {
+func (d *CDisplayManager) ActiveWindow() Window {
 	if len(d.windows) > d.active && d.active >= 0 {
 		return d.windows[d.active]
 	}
@@ -241,7 +241,7 @@ func (d *CDisplay) ActiveWindow() Window {
 	return d.windows[0]
 }
 
-func (d *CDisplay) SetActiveWindow(w Window) {
+func (d *CDisplayManager) SetActiveWindow(w Window) {
 	d.Lock()
 	id := -1
 	var window Window
@@ -259,7 +259,7 @@ func (d *CDisplay) SetActiveWindow(w Window) {
 	d.active = d.AddWindow(w)
 }
 
-func (d *CDisplay) AddWindow(w Window) int {
+func (d *CDisplayManager) AddWindow(w Window) int {
 	d.Lock()
 	defer d.Unlock()
 	id := -1
@@ -274,19 +274,19 @@ func (d *CDisplay) AddWindow(w Window) int {
 		return id
 	}
 	d.windows = append(d.windows, w)
-	w.SetDisplay(d)
+	w.SetDisplayManager(d)
 	return len(d.windows) - 1
 }
 
-func (d *CDisplay) GetWindows() []Window {
+func (d *CDisplayManager) GetWindows() []Window {
 	return d.windows
 }
 
-func (d *CDisplay) App() *CApp {
+func (d *CDisplayManager) App() *CApp {
 	return d.app
 }
 
-func (d *CDisplay) ProcessEvent(evt Event) EventFlag {
+func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 	switch e := evt.(type) {
 	case *EventError:
 		d.LogErr(e)
@@ -337,7 +337,7 @@ func (d *CDisplay) ProcessEvent(evt Event) EventFlag {
 	return d.Emit(SignalEvent, d, evt)
 }
 
-func (d *CDisplay) DrawScreen() EventFlag {
+func (d *CDisplayManager) DrawScreen() EventFlag {
 	d.Lock()
 	defer d.Unlock()
 	if !d.captured || d.screen == nil {
@@ -360,23 +360,23 @@ func (d *CDisplay) DrawScreen() EventFlag {
 	return EVENT_PASS
 }
 
-func (d *CDisplay) RequestDraw() {
+func (d *CDisplayManager) RequestDraw() {
 	d.requests <- DrawRequest
 }
 
-func (d *CDisplay) RequestShow() {
+func (d *CDisplayManager) RequestShow() {
 	d.requests <- ShowRequest
 }
 
-func (d *CDisplay) RequestSync() {
+func (d *CDisplayManager) RequestSync() {
 	d.requests <- SyncRequest
 }
 
-func (d *CDisplay) RequestQuit() {
+func (d *CDisplayManager) RequestQuit() {
 	d.requests <- QuitRequest
 }
 
-func (d *CDisplay) AsyncCall(fn DisplayCallbackFn) error {
+func (d *CDisplayManager) AsyncCall(fn DisplayCallbackFn) error {
 	if !d.running {
 		return fmt.Errorf("application not running")
 	}
@@ -384,7 +384,7 @@ func (d *CDisplay) AsyncCall(fn DisplayCallbackFn) error {
 	return nil
 }
 
-func (d *CDisplay) AwaitCall(fn DisplayCallbackFn) error {
+func (d *CDisplayManager) AwaitCall(fn DisplayCallbackFn) error {
 	if !d.running {
 		return fmt.Errorf("application not running")
 	}
@@ -399,7 +399,7 @@ func (d *CDisplay) AwaitCall(fn DisplayCallbackFn) error {
 	return err
 }
 
-func (d *CDisplay) PostEvent(evt Event) error {
+func (d *CDisplayManager) PostEvent(evt Event) error {
 	if !d.running {
 		return fmt.Errorf("application not running")
 	}
@@ -407,14 +407,14 @@ func (d *CDisplay) PostEvent(evt Event) error {
 	return nil
 }
 
-func (d *CDisplay) pollEventWorker() {
+func (d *CDisplayManager) pollEventWorker() {
 	for d.running {
 		d.process <- d.screen.PollEvent()
 	}
 	d.done <- true
 }
 
-func (d *CDisplay) processEventWorker() {
+func (d *CDisplayManager) processEventWorker() {
 	for d.running {
 		if evt := <-d.process; evt != nil {
 			if f := d.ProcessEvent(evt); f == EVENT_STOP {
@@ -424,7 +424,7 @@ func (d *CDisplay) processEventWorker() {
 		}
 	}
 }
-func (d *CDisplay) screenRequestWorker() {
+func (d *CDisplayManager) screenRequestWorker() {
 	if d.running {
 		if err := d.app.InitUI(d.app.context); err != nil {
 			FatalDF(1, "%v", err)
@@ -454,7 +454,7 @@ func (d *CDisplay) screenRequestWorker() {
 	}
 }
 
-func (d *CDisplay) Run() error {
+func (d *CDisplayManager) Run() error {
 	d.CaptureDisplay(d.ttyPath)
 	d.running = true
 	go d.pollEventWorker()
@@ -486,6 +486,6 @@ func (d *CDisplay) Run() error {
 	}
 }
 
-func (d *CDisplay) IsRunning() bool {
+func (d *CDisplayManager) IsRunning() bool {
 	return d.running
 }

@@ -32,8 +32,8 @@ type Window interface {
 	GetTitle() string
 	SetTitle(title string)
 
-	GetDisplay() DisplayManager
-	SetDisplay(d DisplayManager)
+	GetDisplayManager() DisplayManager
+	SetDisplayManager(d DisplayManager)
 
 	Draw(canvas *Canvas) EventFlag
 	ProcessEvent(evt Event) EventFlag
@@ -74,11 +74,11 @@ func (w *CWindow) GetTitle() string {
 	return w.title
 }
 
-func (w *CWindow) GetDisplay() DisplayManager {
+func (w *CWindow) GetDisplayManager() DisplayManager {
 	return w.display
 }
 
-func (w *CWindow) SetDisplay(d DisplayManager) {
+func (w *CWindow) SetDisplayManager(d DisplayManager) {
 	if f := w.Emit(SignalSetDisplay, w, d); f == EVENT_PASS {
 		w.display = d
 	}
