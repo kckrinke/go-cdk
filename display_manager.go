@@ -44,7 +44,7 @@ const (
 )
 
 func init() {
-	TypesManager.AddType(TypeDisplayManager)
+	_ = TypesManager.AddType(TypeDisplayManager)
 }
 
 type DisplayCallbackFn = func(d DisplayManager) error
@@ -243,7 +243,7 @@ func (d *CDisplay) ActiveWindow() Window {
 
 func (d *CDisplay) SetActiveWindow(w Window) {
 	d.Lock()
-	var id int = -1
+	id := -1
 	var window Window
 	for id, window = range d.windows {
 		if window == w {
@@ -262,7 +262,7 @@ func (d *CDisplay) SetActiveWindow(w Window) {
 func (d *CDisplay) AddWindow(w Window) int {
 	d.Lock()
 	defer d.Unlock()
-	var id int = -1
+	id := -1
 	var window Window
 	for id, window = range d.windows {
 		if window == w {
@@ -352,7 +352,9 @@ func (d *CDisplay) DrawScreen() EventFlag {
 	w, h := d.screen.Size()
 	canvas := NewCanvas(MakePoint2I(0, 0), MakeRectangle(w, h), d.GetTheme())
 	if f := window.Draw(canvas); f == EVENT_STOP {
-		canvas.Render(d.screen)
+		if err := canvas.Render(d.screen); err != nil {
+			d.LogErr(err)
+		}
 		return EVENT_STOP
 	}
 	return EVENT_PASS
@@ -464,7 +466,9 @@ func (d *CDisplay) Run() error {
 			panic(p)
 		}
 	}()
-	d.PostEvent(NewEventResize(d.screen.Size()))
+	if err := d.PostEvent(NewEventResize(d.screen.Size())); err != nil {
+		Error(err)
+	}
 	for {
 		select {
 		case fn := <-d.queue:
@@ -472,7 +476,9 @@ func (d *CDisplay) Run() error {
 				return err
 			}
 		case evt := <-d.events:
-			d.screen.PostEvent(evt)
+			if err := d.screen.PostEvent(evt); err != nil {
+				Error(err)
+			}
 		case <-d.done:
 			d.ReleaseDisplay()
 			return nil

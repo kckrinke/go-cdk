@@ -22,7 +22,7 @@ const (
 )
 
 func init() {
-	TypesManager.AddType(TypeWindow)
+	_ = TypesManager.AddType(TypeWindow)
 }
 
 // Basic window interface

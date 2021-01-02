@@ -23,6 +23,10 @@ const (
 	SignalSignalingInit Signal   = "signaling-init"
 )
 
+func init() {
+	_ = TypesManager.AddType(TypeSignaling)
+}
+
 type Signaling interface {
 	TypeItem
 
@@ -34,10 +38,6 @@ type Signaling interface {
 	PassSignal(signal Signal)
 	IsSignalPassed(signal Signal) bool
 	ResumeSignal(signal Signal)
-}
-
-func init() {
-	TypesManager.AddType(TypeSignaling)
 }
 
 type CSignaling struct {

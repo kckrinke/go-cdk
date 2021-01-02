@@ -22,7 +22,7 @@ const (
 )
 
 func init() {
-	TypesManager.AddType(TypeObject)
+	_ = TypesManager.AddType(TypeObject)
 }
 
 // Basic object type
@@ -66,7 +66,9 @@ func (o *CObject) Init() (already bool) {
 
 func (o *CObject) Destroy() {
 	if f := o.Emit(SignalDestroy, o); f == EVENT_PASS {
-		o.DestroyObject()
+		if err := o.DestroyObject(); err != nil {
+			o.LogErr(err)
+		}
 	}
 }
 
