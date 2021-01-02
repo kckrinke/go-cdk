@@ -18,11 +18,9 @@ vet:
 
 test: vet
 	@echo "testing cdk ..."
-	@go test -cover -coverprofile=coverage.out ./...
-	@echo "test coverage ..."
-	@go tool cover -html=coverage.out
+	@go test -v ./...
 
-coverage:
+cover:
 	@echo "testing cdk (with coverage) ..."
 	@go test -cover -coverprofile=coverage.out ./...
 	@echo "test coverage ..."
