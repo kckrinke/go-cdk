@@ -22,8 +22,8 @@ import (
 	"golang.org/x/text/transform"
 )
 
-func MakeDisplaySimulation(charset string) (DisplaySimulation, error) {
-	s := NewDisplaySimulation(charset)
+func MakeOffscreenDisplay(charset string) (OffscreenDisplay, error) {
+	s := NewOffscreenDisplay(charset)
 	if s == nil {
 		return nil, fmt.Errorf("failed to get simulation screen")
 	}
@@ -33,20 +33,20 @@ func MakeDisplaySimulation(charset string) (DisplaySimulation, error) {
 	return s, nil
 }
 
-// NewDisplaySimulation returns a DisplaySimulation.  Note that
-// DisplaySimulation is also a Display.
-func NewDisplaySimulation(charset string) DisplaySimulation {
+// NewOffscreenDisplay returns a OffscreenDisplay.  Note that
+// OffscreenDisplay is also a Display.
+func NewOffscreenDisplay(charset string) OffscreenDisplay {
 	if charset == "" {
 		charset = "UTF-8"
 	}
-	s := &cDisplaySimulation{charset: charset}
+	s := &COffscreenDisplay{charset: charset}
 	return s
 }
 
-// DisplaySimulation represents a screen simulation.  This is intended to
+// OffscreenDisplay represents a screen simulation.  This is intended to
 // be a superset of normal Screens, but also adds some important interfaces
 // for testing.
-type DisplaySimulation interface {
+type OffscreenDisplay interface {
 	// InjectKeyBytes injects a stream of bytes corresponding to
 	// the native encoding (see charset).  It turns true if the entire
 	// set of bytes were processed and delivered as KeyEvents, false
@@ -72,7 +72,7 @@ type DisplaySimulation interface {
 	// cells, along with the physical width & height.   Note that the
 	// physical contents will be used until the next time SetSize()
 	// is called.
-	GetContents() (cells []SimCell, width int, height int)
+	GetContents() (cells []OffscreenCell, width int, height int)
 
 	// GetCursor returns the cursor details.
 	GetCursor() (x int, y int, visible bool)
@@ -80,9 +80,9 @@ type DisplaySimulation interface {
 	Display
 }
 
-// SimCell represents a simulated screen cell.  The purpose of this
+// OffscreenCell represents a simulated screen cell.  The purpose of this
 // is to track on screen content.
-type SimCell struct {
+type OffscreenCell struct {
 	// Bytes is the actual character bytes.  Normally this is
 	// rune data, but it could be be data in another encoding system.
 	Bytes []byte
@@ -94,7 +94,7 @@ type SimCell struct {
 	Runes []rune
 }
 
-type cDisplaySimulation struct {
+type COffscreenDisplay struct {
 	physw int
 	physh int
 	fini  bool
@@ -102,7 +102,7 @@ type cDisplaySimulation struct {
 	evch  chan Event
 	quit  chan struct{}
 
-	front     []SimCell
+	front     []OffscreenCell
 	back      *CellBuffer
 	clear     bool
 	cursorx   int
@@ -120,11 +120,11 @@ type cDisplaySimulation struct {
 	sync.Mutex
 }
 
-func (s *cDisplaySimulation) Init() error {
+func (s *COffscreenDisplay) Init() error {
 	return s.InitWithTty("")
 }
 
-func (s *cDisplaySimulation) InitWithTty(ttyPath string) error {
+func (s *COffscreenDisplay) InitWithTty(ttyPath string) error {
 	s.evch = make(chan Event, 10)
 	s.quit = make(chan struct{})
 	s.fillchar = 'X'
@@ -144,7 +144,7 @@ func (s *cDisplaySimulation) InitWithTty(ttyPath string) error {
 		return ErrNoCharset
 	}
 
-	s.front = make([]SimCell, s.physw*s.physh)
+	s.front = make([]OffscreenCell, s.physw*s.physh)
 	s.back.Resize(80, 25)
 
 	// default fallbacks
@@ -155,7 +155,7 @@ func (s *cDisplaySimulation) InitWithTty(ttyPath string) error {
 	return nil
 }
 
-func (s *cDisplaySimulation) Close() {
+func (s *COffscreenDisplay) Close() {
 	s.fini = true
 	s.back.Resize(0, 0)
 	if s.quit != nil {
@@ -166,19 +166,19 @@ func (s *cDisplaySimulation) Close() {
 	s.front = nil
 }
 
-func (s *cDisplaySimulation) SetStyle(style Style) {
+func (s *COffscreenDisplay) SetStyle(style Style) {
 	s.style = style
 }
 
-func (s *cDisplaySimulation) Clear() {
+func (s *COffscreenDisplay) Clear() {
 	s.Fill(' ', s.style)
 }
 
-func (s *cDisplaySimulation) Fill(r rune, style Style) {
+func (s *COffscreenDisplay) Fill(r rune, style Style) {
 	s.back.Fill(r, style)
 }
 
-func (s *cDisplaySimulation) SetCell(x, y int, style Style, ch ...rune) {
+func (s *COffscreenDisplay) SetCell(x, y int, style Style, ch ...rune) {
 	if len(ch) > 0 {
 		s.SetContent(x, y, ch[0], ch[1:], style)
 	} else {
@@ -186,11 +186,11 @@ func (s *cDisplaySimulation) SetCell(x, y int, style Style, ch ...rune) {
 	}
 }
 
-func (s *cDisplaySimulation) SetContent(x, y int, mainc rune, combc []rune, st Style) {
+func (s *COffscreenDisplay) SetContent(x, y int, mainc rune, combc []rune, st Style) {
 	s.back.SetContent(x, y, mainc, combc, st)
 }
 
-func (s *cDisplaySimulation) GetContent(x, y int) (rune, []rune, Style, int) {
+func (s *COffscreenDisplay) GetContent(x, y int) (rune, []rune, Style, int) {
 	var mainc rune
 	var combc []rune
 	var style Style
@@ -199,7 +199,7 @@ func (s *cDisplaySimulation) GetContent(x, y int) (rune, []rune, Style, int) {
 	return mainc, combc, style, width
 }
 
-func (s *cDisplaySimulation) drawCell(x, y int) int {
+func (s *COffscreenDisplay) drawCell(x, y int) int {
 
 	mainc, combc, style, width := s.back.GetContent(x, y)
 	if !s.back.Dirty(x, y) {
@@ -260,16 +260,16 @@ func (s *cDisplaySimulation) drawCell(x, y int) int {
 	return width
 }
 
-func (s *cDisplaySimulation) ShowCursor(x, y int) {
+func (s *COffscreenDisplay) ShowCursor(x, y int) {
 	s.cursorx, s.cursory = x, y
 	s.showCursor()
 }
 
-func (s *cDisplaySimulation) HideCursor() {
+func (s *COffscreenDisplay) HideCursor() {
 	s.ShowCursor(-1, -1)
 }
 
-func (s *cDisplaySimulation) showCursor() {
+func (s *COffscreenDisplay) showCursor() {
 
 	x, y := s.cursorx, s.cursory
 	if x < 0 || y < 0 || x >= s.physw || y >= s.physh {
@@ -279,17 +279,17 @@ func (s *cDisplaySimulation) showCursor() {
 	}
 }
 
-func (s *cDisplaySimulation) hideCursor() {
+func (s *COffscreenDisplay) hideCursor() {
 	// does not update cursor position
 	s.cursorvis = false
 }
 
-func (s *cDisplaySimulation) Show() {
+func (s *COffscreenDisplay) Show() {
 	s.resize()
 	s.draw()
 }
 
-func (s *cDisplaySimulation) clearScreen() {
+func (s *COffscreenDisplay) clearScreen() {
 	// We emulate a hardware clear by filling with a specific pattern
 	for i := range s.front {
 		s.front[i].Style = s.fillstyle
@@ -299,7 +299,7 @@ func (s *cDisplaySimulation) clearScreen() {
 	s.clear = false
 }
 
-func (s *cDisplaySimulation) draw() {
+func (s *COffscreenDisplay) draw() {
 	s.hideCursor()
 	if s.clear {
 		s.clearScreen()
@@ -315,28 +315,28 @@ func (s *cDisplaySimulation) draw() {
 	s.showCursor()
 }
 
-func (s *cDisplaySimulation) EnableMouse() {
+func (s *COffscreenDisplay) EnableMouse() {
 	s.mouse = true
 }
 
-func (s *cDisplaySimulation) DisableMouse() {
+func (s *COffscreenDisplay) DisableMouse() {
 	s.mouse = false
 }
 
-func (s *cDisplaySimulation) EnablePaste() {
+func (s *COffscreenDisplay) EnablePaste() {
 	s.paste = true
 }
 
-func (s *cDisplaySimulation) DisablePaste() {
+func (s *COffscreenDisplay) DisablePaste() {
 	s.paste = false
 }
 
-func (s *cDisplaySimulation) Size() (w, h int) {
+func (s *COffscreenDisplay) Size() (w, h int) {
 	w, h = s.back.Size()
 	return
 }
 
-func (s *cDisplaySimulation) resize() {
+func (s *COffscreenDisplay) resize() {
 	w, h := s.physw, s.physh
 	ow, oh := s.back.Size()
 	if w != ow || h != oh {
@@ -346,11 +346,11 @@ func (s *cDisplaySimulation) resize() {
 	}
 }
 
-func (s *cDisplaySimulation) Colors() int {
+func (s *COffscreenDisplay) Colors() int {
 	return 256
 }
 
-func (s *cDisplaySimulation) PollEvent() Event {
+func (s *COffscreenDisplay) PollEvent() Event {
 	select {
 	case <-s.quit:
 		return nil
@@ -359,11 +359,11 @@ func (s *cDisplaySimulation) PollEvent() Event {
 	}
 }
 
-func (s *cDisplaySimulation) PostEventWait(ev Event) {
+func (s *COffscreenDisplay) PostEventWait(ev Event) {
 	s.evch <- ev
 }
 
-func (s *cDisplaySimulation) PostEvent(ev Event) error {
+func (s *COffscreenDisplay) PostEvent(ev Event) error {
 	select {
 	case s.evch <- ev:
 		return nil
@@ -372,17 +372,17 @@ func (s *cDisplaySimulation) PostEvent(ev Event) error {
 	}
 }
 
-func (s *cDisplaySimulation) InjectMouse(x, y int, buttons ButtonMask, mod ModMask) {
+func (s *COffscreenDisplay) InjectMouse(x, y int, buttons ButtonMask, mod ModMask) {
 	ev := NewEventMouse(x, y, buttons, mod)
 	s.PostEvent(ev)
 }
 
-func (s *cDisplaySimulation) InjectKey(key Key, r rune, mod ModMask) {
+func (s *COffscreenDisplay) InjectKey(key Key, r rune, mod ModMask) {
 	ev := NewEventKey(key, r, mod)
 	s.PostEvent(ev)
 }
 
-func (s *cDisplaySimulation) InjectKeyBytes(b []byte) bool {
+func (s *COffscreenDisplay) InjectKeyBytes(b []byte) bool {
 	failed := false
 
 outer:
@@ -430,19 +430,19 @@ outer:
 	return !failed
 }
 
-func (s *cDisplaySimulation) Sync() {
+func (s *COffscreenDisplay) Sync() {
 	s.clear = true
 	s.resize()
 	s.back.Invalidate()
 	s.draw()
 }
 
-func (s *cDisplaySimulation) CharacterSet() string {
+func (s *COffscreenDisplay) CharacterSet() string {
 	return s.charset
 }
 
-func (s *cDisplaySimulation) SetSize(w, h int) {
-	newc := make([]SimCell, w*h)
+func (s *COffscreenDisplay) SetSize(w, h int) {
+	newc := make([]OffscreenCell, w*h)
 	for row := 0; row < h && row < s.physh; row++ {
 		for col := 0; col < w && col < s.physw; col++ {
 			newc[(row*w)+col] = s.front[(row*s.physw)+col]
@@ -454,25 +454,25 @@ func (s *cDisplaySimulation) SetSize(w, h int) {
 	s.back.Resize(w, h)
 }
 
-func (s *cDisplaySimulation) GetContents() ([]SimCell, int, int) {
+func (s *COffscreenDisplay) GetContents() ([]OffscreenCell, int, int) {
 	cells, w, h := s.front, s.physw, s.physh
 	return cells, w, h
 }
 
-func (s *cDisplaySimulation) GetCursor() (int, int, bool) {
+func (s *COffscreenDisplay) GetCursor() (int, int, bool) {
 	x, y, vis := s.cursorx, s.cursory, s.cursorvis
 	return x, y, vis
 }
 
-func (s *cDisplaySimulation) RegisterRuneFallback(r rune, subst string) {
+func (s *COffscreenDisplay) RegisterRuneFallback(r rune, subst string) {
 	s.fallback[r] = subst
 }
 
-func (s *cDisplaySimulation) UnregisterRuneFallback(r rune) {
+func (s *COffscreenDisplay) UnregisterRuneFallback(r rune) {
 	delete(s.fallback, r)
 }
 
-func (s *cDisplaySimulation) CanDisplay(r rune, checkFallbacks bool) bool {
+func (s *COffscreenDisplay) CanDisplay(r rune, checkFallbacks bool) bool {
 	if enc := s.encoder; enc != nil {
 		nb := make([]byte, 6)
 		ob := make([]byte, 6)
@@ -493,21 +493,21 @@ func (s *cDisplaySimulation) CanDisplay(r rune, checkFallbacks bool) bool {
 	return false
 }
 
-func (s *cDisplaySimulation) HasMouse() bool {
+func (s *COffscreenDisplay) HasMouse() bool {
 	return false
 }
 
-func (s *cDisplaySimulation) Resize(int, int, int, int) {}
+func (s *COffscreenDisplay) Resize(int, int, int, int) {}
 
-func (s *cDisplaySimulation) HasKey(Key) bool {
+func (s *COffscreenDisplay) HasKey(Key) bool {
 	return true
 }
 
-func (s *cDisplaySimulation) Beep() error {
+func (s *COffscreenDisplay) Beep() error {
 	return nil
 }
 
-func (t *cDisplaySimulation) Export() *CellBuffer {
+func (t *COffscreenDisplay) Export() *CellBuffer {
 	t.Lock()
 	defer t.Unlock()
 	cb := NewCellBuffer()
@@ -519,7 +519,7 @@ func (t *cDisplaySimulation) Export() *CellBuffer {
 	return cb
 }
 
-func (t *cDisplaySimulation) Import(cb *CellBuffer) {
+func (t *COffscreenDisplay) Import(cb *CellBuffer) {
 	t.Lock()
 	defer t.Unlock()
 	w, h := cb.Size()

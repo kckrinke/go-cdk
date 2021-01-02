@@ -18,8 +18,8 @@ import (
 	"testing"
 )
 
-func mkTestScreen(t *testing.T, charset string) DisplaySimulation {
-	s, err := MakeDisplaySimulation(charset)
+func mkTestScreen(t *testing.T, charset string) OffscreenDisplay {
+	s, err := MakeOffscreenDisplay(charset)
 	if err != nil {
 		t.Fatal(err)
 	}
