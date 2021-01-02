@@ -20,7 +20,11 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/text/transform"
+
+	"github.com/kckrinke/go-cdk/utils"
 )
+
+const OffscreenDisplayTtyPath = "<offscreen>"
 
 func MakeOffscreenDisplay(charset string) (OffscreenDisplay, error) {
 	s := NewOffscreenDisplay(charset)
@@ -124,7 +128,7 @@ func (s *COffscreenDisplay) Init() error {
 	return s.InitWithTty("")
 }
 
-func (s *COffscreenDisplay) InitWithTty(ttyPath string) error {
+func (s *COffscreenDisplay) InitWithTty(_ string) error {
 	s.evch = make(chan Event, 10)
 	s.quit = make(chan struct{})
 	s.fillchar = 'X'

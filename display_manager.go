@@ -27,8 +27,7 @@ import (
 // drawables within viewports render the space
 
 var (
-	DisplayCallQueueCapacity                = 16
-	MainDisplay              DisplayManager = nil
+	DisplayCallQueueCapacity = 16
 )
 
 const (
@@ -54,6 +53,9 @@ type DisplayManager interface {
 
 	GetTitle() string
 	SetTitle(title string)
+
+	GetTtyPath() string
+	SetTtyPath(ttyPath string)
 
 	Display() Display
 	DisplayCaptured() bool
@@ -142,9 +144,19 @@ func (d *CDisplayManager) Init() (already bool) {
 	d.windows = []Window{}
 	d.active = -1
 	d.SetTheme(DefaultColorTheme)
-	MainDisplay = d
 	d.Emit(SignalDisplayInit, d)
 	return false
+}
+
+func (d *CDisplayManager) Destroy() {
+	if d.display != nil {
+		d.display.Close()
+	}
+	close(d.done)
+	close(d.queue)
+	close(d.process)
+	close(d.requests)
+	d.CObject.Destroy()
 }
 
 func (d *CDisplayManager) GetTitle() string {
@@ -153,6 +165,14 @@ func (d *CDisplayManager) GetTitle() string {
 
 func (d *CDisplayManager) SetTitle(title string) {
 	d.title = title
+}
+
+func (d *CDisplayManager) GetTtyPath() string {
+	return d.ttyPath
+}
+
+func (d *CDisplayManager) SetTtyPath(ttyPath string) {
+	d.ttyPath = ttyPath
 }
 
 func (d *CDisplayManager) Display() Display {
@@ -167,12 +187,17 @@ func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
 	d.Lock()
 	defer d.Unlock()
 	var err error
-	d.screen, err = NewDisplay()
-	if err != nil {
-		FatalF("error getting new screen: %v", err)
-	}
-	if err = d.screen.InitWithTty(ttyPath); err != nil {
-		FatalF("error initializing new screen: %v", err)
+	if ttyPath == OffscreenDisplayTtyPath {
+		if d.display, err = MakeOffscreenDisplay(""); err != nil {
+			FatalF("error getting offscreen display: %v", err)
+		}
+	} else {
+		if d.display, err = NewDisplay(); err != nil {
+			FatalF("error getting new display: %v", err)
+		}
+		if err = d.display.InitWithTty(ttyPath); err != nil {
+			FatalF("error initializing new display: %v", err)
+		}
 	}
 	defStyle := StyleDefault.
 		Background(ColorReset).

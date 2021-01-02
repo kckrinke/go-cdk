@@ -20,10 +20,10 @@ import (
 )
 
 var (
-	_cdk__prev_exit    = cdkLogger.ExitFunc
+	_cdk__prev_exit            = cdkLogger.ExitFunc
 	_cdk__fake_exited      int = -1
-	_cdk__last_fake_logged    = ""
-	_cdk__last_fake_exited    = -1
+	_cdk__last_fake_logged     = ""
+	_cdk__last_fake_exited     = -1
 	_cdk__last_fake_error  error
 )
 
@@ -74,4 +74,35 @@ func DoWithFakeIO(fn func() error) (string, bool, error) {
 
 func GetLastFakeIO() (string, int, error) {
 	return _cdk__last_fake_logged, _cdk__last_fake_exited, _cdk__last_fake_error
+}
+
+type AppFn func(app App)
+type DisplayManagerFn func(d DisplayManager)
+
+func WithApp(initFn DisplayInitFn, action AppFn) func() {
+	return func() {
+		app := NewApp(
+			"AppName", "AppUsage", "v0.0.0",
+			"app-tag", "AppTitle",
+			OffscreenDisplayTtyPath,
+			initFn,
+		)
+		defer func() {
+			if app.DisplayManager() != nil {
+				app.DisplayManager().ReleaseDisplay()
+				app.DisplayManager().Destroy()
+			}
+			app = nil
+		}()
+		action(app)
+	}
+}
+
+func WithDisplayManager(action DisplayManagerFn) func() {
+	return func() {
+		d := NewDisplayManager("testing", OffscreenDisplayTtyPath)
+		d.CaptureDisplay(OffscreenDisplayTtyPath)
+		defer d.ReleaseDisplay()
+		action(d)
+	}
 }

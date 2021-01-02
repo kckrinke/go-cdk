@@ -50,7 +50,8 @@ type App interface {
 	Tag() string
 	Title() string
 	Name() string
-	Display() DisplayManager
+	Usage() string
+	DisplayManager() DisplayManager
 	CLI() *cli.App
 	Version() string
 	InitUI(c *cli.Context) error
@@ -113,6 +114,17 @@ func (app *CApp) init() {
 	return
 }
 
+func (app *CApp) Destroy() {
+	if app.display != nil {
+		app.display.ReleaseDisplay()
+		app.display.Destroy()
+	}
+	app.display = nil
+	app.context = nil
+	app.cli = nil
+	app.valid = false
+}
+
 func (app *CApp) GetContext() *cli.Context {
 	return app.context
 }
@@ -129,7 +141,11 @@ func (app *CApp) Name() string {
 	return app.name
 }
 
-func (app *CApp) Display() DisplayManager {
+func (app *CApp) Usage() string {
+	return app.usage
+}
+
+func (app *CApp) DisplayManager() DisplayManager {
 	return app.display
 }
 
@@ -142,7 +158,7 @@ func (app *CApp) Version() string {
 }
 
 func (app *CApp) InitUI(c *cli.Context) error {
-	return app.initFn(app.Display())
+	return app.initFn(app.DisplayManager())
 }
 
 func (app *CApp) AddFlag(f cli.Flag) {
@@ -224,5 +240,5 @@ func (app *CApp) MainActionFn(c *cli.Context) error {
 			}
 		}
 	}
-	return app.Display().Run()
+	return app.DisplayManager().Run()
 }
