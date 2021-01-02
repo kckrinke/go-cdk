@@ -34,6 +34,9 @@ type Object interface {
 	GetTheme() Theme
 	SetTheme(theme Theme)
 
+	SetAllocation(size Rectangle)
+	GetAllocation() Rectangle
+
 	SetProperty(name string, value interface{})
 	GetProperty(name string) interface{}
 	GetPropertyAsBool(name string, def bool) bool
@@ -45,8 +48,8 @@ type Object interface {
 type CObject struct {
 	CSignaling
 
-	theme Theme
-
+	theme      Theme
+	allocation Rectangle
 	properties map[string]interface{}
 }
 
@@ -65,6 +68,15 @@ func (o *CObject) Destroy() {
 	if f := o.Emit(SignalDestroy, o); f == EVENT_PASS {
 		o.DestroyObject()
 	}
+}
+
+func (o *CObject) SetAllocation(size Rectangle) {
+	o.allocation.SetArea(size.W, size.H)
+	o.allocation.Floor(0, 0)
+}
+
+func (w *CObject) GetAllocation() Rectangle {
+	return w.allocation
 }
 
 func (o *CObject) GetTheme() Theme {
