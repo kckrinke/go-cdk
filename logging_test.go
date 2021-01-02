@@ -34,7 +34,7 @@ func TestLoggingInit(t *testing.T) {
 		logged, _, err := DoWithFakeIO(func() error {
 			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
 			ReloadLogging()
-			Errorf("testing")
+			ErrorF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -44,7 +44,7 @@ func TestLoggingInit(t *testing.T) {
 		logged, _, err = DoWithFakeIO(func() error {
 			envy.Set("GO_CDK_LOG_OUTPUT", "stderr")
 			ReloadLogging()
-			Errorf("testing")
+			ErrorF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -61,7 +61,7 @@ func TestLoggingTimestamps(t *testing.T) {
 			envy.Set("GO_CDK_LOG_TIMESTAMPS", "true")
 			envy.Set("GO_CDK_LOG_TIMESTAMP_FORMAT", "2006-01-02")
 			ReloadLogging()
-			Errorf("testing")
+			ErrorF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -80,7 +80,7 @@ func TestLoggingFormatter(t *testing.T) {
 			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
 			envy.Set("GO_CDK_LOG_FORMAT", "json")
 			ReloadLogging()
-			Errorf("testing")
+			ErrorF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -99,7 +99,7 @@ func TestLoggingFormatter(t *testing.T) {
 			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
 			envy.Set("GO_CDK_LOG_FORMAT", "text")
 			ReloadLogging()
-			Errorf("testing")
+			ErrorF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -116,7 +116,7 @@ func TestLoggingLevel(t *testing.T) {
 			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
 			envy.Set("GO_CDK_LOG_LEVEL", "trace")
 			ReloadLogging()
-			Tracef("testing")
+			TraceF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -127,8 +127,8 @@ func TestLoggingLevel(t *testing.T) {
 			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
 			envy.Set("GO_CDK_LOG_LEVEL", "debug")
 			ReloadLogging()
-			Tracef("testing")
-			Debugf("testing")
+			TraceF("testing")
+			DebugF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -139,9 +139,9 @@ func TestLoggingLevel(t *testing.T) {
 			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
 			envy.Set("GO_CDK_LOG_LEVEL", "info")
 			ReloadLogging()
-			Tracef("testing")
-			Debugf("testing")
-			Infof("testing")
+			TraceF("testing")
+			DebugF("testing")
+			InfoF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -152,10 +152,10 @@ func TestLoggingLevel(t *testing.T) {
 			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
 			envy.Set("GO_CDK_LOG_LEVEL", "warn")
 			ReloadLogging()
-			Tracef("testing")
-			Debugf("testing")
-			Infof("testing")
-			Warnf("testing")
+			TraceF("testing")
+			DebugF("testing")
+			InfoF("testing")
+			WarnF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -166,11 +166,11 @@ func TestLoggingLevel(t *testing.T) {
 			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
 			envy.Set("GO_CDK_LOG_LEVEL", "error")
 			ReloadLogging()
-			Tracef("testing")
-			Debugf("testing")
-			Infof("testing")
-			Warnf("testing")
-			Errorf("testing")
+			TraceF("testing")
+			DebugF("testing")
+			InfoF("testing")
+			WarnF("testing")
+			ErrorF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -184,7 +184,7 @@ func TestLoggingLevel(t *testing.T) {
 			envy.Set("GO_CDK_LOG_LEVEL", "error")
 			ReloadLogging()
 			_cdk_logger.ExitFunc = func(int) { fatal = true }
-			Fatalf("testing")
+			FatalF("testing")
 			return nil
 		})
 		So(err, ShouldBeNil)
@@ -209,7 +209,7 @@ func TestLoggingToFiles(t *testing.T) {
 		envy.Set("GO_CDK_LOG_FILE", DEFAULT_LOG_PATH)
 		ReloadLogging()
 		So(_cdk_logfh, ShouldNotBeNil)
-		Errorf("testing")
+		ErrorF("testing")
 		found_file := false
 		if _, err := os.Stat(DEFAULT_LOG_PATH); err == nil {
 			found_file = true
@@ -223,7 +223,7 @@ func TestLoggingToFiles(t *testing.T) {
 		envy.Set("GO_CDK_LOG_FILE", "/dev/null")
 		err = ReloadLogging()
 		So(err, ShouldBeNil)
-		Errorf("testing")
+		ErrorF("testing")
 		found_file = false
 		if _, err := os.Stat(DEFAULT_LOG_PATH); err == nil {
 			found_file = true
@@ -233,7 +233,7 @@ func TestLoggingToFiles(t *testing.T) {
 		os.Remove(tmp_log)
 		envy.Set("GO_CDK_LOG_FILE", tmp_log)
 		ReloadLogging()
-		Errorf("testing")
+		ErrorF("testing")
 		found_file = false
 		if _, err := os.Stat(tmp_log); err == nil {
 			found_file = true

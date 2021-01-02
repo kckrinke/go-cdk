@@ -145,7 +145,7 @@ func (c *Canvas) DrawText(pos Point2I, size Rectangle, justify Justification, si
 	if markup {
 		m, err := NewMarkup(text, style)
 		if err != nil {
-			Fataldf(1, "failed to parse markup: %v", err)
+			FatalDF(1, "failed to parse markup: %v", err)
 		}
 		tb = m.TextBuffer()
 	} else {
@@ -157,7 +157,7 @@ func (c *Canvas) DrawText(pos Point2I, size Rectangle, justify Justification, si
 	v := NewCanvas(pos, size, c.theme)
 	tb.Draw(v, singleLineMode, wrap, justify, ALIGN_TOP)
 	if err := c.Composite(v); err != nil {
-		Errorf("composite error: %v", err)
+		ErrorF("composite error: %v", err)
 	}
 }
 
@@ -166,7 +166,7 @@ func (c *Canvas) DrawSingleLineText(pos Point2I, maxChars int, justify Justifica
 }
 
 func (c *Canvas) DrawLine(pos Point2I, length int, orient Orientation, style Style) {
-	Tracef("c.Line(%v,%v,%v,%v)", pos, length, orient, style)
+	TraceF("c.Line(%v,%v,%v,%v)", pos, length, orient, style)
 	switch orient {
 	case ORIENTATION_HORIZONTAL:
 		c.DrawHorizontalLine(pos, length, style)
@@ -206,7 +206,7 @@ func (c *Canvas) DebugBox(color Color, format string, argv ...interface{}) {
 }
 
 func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme Theme) {
-	Tracedf(1, "c.Box(%v,%v,%v,%v)", pos, size, border, theme)
+	TraceDF(1, "c.Box(%v,%v,%v,%v)", pos, size, border, theme)
 	endx := pos.X + size.W - 1
 	endy := pos.Y + size.H - 1
 	// for each column
@@ -279,12 +279,12 @@ func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme 
 /* Draw Features */
 
 func (c *Canvas) Fill(s Theme) {
-	Tracef("c.fill(%v,%v)", s)
+	TraceF("c.fill(%v,%v)", s)
 	c.Box(MakePoint2I(0, 0), c.size, false, true, s)
 }
 
 func (c *Canvas) FillBorder(dim bool, border bool) {
-	Tracef("c.FillBorder(%v,%v): origin=%v, size=%v", dim, border, c.origin, c.size)
+	TraceF("c.FillBorder(%v,%v): origin=%v, size=%v", dim, border, c.origin, c.size)
 	s := c.theme
 	if dim {
 		s.Normal = s.Normal.Dim(true)
@@ -300,7 +300,7 @@ func (c *Canvas) FillBorder(dim bool, border bool) {
 }
 
 func (c *Canvas) FillBorderTitle(dim bool, title string, justify Justification) {
-	Tracef("c.FillBorderTitle(%v)", dim)
+	TraceF("c.FillBorderTitle(%v)", dim)
 	s := c.theme
 	if dim {
 		s.Normal = s.Normal.Dim(true)

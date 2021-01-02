@@ -68,147 +68,152 @@ const (
 )
 
 func ReloadLogging() error {
-	disable_timestamp := true
+	disableTimestamp := true
 	if v := envy.Get("GO_CDK_LOG_TIMESTAMPS", "false"); v == "true" {
-		disable_timestamp = false
+		disableTimestamp = false
 	}
-	timestamp_format := DefaultLogTimestampFormat
+	timestampFormat := DefaultLogTimestampFormat
 	if v := envy.Get("GO_CDK_LOG_TIMESTAMP_FORMAT", ""); v != "" {
-		timestamp_format = v
+		timestampFormat = v
 	}
 	switch envy.Get("GO_CDK_LOG_FULL_PATHS", "false") {
 	case "true":
-		_cdk_log_fullpaths = true
+		cdkLogFullPaths = true
 	default:
-		_cdk_log_fullpaths = false
+		cdkLogFullPaths = false
 	}
 	switch envy.Get("GO_CDK_LOG_FORMAT", "pretty") {
-	case FORMAT_JSON:
-		_cdk_logger.SetFormatter(&log.JSONFormatter{
-			TimestampFormat:  timestamp_format,
-			DisableTimestamp: disable_timestamp,
+	case FormatJson:
+		cdkLogger.SetFormatter(&log.JSONFormatter{
+			TimestampFormat:  timestampFormat,
+			DisableTimestamp: disableTimestamp,
 		})
-	case FORMAT_TEXT:
-		_cdk_logger.SetFormatter(&log.TextFormatter{
-			TimestampFormat:  timestamp_format,
-			DisableTimestamp: disable_timestamp,
+	case FormatText:
+		cdkLogger.SetFormatter(&log.TextFormatter{
+			TimestampFormat:  timestampFormat,
+			DisableTimestamp: disableTimestamp,
 			DisableSorting:   true,
 			DisableColors:    true,
 			FullTimestamp:    true,
 		})
-	case FORMAT_PRETTY:
+	case FormatPretty:
 		fallthrough
 	default:
-		_cdk_logger.SetFormatter(&prefixed.TextFormatter{
-			DisableTimestamp: disable_timestamp,
-			TimestampFormat:  timestamp_format,
+		cdkLogger.SetFormatter(&prefixed.TextFormatter{
+			DisableTimestamp: disableTimestamp,
+			TimestampFormat:  timestampFormat,
 			ForceFormatting:  true,
 			FullTimestamp:    true,
 			DisableSorting:   true,
 			DisableColors:    true,
 		})
 	}
-	switch envy.Get("GO_CDK_LOG_LEVEL", LEVEL_ERROR) {
-	case LEVEL_TRACE:
-		_cdk_logger.SetLevel(log.TraceLevel)
-	case LEVEL_DEBUG:
-		_cdk_logger.SetLevel(log.DebugLevel)
-	case LEVEL_INFO:
-		_cdk_logger.SetLevel(log.InfoLevel)
-	case LEVEL_WARN:
-		_cdk_logger.SetLevel(log.WarnLevel)
-	case LEVEL_ERROR:
+	switch envy.Get("GO_CDK_LOG_LEVEL", LevelError) {
+	case LevelTrace:
+		cdkLogger.SetLevel(log.TraceLevel)
+	case LevelDebug:
+		cdkLogger.SetLevel(log.DebugLevel)
+	case LevelInfo:
+		cdkLogger.SetLevel(log.InfoLevel)
+	case LevelWarn:
+		cdkLogger.SetLevel(log.WarnLevel)
+	case LevelError:
 		fallthrough
 	default:
-		_cdk_logger.SetLevel(log.ErrorLevel)
+		cdkLogger.SetLevel(log.ErrorLevel)
 	}
-	switch envy.Get("GO_CDK_LOG_OUTPUT", OUTPUT_FILE) {
-	case OUTPUT_STDOUT:
-		_cdk_logger.SetOutput(os.Stdout)
-	case OUTPUT_STDERR:
-		_cdk_logger.SetOutput(os.Stderr)
-	case OUTPUT_FILE:
+	switch envy.Get("GO_CDK_LOG_OUTPUT", OutputFile) {
+	case OutputStdout:
+		cdkLogger.SetOutput(os.Stdout)
+	case OutputStderr:
+		cdkLogger.SetOutput(os.Stderr)
+	case OutputFile:
 		fallthrough
 	default:
-		StopLogging()
-		if logfile := envy.Get("GO_CDK_LOG_FILE", DEFAULT_LOG_PATH); !utils.IsEmpty(logfile) && logfile != "/dev/null" {
-			logfh, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		if err := StopLogging(); err != nil {
+			Error(err)
+		}
+		if logfile := envy.Get("GO_CDK_LOG_FILE", DefaultLogPath); !utils.IsEmpty(logfile) && logfile != "/dev/null" {
+			logFH, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 			if err != nil {
 				return err
 			}
-			_cdk_logfh = logfh
-			_cdk_logger.SetOutput(_cdk_logfh)
+			cdkLogFH = logFH
+			cdkLogger.SetOutput(cdkLogFH)
 		} else {
-			_cdk_logger.SetOutput(ioutil.Discard)
+			cdkLogger.SetOutput(ioutil.Discard)
 		}
 	}
 	return nil
 }
 
 func StopLogging() error {
-	if _cdk_logfh != nil {
-		_cdk_logfh.Close()
-		_cdk_logfh = nil
+	if cdkLogFH != nil {
+		if err := cdkLogFH.Close(); err != nil {
+			return err
+		}
+		cdkLogFH = nil
 	}
 	return nil
 }
 
-func get_log_prefix(depth int) string {
+func getLogPrefix(depth int) string {
 	depth += 1
 	if function, file, line, ok := runtime.Caller(depth); ok {
-		full_name := runtime.FuncForPC(function).Name()
-		func_name := full_name
-		if i := strings.LastIndex(full_name, "."); i > -1 {
-			func_name = full_name[i+1:]
+		fullName := runtime.FuncForPC(function).Name()
+		funcName := fullName
+		if i := strings.LastIndex(fullName, "."); i > -1 {
+			funcName = fullName[i+1:]
 		}
-		func_name = utils.PadLeft(func_name, " ", 12)
-		pack_name := full_name
-		if i := strings.Index(full_name, "."); i > -1 {
-			pack_name = full_name[:i+1]
+		funcName = utils.PadLeft(funcName, " ", 12)
+		packName := fullName
+		if i := strings.Index(fullName, "."); i > -1 {
+			packName = fullName[:i+1]
 		}
 		path := file
-		if !_cdk_log_fullpaths {
-			if i := strings.Index(path, pack_name); i > -1 {
+		if !cdkLogFullPaths {
+			if i := strings.Index(path, packName); i > -1 {
 				path = file[i:]
 			}
 		}
-		return fmt.Sprintf("%s:%d	%s", path, line, func_name)
+		return fmt.Sprintf("%s:%d	%s", path, line, funcName)
 	}
 	return "(missing caller metadata)"
 }
 
-func Tracef(format string, argv ...interface{}) { Tracedf(1, format, argv...) }
-func Tracedf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Tracef(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+func TraceF(format string, argv ...interface{}) { TraceDF(1, format, argv...) }
+func TraceDF(depth int, format string, argv ...interface{}) {
+	cdkLogger.Tracef(utils.NLSprintf("%s	%s", getLogPrefix(depth+1), format), argv...)
 }
 
-func Debugf(format string, argv ...interface{}) { Debugdf(1, format, argv...) }
-func Debugdf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Debugf(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+func DebugF(format string, argv ...interface{}) { DebugDF(1, format, argv...) }
+func DebugDF(depth int, format string, argv ...interface{}) {
+	cdkLogger.Debugf(utils.NLSprintf("%s	%s", getLogPrefix(depth+1), format), argv...)
 }
 
-func Infof(format string, argv ...interface{}) { Infodf(1, format, argv...) }
-func Infodf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Infof(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+func InfoF(format string, argv ...interface{}) { InfoDF(1, format, argv...) }
+func InfoDF(depth int, format string, argv ...interface{}) {
+	cdkLogger.Infof(utils.NLSprintf("%s	%s", getLogPrefix(depth+1), format), argv...)
 }
 
-func Warnf(format string, argv ...interface{}) { Warndf(1, format, argv...) }
-func Warndf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Warnf(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+func WarnF(format string, argv ...interface{}) { WarnDF(1, format, argv...) }
+func WarnDF(depth int, format string, argv ...interface{}) {
+	cdkLogger.Warnf(utils.NLSprintf("%s	%s", getLogPrefix(depth+1), format), argv...)
 }
 
-func Error(err error)                           { Errordf(1, err.Error()) }
-func Errorf(format string, argv ...interface{}) { Errordf(1, format, argv...) }
-func Errordf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Errorf(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+func Error(err error)                           { ErrorDF(1, err.Error()) }
+func ErrorF(format string, argv ...interface{}) { ErrorDF(1, format, argv...) }
+func ErrorDF(depth int, format string, argv ...interface{}) {
+	cdkLogger.Errorf(utils.NLSprintf("%s	%s", getLogPrefix(depth+1), format), argv...)
 }
 
-func Fatal(err error)                           { Fataldf(1, err.Error()) }
-func Fatalf(format string, argv ...interface{}) { Fataldf(1, format, argv...) }
-func Fataldf(depth int, format string, argv ...interface{}) {
-	_cdk_logger.Fatalf(utils.NLSprintf("%s	%s", get_log_prefix(depth+1), format), argv...)
+func Fatal(err error)                           { FatalDF(1, err.Error()) }
+func FatalF(format string, argv ...interface{}) { FatalDF(1, format, argv...) }
+func FatalDF(depth int, format string, argv ...interface{}) {
+	cdkLogger.Fatalf(utils.NLSprintf("%s	%s", getLogPrefix(depth+1), format), argv...)
 }
 
 func Exit(code int) {
-	_cdk_logger.Exit(code)
+	InfoDF(1, "exiting with code: %d", code)
+	cdkLogger.Exit(code)
 }

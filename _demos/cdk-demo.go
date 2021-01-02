@@ -54,7 +54,7 @@ func main() {
 		"CDK Demo",
 		"/dev/tty",
 		func(d cdk.DisplayManager) error {
-			cdk.Debugf("cdk-demo initFn hit")
+			cdk.DebugF("cdk-demo initFn hit")
 			d.CaptureCtrlC()
 			w := &CdkDemoWindow{}
 			w.Init()

@@ -219,7 +219,7 @@ func (app *CApp) MainActionFn(c *cli.Context) error {
 				p = nil
 			}
 			if p != nil {
-				Debugf("starting profile of \"%v\" to path: %v", v, profilePath)
+				DebugF("starting profile of \"%v\" to path: %v", v, profilePath)
 				defer profile.Start(p, profile.ProfilePath(profilePath)).Stop()
 			}
 		}

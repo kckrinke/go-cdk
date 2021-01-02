@@ -127,7 +127,7 @@ func (d *CDisplay) Init() (already bool) {
 	}
 	check := TypesManager.GetTypeItems(TypeDisplayManager)
 	if len(check) > 0 {
-		Fatalf("only one display permitted at a time")
+		FatalF("only one display permitted at a time")
 	}
 	d.CObject.Init()
 
@@ -169,10 +169,10 @@ func (d *CDisplay) CaptureDisplay(ttyPath string) {
 	var err error
 	d.screen, err = NewDisplay()
 	if err != nil {
-		Fatalf("error getting new screen: %v", err)
+		FatalF("error getting new screen: %v", err)
 	}
 	if err = d.screen.InitWithTty(ttyPath); err != nil {
-		Fatalf("error initializing new screen: %v", err)
+		FatalF("error initializing new screen: %v", err)
 	}
 	defStyle := StyleDefault.
 		Background(ColorReset).
@@ -425,7 +425,7 @@ func (d *CDisplay) processEventWorker() {
 func (d *CDisplay) screenRequestWorker() {
 	if d.running {
 		if err := d.app.InitUI(d.app.context); err != nil {
-			Fataldf(1, "%v", err)
+			FatalDF(1, "%v", err)
 		}
 		d.RequestDraw()
 		d.RequestSync()

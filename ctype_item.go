@@ -74,12 +74,12 @@ func (o *CTypeItem) Init() (already bool) {
 		return true
 	}
 	if o.typeTag == TypeNil {
-		Fataldf(1, "invalid object type: nil")
+		FatalDF(1, "invalid object type: nil")
 	}
 	var err error
 	o.id, err = TypesManager.AddTypeItem(o.typeTag, o)
 	if err != nil {
-		Fataldf(1, "failed to add self to \"%v\" type: %v", o.typeTag, err)
+		FatalDF(1, "failed to add self to \"%v\" type: %v", o.typeTag, err)
 	}
 	o.valid = true
 	return false
@@ -133,25 +133,25 @@ func (o *CTypeItem) LogTag() string {
 }
 
 func (o *CTypeItem) LogTrace(format string, argv ...interface{}) {
-	Tracedf(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
+	TraceDF(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
 }
 
 func (o *CTypeItem) LogDebug(format string, argv ...interface{}) {
-	Debugdf(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
+	DebugDF(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
 }
 
 func (o *CTypeItem) LogInfo(format string, argv ...interface{}) {
-	Infodf(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
+	InfoDF(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
 }
 
 func (o *CTypeItem) LogWarn(format string, argv ...interface{}) {
-	Warndf(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
+	WarnDF(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
 }
 
 func (o *CTypeItem) LogError(format string, argv ...interface{}) {
-	Errordf(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
+	ErrorDF(1, fmt.Sprintf("%s %s", o.LogTag(), format), argv...)
 }
 
 func (o *CTypeItem) LogErr(err error) {
-	Errordf(1, err.Error())
+	ErrorDF(1, err.Error())
 }

@@ -84,7 +84,7 @@ func (cb *CellBuffer) Size() (w, h int) {
 
 // Invalidate marks all characters within the buffer as dirty.
 func (cb *CellBuffer) Invalidate() {
-	Tracef("invalidate called")
+	TraceF("invalidate called")
 	cb.Lock()
 	defer cb.Unlock()
 	for i := range cb.cells {
@@ -149,7 +149,7 @@ func (cb *CellBuffer) SetDirty(x, y int, dirty bool) {
 // while preserving the original contents.  The cells will be invalidated
 // so that they can be redrawn.
 func (cb *CellBuffer) Resize(w, h int) {
-	Debugf("w=%d, h=%d", w, h)
+	DebugF("w=%d, h=%d", w, h)
 	if cb.h == h && cb.w == w {
 		return
 	}
@@ -188,7 +188,7 @@ func (cb *CellBuffer) Resize(w, h int) {
 // and style.  Normally choose ' ' to clear the screen.  This API doesn't
 // support combining characters, or characters with a width larger than one.
 func (cb *CellBuffer) Fill(r rune, style Style) {
-	Tracef("rune=%v, style=%v", r, style)
+	TraceF("rune=%v, style=%v", r, style)
 	cb.Lock()
 	defer cb.Unlock()
 	for _, c := range cb.cells {
