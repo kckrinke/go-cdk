@@ -102,6 +102,28 @@ func (c *Canvas) GetFill() rune {
 	return c.fill
 }
 
+func (c *Canvas) Equals(onlyDirty bool, v *Canvas) bool {
+	if c.origin.Equals2I(v.origin) {
+		if c.size.EqualsR(v.size) {
+			for x := 0; x < v.size.W; x++ {
+				for y := 0; y < v.size.H; y++ {
+					ca := c.buffer.Cell(x, y)
+					va := v.buffer.Cell(x, y)
+					if !onlyDirty || (onlyDirty && va.dirty) {
+						if ca.style != va.style {
+							return false
+						}
+						if ca.char != va.char {
+							return false
+						}
+					}
+				}
+			}
+		}
+	}
+	return true
+}
+
 func (c *Canvas) Composite(v *Canvas) error {
 	for x := 0; x < v.buffer.size.W; x++ {
 		for y := 0; y < v.buffer.size.H; y++ {
@@ -133,6 +155,19 @@ func (c *Canvas) Render(screen Display) error {
 		}
 	}
 	return nil
+}
+
+type CanvasForEachFn = func(x, y int, cell *CTextCell) EventFlag
+
+func (c *Canvas) ForEach(fn CanvasForEachFn) EventFlag {
+	for x := 0; x < c.buffer.size.W; x++ {
+		for y := 0; y < c.buffer.size.H; y++ {
+			if f := fn(x, y, c.buffer.Cell(x, y)); f == EVENT_STOP {
+				return EVENT_STOP
+			}
+		}
+	}
+	return EVENT_PASS
 }
 
 /* Draw Primitives */

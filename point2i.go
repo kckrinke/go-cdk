@@ -27,6 +27,14 @@ func (p Point2I) String() string {
 	return fmt.Sprintf("x:%v,y:%v", p.X, p.Y)
 }
 
+func (p Point2I) Equals(x, y int) bool {
+	return p.X == x && p.Y == y
+}
+
+func (p Point2I) Equals2I(o Point2I) bool {
+	return p.X == o.X && p.Y == o.Y
+}
+
 func (p *Point2I) SetPoint(x, y int) {
 	p.X = x
 	p.Y = y

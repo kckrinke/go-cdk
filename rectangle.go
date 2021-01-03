@@ -37,6 +37,14 @@ func (r Rectangle) String() string {
 	return fmt.Sprintf("w:%v,h:%v", r.W, r.H)
 }
 
+func (r Rectangle) Equals(w, h int) bool {
+	return r.W == w && r.H == h
+}
+
+func (r Rectangle) EqualsR(o Rectangle) bool {
+	return r.W == o.W && r.H == o.H
+}
+
 func (r Rectangle) Volume() int {
 	return r.W * r.H
 }
