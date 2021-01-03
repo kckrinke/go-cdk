@@ -6,10 +6,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func makesNoContent(d DisplayManager) error {
-	return nil
-}
-
 func TestCdk(t *testing.T) {
 	Convey("Making a new app instance", t, func() {
 		Convey("validating factory", func() {
@@ -17,7 +13,7 @@ func TestCdk(t *testing.T) {
 				"AppName", "AppUsage", "v0.0.0",
 				"app-tag", "AppTitle",
 				OffscreenDisplayTtyPath,
-				makesNoContent,
+				TestingMakesNoContent,
 			)
 			So(app, ShouldNotBeNil)
 			So(app.Name(), ShouldEqual, "AppName")
@@ -30,7 +26,7 @@ func TestCdk(t *testing.T) {
 			app.Destroy()
 		})
 		Convey("with no content", WithApp(
-			makesNoContent,
+			TestingMakesNoContent,
 			func(d App) {
 				// do tests here?
 				So(d.DisplayManager(), ShouldNotBeNil)

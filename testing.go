@@ -106,3 +106,13 @@ func WithDisplayManager(action DisplayManagerFn) func() {
 		action(d)
 	}
 }
+
+func TestingMakesNoContent(d DisplayManager) error {
+	return nil
+}
+
+func TestingMakesActiveWindow(d DisplayManager) error {
+	w := NewOffscreenWindow(d.GetTitle())
+	d.SetActiveWindow(w)
+	return nil
+}
