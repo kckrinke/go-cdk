@@ -34,9 +34,6 @@ type Object interface {
 	GetTheme() Theme
 	SetTheme(theme Theme)
 
-	SetAllocation(size Rectangle)
-	GetAllocation() Rectangle
-
 	SetProperty(name string, value interface{})
 	GetProperty(name string) interface{}
 	GetPropertyAsBool(name string, def bool) bool
@@ -49,7 +46,6 @@ type CObject struct {
 	CSignaling
 
 	theme      Theme
-	allocation Rectangle
 	properties map[string]interface{}
 }
 
@@ -59,7 +55,6 @@ func (o *CObject) Init() (already bool) {
 	}
 	o.CSignaling.Init()
 	o.theme = DefaultColorTheme
-	o.allocation = MakeRectangle(0, 0)
 	o.properties = make(map[string]interface{})
 	o.Emit(SignalObjectInit, o)
 	return false
@@ -71,15 +66,6 @@ func (o *CObject) Destroy() {
 			o.LogErr(err)
 		}
 	}
-}
-
-func (o *CObject) SetAllocation(size Rectangle) {
-	o.allocation.SetArea(size.W, size.H)
-	o.allocation.Floor(0, 0)
-}
-
-func (o *CObject) GetAllocation() Rectangle {
-	return o.allocation
 }
 
 func (o *CObject) GetTheme() Theme {

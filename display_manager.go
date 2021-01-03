@@ -347,7 +347,6 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 		return d.Emit(SignalEventMouse, d, e)
 	case *EventResize:
 		if w := d.ActiveWindow(); w != nil {
-			w.SetAllocation(MakeRectangle(d.Display().Size()))
 			if f := w.ProcessEvent(evt); f == EVENT_STOP {
 				return EVENT_STOP
 			}
