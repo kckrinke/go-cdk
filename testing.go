@@ -94,7 +94,11 @@ func WithApp(initFn DisplayInitFn, action AppFn) func() {
 			}
 			app = nil
 		}()
-		action(app)
+		if err := app.InitUI(); err != nil {
+			Error(err)
+		} else {
+			action(app)
+		}
 	}
 }
 

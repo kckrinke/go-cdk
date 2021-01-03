@@ -54,7 +54,7 @@ type App interface {
 	DisplayManager() DisplayManager
 	CLI() *cli.App
 	Version() string
-	InitUI(c *cli.Context) error
+	InitUI() error
 	AddFlag(f cli.Flag)
 	AddCommand(c *cli.Command)
 	Run(args []string) error
@@ -157,7 +157,7 @@ func (app *CApp) Version() string {
 	return app.version
 }
 
-func (app *CApp) InitUI(c *cli.Context) error {
+func (app *CApp) InitUI() error {
 	return app.initFn(app.DisplayManager())
 }
 

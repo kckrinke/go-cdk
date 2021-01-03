@@ -451,7 +451,7 @@ func (d *CDisplayManager) processEventWorker() {
 }
 func (d *CDisplayManager) screenRequestWorker() {
 	if d.running {
-		if err := d.app.InitUI(d.app.context); err != nil {
+		if err := d.app.InitUI(); err != nil {
 			FatalDF(1, "%v", err)
 		}
 		d.RequestDraw()
