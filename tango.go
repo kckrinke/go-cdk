@@ -79,10 +79,8 @@ func (m *Tango) Clean() string {
 }
 
 func (m *Tango) TextBuffer() *CTextBuffer {
-	tb := &CTextBuffer{
-		lines: m.lines,
-		style: m.style,
-	}
+	tb := NewEmptyTextBuffer(m.style)
+	tb.lines = append(tb.lines, m.lines...)
 	return tb
 }
 
@@ -99,9 +97,9 @@ func (m *Tango) init() error {
 	cstyle := m.style
 	pstyle := m.style
 
+	isWord := false
 	var err error
 	var token xml.Token
-	look := true
 	for {
 		token, err = parser.Token()
 		if err != nil {
@@ -138,45 +136,53 @@ func (m *Tango) init() error {
 				cstyle = pstyle
 			}
 		case xml.CharData:
-			content := xml.CharData(t)
+			if lid >= len(m.lines) {
+				m.lines = append(m.lines, NewEmptyWordLine())
+			}
+			content := xml.CharData(t) // CharData []byte
 			for idx := 0; idx < len(content); idx++ {
 				v, _ := utf8.DecodeRune(content[idx:])
 				switch v {
 				case '\t':
+					if isWord {
+						isWord = false
+					}
+					wc := NewEmptyWordCell()
 					for i := 0; i < TabStops; i++ {
 						m.clean += " "
 						m.marked = append(m.marked, NewRuneCell(' ', cstyle))
+						wc.AppendRune(' ', cstyle)
 					}
-					if !look {
-						wid++
-					}
-					look = true
+					m.lines[lid].AppendWordCell(wc)
+					wid = len(m.lines[lid].words) - 1
+				case '\n':
+					m.clean += "\n"
+					m.lines = append(
+						m.lines,
+						NewEmptyWordLine(),
+					)
+					lid = len(m.lines) - 1
+					wid = 0
 				default:
 					m.clean += string(v)
 					m.marked = append(m.marked, NewRuneCell(v, cstyle))
-					if lid >= len(m.lines) {
-						m.lines = append(m.lines, NewWordLine("", cstyle))
-					}
-					if v == '\n' {
-						look = true
-						wid = 0 // CR
-						lid++   // LF
-					} else if unicode.IsSpace(v) {
-						if !look {
-							wid++
+					if unicode.IsSpace(v) {
+						if isWord || m.lines[lid].Len() == 0 {
+							isWord = false
+							m.lines[lid].AppendWordCell(NewEmptyWordCell())
+							wid = m.lines[lid].Len() - 1
 						}
-						look = true
-					} else if !unicode.IsSpace(v) {
-						if wid >= len(m.lines[lid].words) {
-							word, _ := NewWordCell("", cstyle)
-							m.lines[lid].words = append(m.lines[lid].words, word)
+					} else {
+						if !isWord || m.lines[lid].Len() == 0 {
+							isWord = true
+							m.lines[lid].AppendWordCell(NewEmptyWordCell())
+							wid = m.lines[lid].Len() - 1
 						}
-						m.lines[lid].words[wid].characters = append(
-							m.lines[lid].words[wid].characters,
-							NewRuneCell(v, cstyle),
-						)
-						look = false
 					}
+					if wid >= len(m.lines[lid].words) {
+						m.lines[lid].words = append(m.lines[lid].words, NewEmptyWordCell())
+					}
+					m.lines[lid].words[wid].AppendRune(v, cstyle)
 				} // switch v
 			} // for idx len(content)
 		case xml.Comment:

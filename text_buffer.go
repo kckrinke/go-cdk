@@ -17,8 +17,6 @@ package cdk
 import (
 	"strings"
 	"sync"
-
-	"github.com/kckrinke/go-cdk/utils"
 )
 
 var (
@@ -27,7 +25,7 @@ var (
 
 type TextBuffer interface {
 	Set(input string, style Style)
-	LetterCount(spaces bool) int
+	Len() (count int)
 	Draw(canvas *Canvas, singleLineMode bool, wordWrap WrapMode, justify Justification, align VerticalAlignment) EventFlag
 }
 
@@ -38,7 +36,14 @@ type CTextBuffer struct {
 	sync.Mutex
 }
 
-func NewTextBuffer(input string, style Style) TextBuffer {
+func NewEmptyTextBuffer(style Style) *CTextBuffer {
+	return &CTextBuffer{
+		lines: make([]*WordLine, 0),
+		style: style,
+	}
+}
+
+func NewTextBuffer(input string, style Style) *CTextBuffer {
 	tb := &CTextBuffer{
 		lines: make([]*WordLine, 0),
 		style: style,
@@ -54,54 +59,46 @@ func (b *CTextBuffer) Set(input string, style Style) {
 	}
 }
 
-func (b *CTextBuffer) LetterCount(spaces bool) int {
-	c := 0
-	for i, word := range b.lines {
-		if i != 0 && spaces {
-			c += 1
-		}
-		c += word.LetterCount(spaces)
+func (b *CTextBuffer) Len() (count int) {
+	for _, line := range b.lines {
+		count += line.CharacterCount()
 	}
-	return c
+	return
 }
 
-func (b *CTextBuffer) getPosAtChar(atLine, n int) (lid, wid, cid int) {
-	c := 0
-	lid = atLine
-	var word *WordCell
-	for wid, word = range b.lines[atLine].words {
-		for cid, _ = range word.characters {
-			if c == n {
-				return
-			}
-			c++
-		}
+func (b *CTextBuffer) LenWords() (wordCount int) {
+	for _, line := range b.lines {
+		wordCount += line.WordCount()
 	}
 	return
 }
 
 func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, justify Justification, align VerticalAlignment) EventFlag {
+	if len(b.lines) == 0 {
+		// non-operation
+		return EVENT_PASS
+	}
 	if !singleLine && canvas.size.H == 1 {
 		singleLine = true
 	}
 	maxChars := canvas.size.W
 	if singleLine {
-		var atLine int
+		var atCanvasLine int
 		switch align {
 		case ALIGN_MIDDLE:
-			atLine = (canvas.size.H / 2) - (len(b.lines) / 2)
+			atCanvasLine = (canvas.size.H / 2) - (len(b.lines) / 2)
 		case ALIGN_BOTTOM:
-			atLine = canvas.size.H - len(b.lines)
+			atCanvasLine = canvas.size.H - len(b.lines)
 		case ALIGN_TOP:
 		default:
-			atLine = 0
+			atCanvasLine = 0
 		}
-		spaces := b.LetterCount(true)
+		spaces := b.Len()
 		if spaces > maxChars {
-			b.truncateSingleLine(atLine, 0, canvas, wordWrap, maxChars)
+			b.truncateSingleLine(atCanvasLine, 0, canvas, wordWrap, maxChars)
 			return EVENT_STOP
 		}
-		b.justifySingleLine(atLine, 0, canvas, wordWrap, maxChars, justify)
+		b.writeJustifiedLines(atCanvasLine, []*WordLine{b.lines[0]}, canvas, wordWrap, maxChars, justify)
 		return EVENT_STOP
 	}
 	b.wrapMultiLine(canvas, wordWrap, justify, align)
@@ -121,275 +118,174 @@ func (b *CTextBuffer) wrapMultiLine(canvas *Canvas, wordWrap WrapMode, justify J
 	}
 	maxChars := canvas.size.W
 	sorted := b.wrapSort(maxChars, wordWrap)
-	origLines := b.lines
-	b.lines = sorted
-	for y, _ := range sorted {
-		b.justifySingleLine(atLine+y, y, canvas, wordWrap, maxChars, justify)
-	}
-	b.lines = origLines
+	b.writeJustifiedLines(atLine, sorted, canvas, wordWrap, maxChars, justify)
 }
 
+func (b *CTextBuffer) wrapSortNop(maxChars, atLine int, sorted []*WordLine, line *WordLine) (out []*WordLine, lid int) {
+	out, lid = sorted, atLine
+	if lid >= len(out) {
+		out = append(out, line)
+	} else {
+		out[lid] = line
+	}
+	lid++
+	return
+}
+func (b *CTextBuffer) wrapSortWord(maxChars, atLine int, sorted []*WordLine, line *WordLine) (out []*WordLine, lid int) {
+	out, lid = sorted, atLine
+	if !line.HasSpace() {
+		// truncate at maxChars, or do nothing?
+	} else if len(out) < lid {
+		for _, word := range line.words {
+			if out[lid].CharacterCount()+word.Len() < maxChars {
+				out[lid].words = append(out[lid].words, word)
+			} else {
+				lid++
+				out = append(out, NewWordLine("", b.style))
+				out[lid].words = append(out[lid].words, word)
+			}
+		}
+	}
+	return
+}
+func (b *CTextBuffer) wrapSortChar(maxChars, atLine int, sorted []*WordLine, line *WordLine) (out []*WordLine, lid int) {
+	out, lid = sorted, atLine
+	count := 0
+	for _, word := range line.words {
+		if count+word.Len() < maxChars {
+			out[lid].words = append(out[lid].words, word)
+		} else {
+			delta := maxChars - count
+			firstHalf := NewEmptyWordCell()
+			secondHalf := NewEmptyWordCell()
+			for i := 0; i < word.Len(); i++ {
+				c := word.GetCharacter(i)
+				if i <= delta {
+					firstHalf.AppendRune(c.Value(), c.Style())
+				} else {
+					secondHalf.AppendRune(c.Value(), c.Style())
+				}
+			}
+			out[lid].words = append(out[lid].words, firstHalf)
+			out = append(out, NewEmptyWordLine())
+			lid = len(out) - 1
+			out[lid].words = append(out[lid].words, secondHalf)
+		}
+		count += word.Len()
+	}
+	return
+}
+func (b *CTextBuffer) wrapSortTruncate(maxChars, atLine int, sorted []*WordLine, line *WordLine) (out []*WordLine, lid int) {
+	out, lid = sorted, atLine
+	count := 0
+	for _, word := range line.words {
+		if count+word.Len() < maxChars {
+			out[lid].words = append(out[lid].words, word)
+		} else {
+			delta := maxChars - count
+			partial := NewEmptyWordCell()
+			for i := 0; i < delta; i++ {
+				c := word.GetCharacter(i)
+				partial.AppendRune(c.Value(), c.Style())
+			}
+			out[lid].words = append(out[lid].words, partial)
+			break
+		}
+		count += word.Len()
+	}
+	return
+}
 func (b *CTextBuffer) wrapSort(maxChars int, wordWrap WrapMode) []*WordLine {
 	var sorted []*WordLine
-	sorted = append(sorted, NewWordLine("", b.style))
-	lid, wid := 0, 0
+	sorted = append(sorted, NewEmptyWordLine())
+	lid := 0
 	for _, line := range b.lines {
-		if line.LetterCount(true) < maxChars {
-			if lid >= len(sorted) {
-				sorted = append(sorted, NewWordLine("", b.style))
-			}
-			for _, word := range line.words {
-				sorted[lid].words = append(sorted[lid].words, word)
-			}
-			lid++
-			wid = 0
+		if line.CharacterCount() < maxChars {
+			// no need to wrap at all
+			sorted, lid = b.wrapSortNop(maxChars, lid, sorted, line)
 			continue
 		}
+		// must wrap or truncate
 		switch wordWrap {
 		case WRAP_WORD:
-			fallthrough
+			sorted, lid = b.wrapSortWord(maxChars, lid, sorted, line)
 		case WRAP_WORD_CHAR:
-			// attempt wrap word, if no spaces, fallback to char
-			if utils.HasSpace(line.String()) {
-				for _, word := range line.words {
-					if len(sorted) < lid {
-						if sorted[lid].LetterCount(true)+1+word.Len() < maxChars {
-							sorted[lid].words = append(sorted[lid].words, word)
-						} else {
-							lid++
-							sorted = append(sorted, NewWordLine("", b.style))
-							sorted[lid].words = append(sorted[lid].words, word)
-						}
-					}
-				}
+			// attempt wrap word
+			if line.HasSpace() {
+				sorted, lid = b.wrapSortWord(maxChars, lid, sorted, line)
 				break
 			}
+			// no breaks in line, fallback to wrap_char
 			fallthrough
 		case WRAP_CHAR:
-			for _, word := range line.words {
-				if len(sorted) < lid {
-					if wid >= len(sorted[lid].words) {
-						sorted[lid].words = append(sorted[lid].words, &WordCell{})
-					}
-					for _, char := range word.characters {
-						if sorted[lid].LetterCount(true)+1+1 < maxChars {
-							sorted[lid].words[wid].characters = append(sorted[lid].words[wid].characters, char)
-						} else {
-							lid++
-							sorted = append(sorted, NewWordLine("", b.style))
-							wid = 0
-							if len(sorted[lid].words) < wid {
-								word, _ := NewWordCell("", b.style)
-								sorted[lid].words = append(sorted[lid].words, word)
-							}
-							sorted[lid].words[wid].characters = append(sorted[lid].words[wid].characters, char)
-						}
-					}
-				}
-				wid++
-			}
+			sorted, lid = b.wrapSortChar(maxChars, lid, sorted, line)
 		case WRAP_NONE:
 			fallthrough
 		default:
-			// truncate
-		truncate_loop:
-			for wid, word := range line.words {
-				if lid < len(sorted) {
-					if wid >= len(sorted[lid].words) {
-						word, _ := NewWordCell("", b.style)
-						sorted[lid].words = append(sorted[lid].words, word)
-					}
-					for _, char := range word.characters {
-						if sorted[lid].LetterCount(true)+1+1 < maxChars {
-							sorted[lid].words[wid].characters = append(sorted[lid].words[wid].characters, char)
-						} else {
-							lid++
-							sorted = append(sorted, NewWordLine("", b.style))
-							break truncate_loop
-						}
-					}
-				}
-			}
+			// truncate the line
+			sorted, lid = b.wrapSortTruncate(maxChars, lid, sorted, line)
 		}
 	}
 	return sorted
 }
 
-func (b *CTextBuffer) justifySingleLine(atLine, forLine int, canvas *Canvas, wordWrap WrapMode, maxChars int, justify Justification) {
-	if len(b.lines) < forLine || len(b.lines[forLine].words) == 0 {
-		return
-	}
-	switch justify {
-	case JUSTIFY_RIGHT:
-		count := b.lines[forLine].LetterCount(true)
-		delta := maxChars - count
-		x := 0
-		for x < maxChars-delta {
-			for _, word := range b.lines[forLine].words {
-				var lastBg Color
-				for _, char := range word.characters {
-					_, lastBg, _ = char.Style().Decompose()
-					canvas.SetRune(x+delta, atLine, char.Value(), char.Style())
-					x++
-				}
-				if x < maxChars-delta {
-					canvas.SetRune(x, atLine, ' ', b.style.Background(lastBg))
-					x++
-				}
-			}
+func (b *CTextBuffer) writeJustifiedLines(fromCanvasLine int, lines []*WordLine, canvas *Canvas, wordWrap WrapMode, maxChars int, justify Justification) {
+	cSize := canvas.GetSize()
+	for y, line := range lines {
+		if fromCanvasLine+y >= cSize.H {
+			break
 		}
-	case JUSTIFY_CENTER:
-		count := b.lines[forLine].LetterCount(true)
-		half := count / 2
-		halfway := canvas.size.W / 2
-		delta := halfway - half
-		x := 0
-		for x < count {
-			for _, word := range b.lines[forLine].words {
-				var lastBg Color
-				for _, char := range word.characters {
-					_, lastBg, _ = char.Style().Decompose()
-					canvas.SetRune(x+delta, atLine, char.Value(), char.Style())
-					x++
-				}
-				if x < count {
-					canvas.SetRune(x+delta, atLine, ' ', b.style.Background(lastBg))
-					x++
-				}
-			}
+		var justified *WordLine
+		switch justify {
+		case JUSTIFY_RIGHT:
+			justified = line.MakeRight(maxChars, b.style)
+		case JUSTIFY_CENTER:
+			justified = line.MakeCenter(maxChars, b.style)
+		case JUSTIFY_FILL:
+			justified = line.MakeFill(maxChars)
+		case JUSTIFY_LEFT:
+			fallthrough
+		default:
+			justified = line.MakeLeft(maxChars)
 		}
-	case JUSTIFY_FILL:
-		// word_count := len(b.lines[atLine].words)
-		numgap := len(b.lines[forLine].words) - 1
-		if numgap == 0 {
-			return
-		}
-		gaps := []string{}
-		for i := 0; i < numgap; i++ {
-			gaps = append(gaps, " ")
-		}
-		// fmt.Printf("gaps: %v, words: %v, spaced:\"%v\"\n", gaps, words, spaced)
-		s := b.joinGaps(b.lines[forLine], gaps)
-		forward := true
-		inner := 0
-		outer := numgap - 1
-		for {
-			if forward {
-				gaps[inner] += " "
-				inner += 1
-				if inner > numgap-1 {
-					inner = 0
-				}
-				forward = false
-			} else {
-				gaps[outer] += " "
-				outer -= 1
-				if outer < 0 {
-					outer = numgap - 1
-				}
-				forward = true
-			}
-			s = b.joinGaps(b.lines[forLine], gaps)
-			if len(s) >= maxChars {
-				// return s
-				break
-			}
-		}
-		// gaps ready for rendering
-		x := 0
-		for x < len(s) {
-			for wid, word := range b.lines[forLine].words {
-				var lastBg Color
-				for _, char := range word.characters {
-					_, lastBg, _ = char.Style().Decompose()
-					canvas.SetRune(x, atLine, char.Value(), char.Style())
-					x++
-				}
-				if len(gaps) > wid && x < len(s) {
-					for i := 0; i < len(gaps[wid]); i++ {
-						canvas.SetRune(x, atLine, ' ', b.style.Background(lastBg))
-						x++
-					}
-				}
-			}
-		}
-	case JUSTIFY_LEFT:
-		fallthrough
-	default:
-		x := 0
-		count := b.lines[forLine].LetterCount(true)
-		for _, word := range b.lines[forLine].words {
-			var lastBg Color
-			for _, char := range word.characters {
-				_, lastBg, _ = char.Style().Decompose()
-				canvas.SetRune(x, atLine, char.Value(), char.Style())
-				x++
-			}
-			if x < count {
-				canvas.SetRune(x, atLine, ' ', b.style.Background(lastBg))
-				x++
-			}
+		for x := 0; x < justified.CharacterCount(); x++ {
+			c := justified.GetCharacter(x)
+			canvas.SetRune(x, fromCanvasLine+y, c.Value(), c.Style())
 		}
 	}
 }
 
-func (b *CTextBuffer) truncateSingleLine(atLine, forLine int, canvas *Canvas, wordWrap WrapMode, maxChars int) {
+
+func (b *CTextBuffer) truncateSingleLine(atCanvasLine, forWordLine int, canvas *Canvas, wordWrap WrapMode, maxChars int) {
+	if len(b.lines) < forWordLine || len(b.lines[forWordLine].words) == 0 {
+		// non-operation
+		return
+	}
+	var line *WordLine
 	switch wordWrap {
 	case WRAP_WORD:
+		line, _ = b.lines[forWordLine].MakeTruncated(maxChars, true)
 	case WRAP_WORD_CHAR:
-		var lid, wid, cid int
-		for i := maxChars; i > 0; i-- {
-			lid, wid, cid = b.getPosAtChar(atLine, i)
-			if b.lines[lid].words[wid].characters[cid].IsSpace() {
-				break
-			}
-			lid, wid, cid = -1, -1, -1
-		}
-		if lid >= -1 {
-		truncAtSpace:
-			for i := 0; i < len(b.lines[lid].words); i++ {
-				for j := 0; j < len(b.lines[lid].words[i].characters); j++ {
-					char := b.lines[lid].words[i].characters[j]
-					canvas.SetRune(atLine, j, char.Value(), char.Style())
-					if i == wid && j == cid {
-						break truncAtSpace
-					}
-				}
-			}
+		var didTruncate bool
+		if line, didTruncate = b.lines[forWordLine].MakeTruncated(maxChars, true); didTruncate {
 			break
 		}
-		// the line has no spaces in it at all, must truncate
-		// means WRAP_WORD_CHAR and WRAP_WORD are identical operations
 		fallthrough
 	case WRAP_CHAR:
 		fallthrough
 	case WRAP_NONE:
 		fallthrough
 	default:
-		count := 0
-	truncAtChar:
-		for i := 0; i < len(b.lines[forLine].words); i++ {
-			for j := 0; j < len(b.lines[forLine].words[i].characters); j++ {
-				char := b.lines[forLine].words[i].characters[j]
-				canvas.SetRune(j, atLine, char.Value(), char.Style())
-				count++
-				if count >= maxChars {
-					break truncAtChar
-				}
+		line, _ = b.lines[forWordLine].MakeTruncated(maxChars, false)
+	}
+	if line != nil {
+		x := 0
+		for _, word := range line.words {
+			for _, char := range word.characters {
+				canvas.SetRune(x, atCanvasLine, char.Value(), char.Style())
+				x += char.Width()
 			}
 		}
 	}
 	return
-}
-
-func (b *CTextBuffer) joinGaps(line *WordLine, gaps []string) string {
-	output := ""
-	last_idx := len(line.words) - 1
-	for idx, word := range line.words {
-		output += word.Value()
-		if idx < last_idx {
-			output += gaps[idx]
-		}
-	}
-	return output
 }

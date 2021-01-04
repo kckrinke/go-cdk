@@ -14,44 +14,74 @@
 
 package cdk
 
-import (
-	"fmt"
-
-	"github.com/kckrinke/go-cdk/utils"
-)
-
-// CTextBuffer holds rows of words
-// Views can Draw text using this, along with other primitives
+// WordCell holds a list of characters making up a word or a gap (space)
 
 type WordCell struct {
 	characters []*CTextCell
 }
 
-func NewWordCell(word string, style Style) (*WordCell, error) {
-	w := &WordCell{}
-	if err := w.Set(word, style); err != nil {
-		return nil, err
+func NewEmptyWordCell() *WordCell {
+	return &WordCell{
+		characters: make([]*CTextCell, 0),
 	}
-	return w, nil
+}
+
+func NewWordCell(word string, style Style) *WordCell {
+	w := &WordCell{}
+	w.Set(word, style)
+	return w
 }
 
 func (w WordCell) Characters() []*CTextCell {
 	return w.characters
 }
 
-func (w *WordCell) Set(word string, style Style) error {
-	if utils.HasSpace(word) {
-		return fmt.Errorf("words cannot contain spaces")
-	}
+func (w *WordCell) Set(word string, style Style) {
 	w.characters = make([]*CTextCell, len(word))
 	for i, c := range word {
 		w.characters[i] = NewRuneCell(c, style)
 	}
-	return nil
+	return
 }
 
-func (w WordCell) Len() int {
-	return len(w.characters)
+func (w *WordCell) GetCharacter(index int) (char *CTextCell) {
+	if index < len(w.characters) {
+		char = w.characters[index]
+	}
+	return
+}
+
+func (w *WordCell) AppendRune(r rune, style Style) {
+	w.characters = append(
+		w.characters,
+		NewRuneCell(r, style),
+	)
+}
+
+func (w *WordCell) IsSpace() bool {
+	for _, c := range w.characters {
+		if !c.IsSpace() {
+			return false
+		}
+	}
+	return true
+}
+
+func (w *WordCell) HasSpace() bool {
+	for _, c := range w.characters {
+		if c.IsSpace() {
+			return true
+		}
+	}
+	return false
+}
+
+func (w WordCell) Len() (count int) {
+	count = 0
+	for _, c := range w.characters {
+		count += c.Width()
+	}
+	return
 }
 
 func (w WordCell) Value() (word string) {

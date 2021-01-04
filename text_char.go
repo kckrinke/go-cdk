@@ -38,11 +38,9 @@ type CTextChar struct {
 }
 
 func NewTextChar(b []byte) *CTextChar {
-	r, s := utf8.DecodeRune(b)
-	return &CTextChar{
-		value: r,
-		width: s,
-	}
+	t := &CTextChar{}
+	t.SetByte(b)
+	return t
 }
 
 func (c *CTextChar) Set(r rune) {
