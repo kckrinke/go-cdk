@@ -71,7 +71,7 @@ func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, j
 	}
 
 	maxChars := canvas.size.W
-	lines := b.input.Make(wordWrap, justify, maxChars)
+	lines := b.input.Make(wordWrap, justify, maxChars, b.style)
 
 	for y, line := range lines {
 		x := 0

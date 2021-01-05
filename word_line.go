@@ -179,8 +179,8 @@ func (w WordLine) String() (s string) {
 	return
 }
 
-// wrap, justify and align the set input,
-func (w WordLine) Make(wrap WrapMode, justify Justification, maxChars int) (lines []*WordLine) {
+// wrap, justify and align the set input, with filler style
+func (w WordLine) Make(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style) (lines []*WordLine) {
 	lines = append(lines, NewEmptyWordLine())
 	cid, wid, lid := 0, 0, 0
 	for _, word := range w.words {
@@ -203,269 +203,53 @@ func (w WordLine) Make(wrap WrapMode, justify Justification, maxChars int) (line
 		}
 		wid++
 	}
-	lines = w.applyTypography(wrap, justify, maxChars, lines)
+	lines = w.applyTypography(wrap, justify, maxChars, fillerStyle, lines)
 	return
 }
 
-func (w WordLine) applyTypography(wrap WrapMode, justify Justification, maxChars int, in []*WordLine) (out []*WordLine) {
+func (w WordLine) applyTypography(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style, input []*WordLine) (output []*WordLine) {
+	output = w.applyTypographicWrap(wrap, maxChars, input)
+	output = w.applyTypographicJustify(justify, maxChars, fillerStyle, output)
+	return
+}
+
+func (w WordLine) applyTypographicWrap(wrap WrapMode, maxChars int, input []*WordLine) (output []*WordLine) {
 	// all space-words must be applied as 1 width
 	switch wrap {
 	case WRAP_WORD:
 		// break onto inserted/new line at end gap
 		// - if line has no breakpoints, truncate
-		out = w.applyTypographicWrapWord(maxChars, in)
+		output = w.applyTypographicWrapWord(maxChars, input)
 	case WRAP_WORD_CHAR:
 		// break onto inserted/new line at end gap
 		// - if line has no breakpoints, fallthrough
-		out = w.applyTypographicWrapWordChar(maxChars, in)
+		output = w.applyTypographicWrapWordChar(maxChars, input)
 	case WRAP_CHAR:
 		// break onto inserted/new line at maxChars
-		out = w.applyTypographicWrapChar(maxChars, in)
+		output = w.applyTypographicWrapChar(maxChars, input)
 	case WRAP_NONE:
 		// truncate each line to maxChars
-		out = w.applyTypographicWrapNone(maxChars, in)
+		output = w.applyTypographicWrapNone(maxChars, input)
 	}
+	return
+}
+
+func (w WordLine) applyTypographicJustify(justify Justification, maxChars int, fillerStyle Style, input []*WordLine) (output []*WordLine) {
 	switch justify {
 	case JUSTIFY_FILL:
 		// each non-empty line is space-expanded to fill maxChars
+		output = w.applyTypographicJustifyFill(maxChars, fillerStyle, input)
 	case JUSTIFY_CENTER:
 		// each non-empty line is centered on halfway maxChars
+		output = w.applyTypographicJustifyCenter(maxChars, fillerStyle, input)
 	case JUSTIFY_RIGHT:
 		// each non-empty line is left-padded to fill maxChars
+		output = w.applyTypographicJustifyRight(maxChars, fillerStyle, input)
 	case JUSTIFY_LEFT:
 		fallthrough
 	default:
 		// each non-empty line has leading space removed
-	}
-	return
-}
-
-func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (out []*WordLine) {
-	cid, wid, lid := 0, 0, 0
-	for _, line := range input {
-		if lid >= len(out) {
-			out = append(out, NewEmptyWordLine())
-		}
-		if line.Len() > maxChars {
-			if !line.HasSpace() {
-				// nothing to break on, truncate on maxChars
-			truncateWrapWord:
-				for _, word := range line.Words() {
-					if wid >= out[lid].Len() {
-						out[lid].AppendWordCell(NewEmptyWordCell())
-					}
-					for _, c := range word.Characters() {
-						if cid > maxChars {
-							lid = len(out) // don't append trailing NEWLs
-							break truncateWrapWord
-						}
-						out[lid].words[wid].AppendRune(c.Value(), c.Style())
-						cid++
-					}
-					wid++
-				}
-				continue
-			}
-		}
-		for _, word := range line.Words() {
-			if wid >= out[lid].Len() {
-				out[lid].AppendWordCell(NewEmptyWordCell())
-			}
-			wordLen := word.Len()
-			if word.IsSpace() {
-				wordLen = 1
-			}
-			if cid+wordLen >= maxChars {
-				out = append(out, NewEmptyWordLine())
-				lid = len(out) - 1
-				wid = 0
-				if !word.IsSpace() {
-					out[lid].AppendWordCell(word)
-					wid = out[lid].Len() - 1
-				}
-				continue
-			}
-			if word.IsSpace() {
-				c := word.GetCharacter(0)
-				wc := NewEmptyWordCell()
-				wc.AppendRune(c.Value(), c.Style())
-				out[lid].AppendWordCell(wc)
-				cid += wc.Len()
-			} else {
-				out[lid].AppendWordCell(word)
-				cid += word.Len()
-			}
-			wid++
-		}
-		lid++
-		cid = 0
-	}
-	return
-}
-
-func (w WordLine) applyTypographicWrapWordChar(maxChars int, input []*WordLine) (out []*WordLine) {
-	cid, wid, lid := 0, 0, 0
-	for _, line := range input {
-		if lid >= len(out) {
-			out = append(out, NewEmptyWordLine())
-		}
-		if line.Len() > maxChars {
-			if !line.HasSpace() {
-				// nothing to break on, wrap on maxChars
-				for _, word := range line.Words() {
-					if wid >= out[lid].Len() {
-						out[lid].AppendWordCell(NewEmptyWordCell())
-					}
-					for _, c := range word.Characters() {
-						if cid > maxChars {
-							out = append(out, NewEmptyWordLine())
-							lid = len(out) - 1
-							out[lid].AppendWordCell(NewEmptyWordCell())
-							wid = 0
-							cid = 0
-						}
-						out[lid].words[wid].AppendRune(c.Value(), c.Style())
-						cid++
-					}
-					wid++
-				}
-				lid++
-				wid = 0
-				cid = 0
-				continue
-			}
-		}
-		for _, word := range line.Words() {
-			if wid >= out[lid].Len() {
-				out[lid].AppendWordCell(NewEmptyWordCell())
-			}
-			wordLen := word.Len()
-			if word.IsSpace() {
-				wordLen = 1
-			}
-			if cid+wordLen >= maxChars {
-				out = append(out, NewEmptyWordLine())
-				lid = len(out) - 1
-				wid = 0
-				if !word.IsSpace() {
-					out[lid].AppendWordCell(word)
-					wid = out[lid].Len() - 1
-				}
-				continue
-			}
-			if word.IsSpace() {
-				c := word.GetCharacter(0)
-				wc := NewEmptyWordCell()
-				wc.AppendRune(c.Value(), c.Style())
-				out[lid].AppendWordCell(wc)
-				cid += wc.Len()
-			} else {
-				out[lid].AppendWordCell(word)
-				cid += word.Len()
-			}
-			wid++
-		}
-		lid++
-		cid = 0
-	}
-	return
-}
-
-func (w WordLine) applyTypographicWrapChar(maxChars int, input []*WordLine) (out []*WordLine) {
-	cid, wid, lid := 0, 0, 0
-	for _, line := range input {
-		if lid >= len(out) {
-			out = append(out, NewEmptyWordLine())
-		}
-		for _, word := range line.Words() {
-			if word.IsSpace() {
-				if cid >= maxChars {
-					out = append(out, NewEmptyWordLine())
-					lid = len(out) - 1
-					wid = 0
-					cid = 0
-				}
-				if c := word.GetCharacter(0); c != nil {
-					wc := NewEmptyWordCell()
-					wc.AppendRune(c.Value(), c.Style())
-					out[lid].AppendWordCell(wc)
-					cid += wc.Len()
-				}
-			} else {
-				if cid+word.Len() > maxChars {
-					firstHalf, secondHalf := NewEmptyWordCell(), NewEmptyWordCell()
-					for _, c := range word.Characters() {
-						if cid < maxChars {
-							firstHalf.AppendRune(c.Value(), c.Style())
-						} else {
-							secondHalf.AppendRune(c.Value(), c.Style())
-						}
-						cid++
-					}
-					out[lid].AppendWordCell(firstHalf)
-					out = append(out, NewEmptyWordLine())
-					lid = len(out) - 1
-					out[lid].AppendWordCell(secondHalf)
-					cid = secondHalf.Len()
-					wid = 0
-				} else {
-					out[lid].AppendWordCell(word)
-					cid += word.Len()
-				}
-			}
-			wid++
-		}
-		lid++
-		cid = 0
-	}
-	return
-}
-
-func (w WordLine) applyTypographicWrapNone(maxChars int, input []*WordLine) (out []*WordLine) {
-	cid, wid, lid := 0, 0, 0
-	for _, line := range input {
-		if lid >= len(out) {
-			out = append(out, NewEmptyWordLine())
-		}
-	forEachWordWrapNone:
-		for _, word := range line.Words() {
-			if wid >= out[lid].Len() {
-				out[lid].AppendWordCell(NewEmptyWordCell())
-			}
-			if word.IsSpace() {
-				if cid > maxChars {
-					lid = len(out)
-					wid = 0
-					cid = 0
-					break
-				}
-				if c := word.GetCharacter(0); c != nil {
-					wc := NewEmptyWordCell()
-					wc.AppendRune(c.Value(), c.Style())
-					out[lid].AppendWordCell(wc)
-					cid += wc.Len()
-				}
-			} else {
-				if cid+word.Len() > maxChars {
-					for _, c := range word.Characters() {
-						if cid > maxChars {
-							lid++
-							wid = 0
-							cid = 0
-							break forEachWordWrapNone
-						}
-						out[lid].words[wid].AppendRune(c.Value(), c.Style())
-						cid++
-					}
-				} else {
-					out[lid].AppendWordCell(word)
-					cid += word.Len()
-				}
-			}
-			wid++
-		}
-		lid++
-		cid = 0
+		output = w.applyTypographicJustifyLeft(maxChars, fillerStyle, input)
 	}
 	return
 }
