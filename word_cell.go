@@ -84,6 +84,15 @@ func (w WordCell) Len() (count int) {
 	return
 }
 
+func (w WordCell) CompactLen() (count int) {
+	if w.IsSpace() {
+		count = 1
+		return
+	}
+	count = w.Len()
+	return
+}
+
 func (w WordCell) Value() (word string) {
 	word = ""
 	for _, c := range w.characters {

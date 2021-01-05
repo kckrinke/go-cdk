@@ -122,7 +122,7 @@ func (b *CTextBuffer) wrapMultiLine(canvas *Canvas, wordWrap WrapMode, justify J
 }
 
 func (b *CTextBuffer) wrapSortNop(maxChars, atLine int, sorted []*WordLine, line *WordLine) (out []*WordLine, lid int) {
-	out, lid = sorted, atLine
+	out, lid = append(out, sorted...), atLine
 	if lid >= len(out) {
 		out = append(out, line)
 	} else {
@@ -132,7 +132,7 @@ func (b *CTextBuffer) wrapSortNop(maxChars, atLine int, sorted []*WordLine, line
 	return
 }
 func (b *CTextBuffer) wrapSortWord(maxChars, atLine int, sorted []*WordLine, line *WordLine) (out []*WordLine, lid int) {
-	out, lid = sorted, atLine
+	out, lid = append(out, sorted...), atLine
 	if !line.HasSpace() {
 		// truncate at maxChars, or do nothing?
 	} else if len(out) < lid {
@@ -149,18 +149,25 @@ func (b *CTextBuffer) wrapSortWord(maxChars, atLine int, sorted []*WordLine, lin
 	return
 }
 func (b *CTextBuffer) wrapSortChar(maxChars, atLine int, sorted []*WordLine, line *WordLine) (out []*WordLine, lid int) {
-	out, lid = sorted, atLine
-	count := 0
+	out, lid = append(out, sorted...), atLine
+	count := out[lid].Len()
 	for _, word := range line.words {
-		if count+word.Len() < maxChars {
+		wordSpaceLen := word.Len()
+		if count+wordSpaceLen < maxChars {
 			out[lid].words = append(out[lid].words, word)
+			count += wordSpaceLen
 		} else {
-			delta := maxChars - count
+			if word.IsSpace() {
+				out = append(out, NewEmptyWordLine())
+				lid = len(out) - 1
+				continue
+			}
+			delta := (count + wordSpaceLen) - maxChars
 			firstHalf := NewEmptyWordCell()
 			secondHalf := NewEmptyWordCell()
 			for i := 0; i < word.Len(); i++ {
 				c := word.GetCharacter(i)
-				if i <= delta {
+				if i < delta {
 					firstHalf.AppendRune(c.Value(), c.Style())
 				} else {
 					secondHalf.AppendRune(c.Value(), c.Style())
@@ -170,28 +177,31 @@ func (b *CTextBuffer) wrapSortChar(maxChars, atLine int, sorted []*WordLine, lin
 			out = append(out, NewEmptyWordLine())
 			lid = len(out) - 1
 			out[lid].words = append(out[lid].words, secondHalf)
+			out[lid].words = append(out[lid].words, NewWordCell(" ", b.style))
+			count = secondHalf.Len() + 1
 		}
-		count += word.Len()
 	}
 	return
 }
 func (b *CTextBuffer) wrapSortTruncate(maxChars, atLine int, sorted []*WordLine, line *WordLine) (out []*WordLine, lid int) {
-	out, lid = sorted, atLine
+	out, lid = append(out, sorted...), atLine
 	count := 0
 	for _, word := range line.words {
 		if count+word.Len() < maxChars {
 			out[lid].words = append(out[lid].words, word)
+			count += word.Len()
 		} else {
-			delta := maxChars - count
+			delta := (count + word.Len()) - maxChars
 			partial := NewEmptyWordCell()
 			for i := 0; i < delta; i++ {
 				c := word.GetCharacter(i)
 				partial.AppendRune(c.Value(), c.Style())
 			}
 			out[lid].words = append(out[lid].words, partial)
+			out = append(out, NewEmptyWordLine())
+			lid = len(out) - 1
 			break
 		}
-		count += word.Len()
 	}
 	return
 }
@@ -254,7 +264,6 @@ func (b *CTextBuffer) writeJustifiedLines(fromCanvasLine int, lines []*WordLine,
 		}
 	}
 }
-
 
 func (b *CTextBuffer) truncateSingleLine(atCanvasLine, forWordLine int, canvas *Canvas, wordWrap WrapMode, maxChars int) {
 	if len(b.lines) < forWordLine || len(b.lines[forWordLine].words) == 0 {
