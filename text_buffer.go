@@ -16,6 +16,8 @@ package cdk
 
 import (
 	"sync"
+
+	"github.com/kckrinke/go-cdk/utils"
 )
 
 var (
@@ -77,7 +79,12 @@ func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, j
 	maxChars := canvas.size.W
 	lines := b.input.Make(wordWrap, justify, maxChars, b.style)
 	size := canvas.GetSize()
-
+	if size.W <= 0 || size.H <= 0 {
+		return EVENT_PASS
+	}
+	if len(lines) == 0 {
+		return EVENT_PASS
+	}
 	lenLines := len(lines)
 	if singleLine && lenLines > 1 {
 		lenLines = 1
@@ -88,7 +95,7 @@ func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, j
 	case ALIGN_BOTTOM:
 		numLines := lenLines
 		if numLines > size.H {
-			delta := numLines - size.H
+			delta := utils.FloorI(numLines - size.H, 0)
 			atCanvasLine = 0
 			fromInputLine = delta
 		} else {
@@ -100,7 +107,10 @@ func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, j
 		numLines := lenLines
 		halfLines := numLines / 2
 		halfCanvas := size.H / 2
-		delta := halfCanvas - halfLines
+		delta := utils.FloorI(halfCanvas - halfLines, 0)
+		if delta < 0 {
+			delta = 0
+		}
 		if numLines > size.H {
 			atCanvasLine = 0
 			fromInputLine = delta
@@ -114,12 +124,8 @@ func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, j
 		fromInputLine = 0
 	}
 
-	firstLine := true
 	y := atCanvasLine
 	for lid := fromInputLine; lid < lenLines; lid++ {
-		if !firstLine && singleLine {
-			break
-		}
 		if lid >= len(lines) {
 			break
 		}
@@ -129,12 +135,16 @@ func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, j
 		x := 0
 		for _, word := range lines[lid].Words() {
 			for _, c := range word.Characters() {
-				canvas.SetRune(x, y, c.Value(), c.Style())
-				x++
+				if x <= size.W {
+					canvas.SetRune(x, y, c.Value(), c.Style())
+					x++
+				}
 			}
 		}
 		y++
-		firstLine = false
+		if singleLine {
+			break
+		}
 	}
 
 	return EVENT_STOP
