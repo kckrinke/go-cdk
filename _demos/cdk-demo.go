@@ -22,7 +22,7 @@ func (w *CdkDemoWindow) Init() (already bool) {
 
 func (w *CdkDemoWindow) Draw(canvas *cdk.Canvas) cdk.EventFlag {
 	w.LogInfo("Draw: %s", canvas)
-	theme := w.GetDisplay().DefaultTheme()
+	theme := w.GetDisplayManager().DefaultTheme()
 	size := canvas.GetSize()
 	canvas.Box(cdk.Point2I{0, 0}, size, true, true, theme)
 	content := "<b><u>H</u><span foreground=\"gold\">ello</span> <i>W</i><span foreground=\"brown\">orld</span></b>\n"
