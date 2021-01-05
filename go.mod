@@ -19,6 +19,6 @@ require (
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
-	golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f
+	golang.org/x/sys v0.0.0-20210104204734-6f8348627aad
 	golang.org/x/text v0.3.3
 )
