@@ -213,8 +213,10 @@ func (w WordLine) applyTypographicWrapNone(maxChars int, input []*WordLine) (out
 						wc.AppendRune(c.Value(), c.Style())
 						cid++
 					}
-					output[lid].AppendWordCell(wc)
-					cid += wc.Len()
+					if wc.Len() > 0 {
+						output[lid].AppendWordCell(wc)
+						cid += wc.Len()
+					}
 				} else {
 					output[lid].AppendWordCell(word)
 					cid += word.Len()

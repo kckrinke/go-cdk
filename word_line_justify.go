@@ -18,7 +18,7 @@ func (w WordLine) applyTypographicJustifyFill(maxChars int, fillerStyle Style, i
 				gaps = append(gaps, 1)
 			}
 		}
-		widthMinusGaps := width - len(gaps) + 1
+		widthMinusGaps := width - len(gaps)
 		gaps = utils.DistInts(maxChars-widthMinusGaps, gaps)
 		gid := 0
 		for _, word := range line.Words() {
