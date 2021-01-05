@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/kckrinke/go-cdk/term"
+	"github.com/kckrinke/go-term"
 )
 
 func (t *cDisplay) termioInit(ttyPath string) error {
