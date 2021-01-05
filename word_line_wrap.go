@@ -189,8 +189,7 @@ func (w WordLine) applyTypographicWrapNone(maxChars int, input []*WordLine) (out
 		}
 		for _, word := range line.Words() {
 			if word.IsSpace() {
-				if cid+1 > maxChars {
-					lid = len(output) - 1
+				if cid+1 >= maxChars {
 					cid = 0
 					break
 				}
@@ -201,13 +200,10 @@ func (w WordLine) applyTypographicWrapNone(maxChars int, input []*WordLine) (out
 					cid += wc.Len()
 				}
 			} else {
-				if cid+word.Len() > maxChars {
+				if cid+word.Len() >= maxChars {
 					wc := NewEmptyWordCell()
 					for _, c := range word.Characters() {
 						if cid > maxChars {
-							output = append(output, NewEmptyWordLine())
-							lid = len(output) - 1
-							cid = 0
 							break
 						}
 						wc.AppendRune(c.Value(), c.Style())

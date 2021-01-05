@@ -79,7 +79,7 @@ func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, j
 	size := canvas.GetSize()
 
 	lenLines := len(lines)
-	if singleLine {
+	if singleLine && lenLines > 1 {
 		lenLines = 1
 	}
 
