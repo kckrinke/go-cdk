@@ -47,11 +47,6 @@ func (w *WordLine) SetLine(line string, style Style) {
 			}
 			// appending to the "space" word
 			w.words[wid].AppendRune(c, style)
-		} else if c == '\n' {
-			// always a reset and single-char-word of it's own
-			isWord = false
-			w.words = append(w.words, NewWordCell("\n", style))
-			wid = len(w.words) - 1
 		} else {
 			if !isWord || len(w.words) == 0 {
 				isWord = true
@@ -122,27 +117,6 @@ func (w WordLine) WordCount() (wordCount int) {
 	for _, word := range w.words {
 		if !word.IsSpace() {
 			wordCount++
-		}
-	}
-	return
-}
-
-func (w WordLine) GapWordList() (gaps []*WordCell) {
-	gaps = make([]*WordCell, len(w.words))
-	for i, word := range w.words {
-		if word.IsSpace() {
-			gaps[i] = word
-		} else {
-			gaps[i] = nil
-		}
-	}
-	return
-}
-
-func (w WordLine) GapCount() (count int) {
-	for _, word := range w.words {
-		if word.IsSpace() {
-			count++
 		}
 	}
 	return

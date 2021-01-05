@@ -76,6 +76,7 @@ func (w *WordCell) HasSpace() bool {
 	return false
 }
 
+// the total number of characters in this word
 func (w WordCell) Len() (count int) {
 	count = 0
 	for _, c := range w.characters {
@@ -84,6 +85,8 @@ func (w WordCell) Len() (count int) {
 	return
 }
 
+// same as `Len()` with space-words being treated as 1 character wide rather
+// than the literal number of spaces from the input string
 func (w WordCell) CompactLen() (count int) {
 	if w.IsSpace() {
 		count = 1
@@ -93,6 +96,7 @@ func (w WordCell) CompactLen() (count int) {
 	return
 }
 
+// returns the literal string value of the word
 func (w WordCell) Value() (word string) {
 	word = ""
 	for _, c := range w.characters {
@@ -101,6 +105,7 @@ func (w WordCell) Value() (word string) {
 	return
 }
 
+// returns the debuggable value of the word
 func (w WordCell) String() (s string) {
 	s = ""
 	for _, c := range w.characters {
