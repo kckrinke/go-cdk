@@ -64,23 +64,77 @@ func (b *CTextBuffer) WordCount() (wordCount int) {
 	return
 }
 
-func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, justify Justification, align VerticalAlignment) EventFlag {
+func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag {
 	if b.input.CharacterCount() == 0 {
 		// non-operation
 		return EVENT_PASS
 	}
 
+	if singleLine {
+		wordWrap = WRAP_NONE
+	}
+
 	maxChars := canvas.size.W
 	lines := b.input.Make(wordWrap, justify, maxChars, b.style)
+	size := canvas.GetSize()
 
-	for y, line := range lines {
+	lenLines := len(lines)
+	if singleLine {
+		lenLines = 1
+	}
+
+	var atCanvasLine, fromInputLine int
+	switch vAlign {
+	case ALIGN_BOTTOM:
+		numLines := lenLines
+		if numLines > size.H {
+			delta := numLines - size.H
+			atCanvasLine = 0
+			fromInputLine = delta
+		} else {
+			delta := size.H - numLines
+			atCanvasLine = delta
+			fromInputLine = 0
+		}
+	case ALIGN_MIDDLE:
+		numLines := lenLines
+		halfLines := numLines / 2
+		halfCanvas := size.H / 2
+		delta := halfCanvas - halfLines
+		if numLines > size.H {
+			atCanvasLine = 0
+			fromInputLine = delta
+		} else {
+			atCanvasLine = delta
+			fromInputLine = 0
+		}
+	case ALIGN_TOP:
+	default:
+		atCanvasLine = 0
+		fromInputLine = 0
+	}
+
+	firstLine := true
+	y := atCanvasLine
+	for lid := fromInputLine; lid < lenLines; lid++ {
+		if !firstLine && singleLine {
+			break
+		}
+		if lid >= len(lines) {
+			break
+		}
+		if y >= size.H {
+			break
+		}
 		x := 0
-		for _, word := range line.Words() {
+		for _, word := range lines[lid].Words() {
 			for _, c := range word.Characters() {
 				canvas.SetRune(x, y, c.Value(), c.Style())
 				x++
 			}
 		}
+		y++
+		firstLine = false
 	}
 
 	return EVENT_STOP

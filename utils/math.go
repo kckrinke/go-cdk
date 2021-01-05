@@ -46,6 +46,10 @@ func CeilF2I(v float64) int {
 }
 
 func DistInts(max int, in []int) (out []int) {
+	if len(in) == 0 {
+		out = make([]int, 0)
+		return
+	}
 	out = append(out, in...)
 	front := true
 	first, last := 0, len(out)-1

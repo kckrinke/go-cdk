@@ -12,7 +12,7 @@ func (w WordLine) applyTypographicJustifyFill(maxChars int, fillerStyle Style, i
 			output = append(output, NewEmptyWordLine())
 		}
 		width := line.CharacterCount()
-		var gaps []int
+		gaps := make([]int, 0)
 		for _, word := range line.Words() {
 			if word.IsSpace() {
 				gaps = append(gaps, 1)
