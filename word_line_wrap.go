@@ -14,18 +14,12 @@ func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (out
 						output[lid].AppendWordCell(NewEmptyWordCell())
 					}
 					for _, c := range word.Characters() {
-						if cid > maxChars {
+						if cid >= maxChars {
 							lid = len(output) // don't append trailing NEWLs
 							break
 						}
 						output[lid].words[wid].AppendRune(c.Value(), c.Style())
 						cid++
-					}
-					if cid > maxChars {
-						lid = len(output) // don't append trailing NEWLs
-						wid = 0
-						cid = 0
-						break
 					}
 					wid++
 				}
@@ -33,9 +27,6 @@ func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (out
 			}
 		}
 		for _, word := range line.Words() {
-			// if wid >= output[lid].Len() {
-			// 	output[lid].AppendWordCell(NewEmptyWordCell())
-			// }
 			wordLen := word.Len()
 			if word.IsSpace() && wordLen > 1 {
 				wordLen = 1
@@ -44,11 +35,13 @@ func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (out
 				output = append(output, NewEmptyWordLine())
 				lid = len(output) - 1
 				wid = -1
+				cid = 0
 				if !word.IsSpace() {
 					output[lid].AppendWordCell(word)
 					wid = output[lid].Len() - 1
+					cid += word.Len()
 				}
-			} else if word.IsSpace() && cid + wordLen + 1 > maxChars {
+			} else if word.IsSpace() && cid+wordLen+1 > maxChars {
 				// continue
 			} else {
 				if word.IsSpace() {
@@ -71,71 +64,36 @@ func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (out
 	}
 	return
 }
-
 func (w WordLine) applyTypographicWrapWordChar(maxChars int, input []*WordLine) (output []*WordLine) {
-	cid, wid, lid := 0, 0, 0
-	for _, line := range input {
+	for lid, line := range input {
 		if lid >= len(output) {
 			output = append(output, NewEmptyWordLine())
 		}
-		if line.Len() > maxChars {
+		if line.CharacterCount() > maxChars {
 			if !line.HasSpace() {
-				// nothing to break on, wrap on maxChars
-				for _, word := range line.Words() {
-					if wid >= output[lid].Len() {
-						output[lid].AppendWordCell(NewEmptyWordCell())
+				wrapped := w.applyTypographicWrapChar(maxChars, []*WordLine{line})
+				for wLid, wLine := range wrapped {
+					id := lid + wLid
+					if id >= len(output) {
+						output = append(output, NewEmptyWordLine())
 					}
-					for _, c := range word.Characters() {
-						if cid > maxChars {
-							output = append(output, NewEmptyWordLine())
-							lid = len(output) - 1
-							output[lid].AppendWordCell(NewEmptyWordCell())
-							wid = 0
-							cid = 0
-						}
-						output[lid].words[wid].AppendRune(c.Value(), c.Style())
-						cid++
+					for _, wWord := range wLine.Words() {
+						output[id].AppendWordCell(wWord)
 					}
-					wid++
 				}
-				lid++
-				wid = 0
-				cid = 0
 				continue
 			}
 		}
-		for _, word := range line.Words() {
-			if wid >= output[lid].Len() {
-				output[lid].AppendWordCell(NewEmptyWordCell())
-			}
-			wordLen := word.Len()
-			if word.IsSpace() {
-				wordLen = 1
-			}
-			if cid+wordLen >= maxChars {
+		wrapped := w.applyTypographicWrapWord(maxChars, []*WordLine{line})
+		for wLid, wLine := range wrapped {
+			id := lid + wLid
+			if id >= len(output) {
 				output = append(output, NewEmptyWordLine())
-				lid = len(output) - 1
-				wid = 0
-				if !word.IsSpace() {
-					output[lid].AppendWordCell(word)
-					wid = output[lid].Len() - 1
-				}
-				continue
 			}
-			if word.IsSpace() {
-				c := word.GetCharacter(0)
-				wc := NewEmptyWordCell()
-				wc.AppendRune(c.Value(), c.Style())
-				output[lid].AppendWordCell(wc)
-				cid += wc.Len()
-			} else {
-				output[lid].AppendWordCell(word)
-				cid += word.Len()
+			for _, wWord := range wLine.Words() {
+				output[id].AppendWordCell(wWord)
 			}
-			wid++
 		}
-		lid++
-		cid = 0
 	}
 	return
 }
@@ -148,7 +106,7 @@ func (w WordLine) applyTypographicWrapChar(maxChars int, input []*WordLine) (out
 		}
 		for _, word := range line.Words() {
 			if word.IsSpace() {
-				if cid > maxChars {
+				if cid+1 > maxChars {
 					output = append(output, NewEmptyWordLine())
 					lid = len(output) - 1
 					wid = 0
@@ -175,7 +133,6 @@ func (w WordLine) applyTypographicWrapChar(maxChars int, input []*WordLine) (out
 					output = append(output, NewEmptyWordLine())
 					lid = len(output) - 1
 					output[lid].AppendWordCell(secondHalf)
-					cid = secondHalf.Len()
 					wid = 0
 				} else {
 					output[lid].AppendWordCell(word)
@@ -198,10 +155,6 @@ func (w WordLine) applyTypographicWrapNone(maxChars int, input []*WordLine) (out
 		}
 		for _, word := range line.Words() {
 			if word.IsSpace() {
-				if cid+1 >= maxChars {
-					cid = 0
-					break
-				}
 				if c := word.GetCharacter(0); c != nil {
 					wc := NewEmptyWordCell()
 					wc.AppendRune(c.Value(), c.Style())
@@ -209,18 +162,18 @@ func (w WordLine) applyTypographicWrapNone(maxChars int, input []*WordLine) (out
 					cid += wc.Len()
 				}
 			} else {
-				if cid+word.Len() >= maxChars {
+				if cid+word.Len() > maxChars {
 					wc := NewEmptyWordCell()
 					for _, c := range word.Characters() {
-						if cid > maxChars {
+						if cid+c.Width() > maxChars {
 							break
 						}
 						wc.AppendRune(c.Value(), c.Style())
-						cid++
+						cid += c.Width()
 					}
 					if wc.Len() > 0 {
 						output[lid].AppendWordCell(wc)
-						cid += wc.Len()
+						break
 					}
 				} else {
 					output[lid].AppendWordCell(word)
