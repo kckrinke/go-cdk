@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/kckrinke/go-cdk.svg)](https://pkg.go.dev/github.com/kckrinke/go-cdk)
+[![status](https://github.com/kckrinke/go-cdk/workflows/codecov/badge.svg)](https://github.com/kckrinke/go-cdk/actions?query=workflow%3Acodecov)
 [![codecov](https://codecov.io/gh/kckrinke/go-cdk/branch/trunk/graph/badge.svg?token=8AVBADVD1S)](https://codecov.io/gh/kckrinke/go-cdk)
 
 # CDK - Curses Development Kit
@@ -33,18 +35,18 @@ While CDK is not intended for direct usage, there are some simple demonstration 
 
 A formal CDK application demonstrating the typical boilerplate setup.
 
-* See: [cdk-demo.go](_demos/cdk-demo.go)
+* source code: [cdk-demo.go](_demos/cdk-demo.go)
+* walkthrough: [pkg.go.dev](https://pkg.go.dev/github.com/kckrinke/go-cdk)
 
 ## Running the tests
 
 CDK provides tests for color, event, runes and styles using the simulation screen. To run the tests, use the make-file for convenience:
 
 ```
-$ make test
+> make test
 testing cdk
 ok      github.com/kckrinke/go-cdk  0.171s
-?       github.com/kckrinke/go-cdk/encoding [no test files]
-ok      github.com/kckrinke/go-cdk/terminfo 0.052s
+...
 ```
 
 ## Versioning
