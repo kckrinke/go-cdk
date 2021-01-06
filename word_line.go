@@ -55,11 +55,16 @@ func NewWordLine(line string, style Style) WordLine {
 
 func (w *CWordLine) SetLine(line string, style Style) {
 	w.words = make([]WordCell, 0)
-	isWord := false
+	isWord, wasNL := false, false
 	wid := 0
 	for _, c := range line {
 		if unicode.IsSpace(c) {
-			if isWord || len(w.words) == 0 {
+			if c == '\n' {
+				isWord = false
+				wasNL = true
+				w.words = append(w.words, NewEmptyWordCell())
+				wid = len(w.words) - 1
+			} else if isWord || wasNL || len(w.words) == 0 {
 				isWord = false
 				w.words = append(w.words, NewEmptyWordCell())
 				wid = len(w.words) - 1
