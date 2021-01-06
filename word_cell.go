@@ -14,47 +14,103 @@
 
 package cdk
 
-import (
-	"fmt"
+// WordCell holds a list of characters making up a word or a gap (space)
 
-	"github.com/kckrinke/go-cdk/utils"
-)
-
-// CTextBuffer holds rows of words
-// Views can Draw text using this, along with other primitives
-
-type WordCell struct {
-	characters []*CTextCell
+type WordCell interface {
+	Characters() []TextCell
+	Set(word string, style Style)
+	GetCharacter(index int) (char TextCell)
+	AppendRune(r rune, style Style)
+	IsSpace() bool
+	HasSpace() bool
+	Len() (count int)
+	CompactLen() (count int)
+	Value() (word string)
+	String() (s string)
 }
 
-func NewWordCell(word string, style Style) (*WordCell, error) {
-	w := &WordCell{}
-	if err := w.Set(word, style); err != nil {
-		return nil, err
+type CWordCell struct {
+	characters []TextCell
+}
+
+func NewEmptyWordCell() WordCell {
+	return &CWordCell{
+		characters: make([]TextCell, 0),
 	}
-	return w, nil
 }
 
-func (w WordCell) Characters() []*CTextCell {
+func NewWordCell(word string, style Style) WordCell {
+	w := &CWordCell{}
+	w.Set(word, style)
+	return w
+}
+
+func (w *CWordCell) Characters() []TextCell {
 	return w.characters
 }
 
-func (w *WordCell) Set(word string, style Style) error {
-	if utils.HasSpace(word) {
-		return fmt.Errorf("words cannot contain spaces")
-	}
-	w.characters = make([]*CTextCell, len(word))
+func (w *CWordCell) Set(word string, style Style) {
+	w.characters = make([]TextCell, len(word))
 	for i, c := range word {
 		w.characters[i] = NewRuneCell(c, style)
 	}
-	return nil
+	return
 }
 
-func (w WordCell) Len() int {
-	return len(w.characters)
+func (w *CWordCell) GetCharacter(index int) (char TextCell) {
+	if index < len(w.characters) {
+		char = w.characters[index]
+	}
+	return
 }
 
-func (w WordCell) Value() (word string) {
+func (w *CWordCell) AppendRune(r rune, style Style) {
+	w.characters = append(
+		w.characters,
+		NewRuneCell(r, style),
+	)
+}
+
+func (w *CWordCell) IsSpace() bool {
+	for _, c := range w.characters {
+		if !c.IsSpace() {
+			return false
+		}
+	}
+	return true
+}
+
+func (w *CWordCell) HasSpace() bool {
+	for _, c := range w.characters {
+		if c.IsSpace() {
+			return true
+		}
+	}
+	return false
+}
+
+// the total number of characters in this word
+func (w *CWordCell) Len() (count int) {
+	count = 0
+	for _, c := range w.characters {
+		count += c.Width()
+	}
+	return
+}
+
+// same as `Len()` with space-words being treated as 1 character wide rather
+// than the literal number of spaces from the input string
+func (w *CWordCell) CompactLen() (count int) {
+	if w.IsSpace() {
+		count = 1
+		return
+	}
+	count = w.Len()
+	return
+}
+
+// returns the literal string value of the word
+func (w *CWordCell) Value() (word string) {
 	word = ""
 	for _, c := range w.characters {
 		word += string(c.Value())
@@ -62,7 +118,8 @@ func (w WordCell) Value() (word string) {
 	return
 }
 
-func (w WordCell) String() (s string) {
+// returns the debuggable value of the word
+func (w *CWordCell) String() (s string) {
 	s = ""
 	for _, c := range w.characters {
 		s += c.String()

@@ -30,7 +30,7 @@ import (
 
 var defStyle cdk.Style
 
-func emitStr(s *cdk.Canvas, x, y int, style cdk.Style, str string) {
+func emitStr(s cdk.Canvas, x, y int, style cdk.Style, str string) {
 	for _, c := range str {
 		w := runewidth.RuneWidth(c)
 		if w == 0 {
@@ -42,7 +42,7 @@ func emitStr(s *cdk.Canvas, x, y int, style cdk.Style, str string) {
 	}
 }
 
-func drawBox(s *cdk.Canvas, x1, y1, x2, y2 int, style cdk.Style, r rune) {
+func drawBox(s cdk.Canvas, x1, y1, x2, y2 int, style cdk.Style, r rune) {
 	if y2 < y1 {
 		y1, y2 = y2, y1
 	}
@@ -72,7 +72,7 @@ func drawBox(s *cdk.Canvas, x1, y1, x2, y2 int, style cdk.Style, r rune) {
 	}
 }
 
-func drawSelect(s *cdk.Canvas, x1, y1, x2, y2 int, sel bool) {
+func drawSelect(s cdk.Canvas, x1, y1, x2, y2 int, sel bool) {
 
 	if y2 < y1 {
 		y1, y2 = y2, y1
@@ -82,13 +82,14 @@ func drawSelect(s *cdk.Canvas, x1, y1, x2, y2 int, sel bool) {
 	}
 	for row := y1; row <= y2; row++ {
 		for col := x1; col <= x2; col++ {
-			mainc, style, width := s.GetContent(col, row)
+			c := s.GetContent(col, row)
+			style := c.Style()
 			if style == cdk.StyleDefault {
 				style = defStyle
 			}
 			style = style.Reverse(sel)
-			s.SetRune(col, row, mainc, style)
-			col += width - 1
+			s.SetRune(col, row, c.Value(), style)
+			col += c.Width() - 1
 		}
 	}
 }
@@ -143,7 +144,7 @@ func (w *CdkMouseWindow) Init() (already bool) {
 	return false
 }
 
-func (w *CdkMouseWindow) Draw(s *cdk.Canvas) cdk.EventFlag {
+func (w *CdkMouseWindow) Draw(s cdk.Canvas) cdk.EventFlag {
 	w.LogInfo("Draw: %s", s)
 
 	size := s.GetSize()
@@ -212,11 +213,11 @@ func (w *CdkMouseWindow) ProcessEvent(evt cdk.Event) cdk.EventFlag {
 		if ev.Key() == cdk.KeyEscape {
 			w.ecnt++
 			if w.ecnt > 1 {
-				w.GetDisplay().RequestQuit()
+				w.GetDisplayManager().RequestQuit()
 				return cdk.EVENT_STOP
 			}
 		} else if ev.Key() == cdk.KeyCtrlL {
-			w.GetDisplay().RequestSync()
+			w.GetDisplayManager().RequestSync()
 		} else {
 			w.ecnt = 0
 			if ev.Rune() == 'C' || ev.Rune() == 'c' {

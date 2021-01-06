@@ -19,17 +19,31 @@ import (
 	"sync"
 )
 
-type CanvasBuffer struct {
-	data  [][]*CTextCell
+type CanvasBuffer interface {
+	String() string
+	Size() (size Rectangle)
+	Width() (width int)
+	Height() (height int)
+	Resize(size Rectangle)
+	Cell(x int, y int) TextCell
+	GetDim(x, y int) bool
+	GetBgColor(x, y int) (bg Color)
+	GetContent(x, y int) (textCell TextCell)
+	SetContent(x int, y int, mainc rune, style Style) error
+	LoadData(d [][]TextCell)
+}
+
+type CCanvasBuffer struct {
+	data  [][]TextCell
 	size  Rectangle
 	style Style
 
 	sync.Mutex
 }
 
-func NewCanvasBuffer(size Rectangle, style Style) *CanvasBuffer {
-	b := &CanvasBuffer{
-		data: make([][]*CTextCell, size.W),
+func NewCanvasBuffer(size Rectangle, style Style) CanvasBuffer {
+	b := &CCanvasBuffer{
+		data: make([][]TextCell, size.W),
 		size: MakeRectangle(0, 0),
 	}
 	b.style = style
@@ -37,7 +51,7 @@ func NewCanvasBuffer(size Rectangle, style Style) *CanvasBuffer {
 	return b
 }
 
-func (b *CanvasBuffer) String() string {
+func (b *CCanvasBuffer) String() string {
 	return fmt.Sprintf(
 		"{Size=%s,Style=%s}",
 		b.size,
@@ -45,12 +59,24 @@ func (b *CanvasBuffer) String() string {
 	)
 }
 
-func (b *CanvasBuffer) Resize(size Rectangle) {
+func (b *CCanvasBuffer) Size() (size Rectangle) {
+	return b.size
+}
+
+func (b *CCanvasBuffer) Width() (width int) {
+	return b.size.W
+}
+
+func (b *CCanvasBuffer) Height() (height int) {
+	return b.size.H
+}
+
+func (b *CCanvasBuffer) Resize(size Rectangle) {
 	b.Lock()
 	defer b.Unlock()
 	for x := 0; x < size.W; x++ {
 		if len(b.data) <= x {
-			b.data = append(b.data, make([]*CTextCell, size.H))
+			b.data = append(b.data, make([]TextCell, size.H))
 		}
 		for y := 0; y < size.H; y++ {
 			if len(b.data[x]) <= y {
@@ -69,40 +95,35 @@ func (b *CanvasBuffer) Resize(size Rectangle) {
 	b.size = size
 }
 
-func (b *CanvasBuffer) Cell(x int, y int) *CTextCell {
+func (b *CCanvasBuffer) Cell(x int, y int) TextCell {
 	if b.size.W > x && b.size.H > y {
 		return b.data[x][y]
 	}
 	return nil
 }
 
-func (b *CanvasBuffer) GetDim(x, y int) bool {
-	_, s, _ := b.GetContent(x, y)
+func (b *CCanvasBuffer) GetDim(x, y int) bool {
+	c := b.GetContent(x, y)
+	s := c.Style()
 	_, _, a := s.Decompose()
 	return a.IsDim()
 }
 
-func (b *CanvasBuffer) GetBgColor(x, y int) (bg Color) {
-	_, s, _ := b.GetContent(x, y)
+func (b *CCanvasBuffer) GetBgColor(x, y int) (bg Color) {
+	c := b.GetContent(x, y)
+	s := c.Style()
 	_, bg, _ = s.Decompose()
 	return
 }
 
-func (b *CanvasBuffer) GetContent(x, y int) (mainc rune, style Style, width int) {
+func (b *CCanvasBuffer) GetContent(x, y int) (textCell TextCell) {
 	if x >= 0 && y >= 0 && x < b.size.W && y < b.size.H {
-		c := b.data[x][y]
-		c.Lock()
-		mainc, style = c.Value(), c.Style()
-		if width = c.Width(); width == 0 || mainc < ' ' {
-			width = 1
-			mainc = ' '
-		}
-		c.Unlock()
+		textCell = b.data[x][y]
 	}
 	return
 }
 
-func (b *CanvasBuffer) SetContent(x int, y int, mainc rune, style Style) error {
+func (b *CCanvasBuffer) SetContent(x int, y int, mainc rune, style Style) error {
 	dlen := len(b.data)
 	if x >= 0 && x < dlen {
 		dxlen := len(b.data[x])
@@ -116,7 +137,7 @@ func (b *CanvasBuffer) SetContent(x int, y int, mainc rune, style Style) error {
 	return fmt.Errorf("x=%v not in range [0-%d]", x, len(b.data)-1)
 }
 
-func (b *CanvasBuffer) LoadData(d [][]*CTextCell) {
+func (b *CCanvasBuffer) LoadData(d [][]TextCell) {
 	for x := 0; x < len(d); x++ {
 		for y := 0; y < len(d[x]); y++ {
 			if y >= len(b.data[x]) {

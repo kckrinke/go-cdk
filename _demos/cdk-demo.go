@@ -20,14 +20,14 @@ func (w *CdkDemoWindow) Init() (already bool) {
 	return false
 }
 
-func (w *CdkDemoWindow) Draw(canvas *cdk.Canvas) cdk.EventFlag {
+func (w *CdkDemoWindow) Draw(canvas cdk.Canvas) cdk.EventFlag {
 	w.LogInfo("Draw: %s", canvas)
-	theme := w.GetDisplay().DefaultTheme()
+	theme := w.GetDisplayManager().DefaultTheme()
 	size := canvas.GetSize()
-	canvas.Box(cdk.Point2I{0, 0}, size, true, true, theme)
+	canvas.Box(cdk.Point2I{}, size, true, true, theme)
 	content := "<b><u>H</u><span foreground=\"gold\">ello</span> <i>W</i><span foreground=\"brown\">orld</span></b>\n"
 	content += "<span foreground=\"grey\" background=\"cyan\">(press CTRL+c to exit)</span>\n"
-	content += "<span foreground=\"silver\" background=\"darkblue\">"+time.Now().Format("2006-01-02 15:04:05")+"</span>"
+	content += "<span foreground=\"silver\" background=\"darkblue\">" + time.Now().Format("2006-01-02 15:04:05") + "</span>"
 	textPoint := cdk.Point2I{
 		X: size.W / 2 / 2,
 		Y: size.H/2 - 1,

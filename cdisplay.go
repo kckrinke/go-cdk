@@ -26,7 +26,8 @@ import (
 
 	"golang.org/x/text/transform"
 
-	"github.com/kckrinke/go-cdk/term"
+	"github.com/kckrinke/go-term"
+
 	"github.com/kckrinke/go-cdk/terminfo"
 
 	// import the stock terminals

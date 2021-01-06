@@ -28,6 +28,7 @@ func FloorI(v, min int) int {
 
 // Add the given list of integers up and return the result.
 func SumInts(ints []int) (sum int) {
+	sum = 0
 	for _, v := range ints {
 		sum += v
 	}
@@ -45,7 +46,11 @@ func CeilF2I(v float64) int {
 }
 
 func DistInts(max int, in []int) (out []int) {
-	out = in
+	if len(in) == 0 {
+		out = make([]int, 0)
+		return
+	}
+	out = append(out, in...)
 	front := true
 	first, last := 0, len(out)-1
 	fw, bw := 0, last
@@ -54,14 +59,14 @@ func DistInts(max int, in []int) (out []int) {
 			out[fw]++
 			front = false
 			fw++
-			if fw > last || fw == bw {
+			if fw > last {
 				fw = first
 			}
 		} else {
 			out[bw]++
 			front = true
 			bw--
-			if bw < first || bw == fw {
+			if bw < first {
 				bw = last
 			}
 		}
@@ -105,7 +110,7 @@ func Distribute(total, available, parts, nChildren, spacing int) (values, gaps [
 		err = fmt.Errorf("totalDist[%d] > total[%d]", totalDist, total)
 	} else if totalDist < total {
 		delta := total - totalDist
-		values = DistInts(SumInts(values) + delta, values)
+		values = DistInts(SumInts(values)+delta, values)
 	}
 	return
 }

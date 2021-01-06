@@ -20,7 +20,7 @@ func TestWindow(t *testing.T) {
 		So(w.GetDisplayManager(), ShouldEqual, d)
 		w.SetTitle("testing")
 		So(w.GetTitle(), ShouldEqual, "testing")
-		So(w.Draw(&Canvas{}), ShouldEqual, EVENT_PASS)
+		So(w.Draw(&CCanvas{}), ShouldEqual, EVENT_PASS)
 		So(w.ProcessEvent(&EventError{}), ShouldEqual, EVENT_PASS)
 	})
 }

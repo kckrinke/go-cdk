@@ -37,7 +37,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/kckrinke/go-cdk/term"
+	"github.com/kckrinke/go-term"
 )
 
 type termiosPrivate syscall.Termios

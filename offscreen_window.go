@@ -15,7 +15,7 @@
 package cdk
 
 const (
-	TypeOffscreenWindow       CTypeTag = "cdk-offscreen-window"
+	TypeOffscreenWindow CTypeTag = "cdk-offscreen-window"
 )
 
 func init() {
@@ -32,7 +32,7 @@ type OffscreenWindow interface {
 	GetDisplayManager() DisplayManager
 	SetDisplayManager(d DisplayManager)
 
-	Draw(canvas *Canvas) EventFlag
+	Draw(canvas Canvas) EventFlag
 	ProcessEvent(evt Event) EventFlag
 }
 
@@ -86,7 +86,7 @@ func (w *COffscreenWindow) SetDisplayManager(d DisplayManager) {
 	}
 }
 
-func (w *COffscreenWindow) Draw(canvas *Canvas) EventFlag {
+func (w *COffscreenWindow) Draw(canvas Canvas) EventFlag {
 	return w.Emit(SignalDraw, w, canvas)
 }
 

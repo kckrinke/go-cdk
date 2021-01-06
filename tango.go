@@ -47,19 +47,27 @@ var (
 	TabStops = 4
 )
 
-type Tango struct {
+type Tango interface {
+	Raw() string
+	Clean() string
+	TextBuffer() TextBuffer
+	init() error
+	parseStyleAttrs(attrs []xml.Attr) (style Style)
+}
+
+type CTango struct {
 	raw    string
 	clean  string
 	style  Style
-	marked []*CTextCell
-	lines  []*WordLine
+	marked []TextCell
+	input  WordLine
 }
 
-func NewMarkup(text string, style Style) (markup *Tango, err error) {
+func NewMarkup(text string, style Style) (markup Tango, err error) {
 	if !strings.HasPrefix(text, "<markup") {
 		text = "<markup>" + text + "</markup>"
 	}
-	markup = &Tango{
+	markup = &CTango{
 		raw:   text,
 		style: style,
 	}
@@ -70,38 +78,36 @@ func NewMarkup(text string, style Style) (markup *Tango, err error) {
 	return
 }
 
-func (m *Tango) Raw() string {
+func (m *CTango) Raw() string {
 	return m.raw
 }
 
-func (m *Tango) Clean() string {
+func (m *CTango) Clean() string {
 	return m.clean
 }
 
-func (m *Tango) TextBuffer() *CTextBuffer {
-	tb := &CTextBuffer{
-		lines: m.lines,
-		style: m.style,
-	}
+func (m *CTango) TextBuffer() TextBuffer {
+	tb := NewEmptyTextBuffer(m.style)
+	tb.SetInput(m.input)
 	return tb
 }
 
-func (m *Tango) init() error {
+func (m *CTango) init() error {
 	m.clean = ""
-	m.marked = []*CTextCell{}
-	m.lines = []*WordLine{}
+	m.marked = []TextCell{}
+	m.input = NewEmptyWordLine()
 	r := strings.NewReader(m.raw)
 	parser := xml.NewDecoder(r)
 
-	lid, wid := 0, 0
+	wid := 0
 
 	mstyle := m.style
 	cstyle := m.style
 	pstyle := m.style
 
+	isWord := false
 	var err error
 	var token xml.Token
-	look := true
 	for {
 		token, err = parser.Token()
 		if err != nil {
@@ -138,46 +144,28 @@ func (m *Tango) init() error {
 				cstyle = pstyle
 			}
 		case xml.CharData:
-			content := xml.CharData(t)
+			content := xml.CharData(t) // CharData []byte
 			for idx := 0; idx < len(content); idx++ {
 				v, _ := utf8.DecodeRune(content[idx:])
-				switch v {
-				case '\t':
-					for i := 0; i < TabStops; i++ {
-						m.clean += " "
-						m.marked = append(m.marked, NewRuneCell(' ', cstyle))
+				m.clean += string(v)
+				m.marked = append(m.marked, NewRuneCell(v, cstyle))
+				if unicode.IsSpace(v) {
+					if isWord {
+						isWord = false
+						m.input.AppendWordCell(NewEmptyWordCell())
+						wid = m.input.Len() - 1
 					}
-					if !look {
-						wid++
+				} else {
+					if !isWord {
+						isWord = true
+						m.input.AppendWordCell(NewEmptyWordCell())
+						wid = m.input.Len() - 1
 					}
-					look = true
-				default:
-					m.clean += string(v)
-					m.marked = append(m.marked, NewRuneCell(v, cstyle))
-					if lid >= len(m.lines) {
-						m.lines = append(m.lines, NewWordLine("", cstyle))
-					}
-					if v == '\n' {
-						look = true
-						wid = 0 // CR
-						lid++   // LF
-					} else if unicode.IsSpace(v) {
-						if !look {
-							wid++
-						}
-						look = true
-					} else if !unicode.IsSpace(v) {
-						if wid >= len(m.lines[lid].words) {
-							word, _ := NewWordCell("", cstyle)
-							m.lines[lid].words = append(m.lines[lid].words, word)
-						}
-						m.lines[lid].words[wid].characters = append(
-							m.lines[lid].words[wid].characters,
-							NewRuneCell(v, cstyle),
-						)
-						look = false
-					}
-				} // switch v
+				}
+				if wid >= m.input.Len() {
+					m.input.AppendWordCell(NewEmptyWordCell())
+				}
+				m.input.AppendWordRune(wid, v, cstyle)
 			} // for idx len(content)
 		case xml.Comment:
 		case xml.ProcInst:
@@ -189,7 +177,7 @@ func (m *Tango) init() error {
 	return nil
 }
 
-func (m *Tango) parseStyleAttrs(attrs []xml.Attr) (style Style) {
+func (m *CTango) parseStyleAttrs(attrs []xml.Attr) (style Style) {
 	style = m.style
 	for _, attr := range attrs {
 		switch attr.Name.Local {
