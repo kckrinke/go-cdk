@@ -20,7 +20,7 @@ import (
 )
 
 type CanvasBuffer struct {
-	data  [][]*CTextCell
+	data  [][]TextCell
 	size  Rectangle
 	style Style
 
@@ -29,7 +29,7 @@ type CanvasBuffer struct {
 
 func NewCanvasBuffer(size Rectangle, style Style) *CanvasBuffer {
 	b := &CanvasBuffer{
-		data: make([][]*CTextCell, size.W),
+		data: make([][]TextCell, size.W),
 		size: MakeRectangle(0, 0),
 	}
 	b.style = style
@@ -50,7 +50,7 @@ func (b *CanvasBuffer) Resize(size Rectangle) {
 	defer b.Unlock()
 	for x := 0; x < size.W; x++ {
 		if len(b.data) <= x {
-			b.data = append(b.data, make([]*CTextCell, size.H))
+			b.data = append(b.data, make([]TextCell, size.H))
 		}
 		for y := 0; y < size.H; y++ {
 			if len(b.data[x]) <= y {
@@ -69,7 +69,7 @@ func (b *CanvasBuffer) Resize(size Rectangle) {
 	b.size = size
 }
 
-func (b *CanvasBuffer) Cell(x int, y int) *CTextCell {
+func (b *CanvasBuffer) Cell(x int, y int) TextCell {
 	if b.size.W > x && b.size.H > y {
 		return b.data[x][y]
 	}
@@ -77,27 +77,22 @@ func (b *CanvasBuffer) Cell(x int, y int) *CTextCell {
 }
 
 func (b *CanvasBuffer) GetDim(x, y int) bool {
-	_, s, _ := b.GetContent(x, y)
+	c := b.GetContent(x, y)
+	s := c.Style()
 	_, _, a := s.Decompose()
 	return a.IsDim()
 }
 
 func (b *CanvasBuffer) GetBgColor(x, y int) (bg Color) {
-	_, s, _ := b.GetContent(x, y)
+	c := b.GetContent(x, y)
+	s := c.Style()
 	_, bg, _ = s.Decompose()
 	return
 }
 
-func (b *CanvasBuffer) GetContent(x, y int) (mainc rune, style Style, width int) {
+func (b *CanvasBuffer) GetContent(x, y int) (textCell TextCell) {
 	if x >= 0 && y >= 0 && x < b.size.W && y < b.size.H {
-		c := b.data[x][y]
-		c.Lock()
-		mainc, style = c.Value(), c.Style()
-		if width = c.Width(); width == 0 || mainc < ' ' {
-			width = 1
-			mainc = ' '
-		}
-		c.Unlock()
+		textCell = b.data[x][y]
 	}
 	return
 }
@@ -116,7 +111,7 @@ func (b *CanvasBuffer) SetContent(x int, y int, mainc rune, style Style) error {
 	return fmt.Errorf("x=%v not in range [0-%d]", x, len(b.data)-1)
 }
 
-func (b *CanvasBuffer) LoadData(d [][]*CTextCell) {
+func (b *CanvasBuffer) LoadData(d [][]TextCell) {
 	for x := 0; x < len(d); x++ {
 		for y := 0; y < len(d[x]); y++ {
 			if y >= len(b.data[x]) {

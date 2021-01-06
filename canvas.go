@@ -57,7 +57,7 @@ func (c *Canvas) Resize(size Rectangle) {
 	c.size = size
 }
 
-func (c *Canvas) GetContent(x, y int) (mainc rune, style Style, width int) {
+func (c *Canvas) GetContent(x, y int) (textCell TextCell) {
 	return c.buffer.GetContent(x, y)
 }
 
@@ -109,11 +109,11 @@ func (c *Canvas) Equals(onlyDirty bool, v *Canvas) bool {
 				for y := 0; y < v.size.H; y++ {
 					ca := c.buffer.Cell(x, y)
 					va := v.buffer.Cell(x, y)
-					if !onlyDirty || (onlyDirty && va.dirty) {
-						if ca.style != va.style {
+					if !onlyDirty || (onlyDirty && va.Dirty()) {
+						if ca.Style() != va.Style() {
 							return false
 						}
-						if ca.char != va.char {
+						if ca.Value() != va.Value() {
 							return false
 						}
 					}
@@ -129,7 +129,7 @@ func (c *Canvas) Composite(v *Canvas) error {
 		for y := 0; y < v.buffer.size.H; y++ {
 			cell := v.buffer.Cell(x, y)
 			if cell != nil {
-				if cell.dirty {
+				if cell.Dirty() {
 					if err := c.buffer.SetContent(
 						v.origin.X+x,
 						v.origin.Y+y,
@@ -151,13 +151,13 @@ func (c *Canvas) Render(screen Display) error {
 	for x := 0; x < c.size.W; x++ {
 		for y := 0; y < c.size.H; y++ {
 			cell := c.buffer.Cell(x, y)
-			screen.SetContent(x, y, cell.Value(), nil, cell.style)
+			screen.SetContent(x, y, cell.Value(), nil, cell.Style())
 		}
 	}
 	return nil
 }
 
-type CanvasForEachFn = func(x, y int, cell *CTextCell) EventFlag
+type CanvasForEachFn = func(x, y int, cell TextCell) EventFlag
 
 func (c *Canvas) ForEach(fn CanvasForEachFn) EventFlag {
 	for x := 0; x < c.buffer.size.W; x++ {
@@ -348,5 +348,5 @@ func (c *Canvas) FillBorderTitle(dim bool, title string, justify Justification) 
 		true,
 		c.theme,
 	)
-	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W - 2, justify, c.theme.Normal.Dim(dim), false, title)
+	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, justify, c.theme.Normal.Dim(dim), false, title)
 }

@@ -17,12 +17,12 @@ package cdk
 // WordCell holds a list of characters making up a word or a gap (space)
 
 type WordCell struct {
-	characters []*CTextCell
+	characters []TextCell
 }
 
 func NewEmptyWordCell() *WordCell {
 	return &WordCell{
-		characters: make([]*CTextCell, 0),
+		characters: make([]TextCell, 0),
 	}
 }
 
@@ -32,19 +32,19 @@ func NewWordCell(word string, style Style) *WordCell {
 	return w
 }
 
-func (w WordCell) Characters() []*CTextCell {
+func (w WordCell) Characters() []TextCell {
 	return w.characters
 }
 
 func (w *WordCell) Set(word string, style Style) {
-	w.characters = make([]*CTextCell, len(word))
+	w.characters = make([]TextCell, len(word))
 	for i, c := range word {
 		w.characters[i] = NewRuneCell(c, style)
 	}
 	return
 }
 
-func (w *WordCell) GetCharacter(index int) (char *CTextCell) {
+func (w *WordCell) GetCharacter(index int) (char TextCell) {
 	if index < len(w.characters) {
 		char = w.characters[index]
 	}

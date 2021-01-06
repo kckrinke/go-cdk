@@ -51,7 +51,7 @@ type Tango struct {
 	raw    string
 	clean  string
 	style  Style
-	marked []*CTextCell
+	marked []TextCell
 	input  *WordLine
 }
 
@@ -86,7 +86,7 @@ func (m *Tango) TextBuffer() *CTextBuffer {
 
 func (m *Tango) init() error {
 	m.clean = ""
-	m.marked = []*CTextCell{}
+	m.marked = []TextCell{}
 	m.input = NewEmptyWordLine()
 	r := strings.NewReader(m.raw)
 	parser := xml.NewDecoder(r)
@@ -139,25 +139,25 @@ func (m *Tango) init() error {
 			content := xml.CharData(t) // CharData []byte
 			for idx := 0; idx < len(content); idx++ {
 				v, _ := utf8.DecodeRune(content[idx:])
-					m.clean += string(v)
-					m.marked = append(m.marked, NewRuneCell(v, cstyle))
-					if unicode.IsSpace(v) {
-						if isWord {
-							isWord = false
-							m.input.AppendWordCell(NewEmptyWordCell())
-							wid = m.input.Len() - 1
-						}
-					} else {
-						if !isWord {
-							isWord = true
-							m.input.AppendWordCell(NewEmptyWordCell())
-							wid = m.input.Len() - 1
-						}
-					}
-					if wid >= m.input.Len() {
+				m.clean += string(v)
+				m.marked = append(m.marked, NewRuneCell(v, cstyle))
+				if unicode.IsSpace(v) {
+					if isWord {
+						isWord = false
 						m.input.AppendWordCell(NewEmptyWordCell())
+						wid = m.input.Len() - 1
 					}
-					m.input.words[wid].AppendRune(v, cstyle)
+				} else {
+					if !isWord {
+						isWord = true
+						m.input.AppendWordCell(NewEmptyWordCell())
+						wid = m.input.Len() - 1
+					}
+				}
+				if wid >= m.input.Len() {
+					m.input.AppendWordCell(NewEmptyWordCell())
+				}
+				m.input.words[wid].AppendRune(v, cstyle)
 			} // for idx len(content)
 		case xml.Comment:
 		case xml.ProcInst:

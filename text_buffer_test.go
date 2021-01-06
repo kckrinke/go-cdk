@@ -2,7 +2,6 @@ package cdk
 
 import (
 	"testing"
-	"unicode"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -35,8 +34,8 @@ func TestTextBuffer(t *testing.T) {
 			val := ""
 			numSpaces := 0
 			for x := 0; x < 10; x++ {
-				if r, _, _ := canvas.GetContent(x, 0); !unicode.IsSpace(r) {
-					val += string(r)
+				if c := canvas.GetContent(x, 0); !c.IsSpace() {
+					val += string(c.Value())
 				} else {
 					numSpaces++
 				}
@@ -50,8 +49,8 @@ func TestTextBuffer(t *testing.T) {
 			val = ""
 			numSpaces = 0
 			for x := 0; x < 10; x++ {
-				if r, _, _ := canvas.GetContent(x, 2); !unicode.IsSpace(r) {
-					val += string(r)
+				if c := canvas.GetContent(x, 2); !c.IsSpace() {
+					val += string(c.Value())
 				} else {
 					numSpaces++
 				}
@@ -65,8 +64,8 @@ func TestTextBuffer(t *testing.T) {
 			val = ""
 			numSpaces = 0
 			for x := 0; x < 10; x++ {
-				if r, _, _ := canvas.GetContent(x, 1); !unicode.IsSpace(r) {
-					val += string(r)
+				if c := canvas.GetContent(x, 1); !c.IsSpace() {
+					val += string(c.Value())
 				} else {
 					numSpaces++
 				}

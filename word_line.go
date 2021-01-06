@@ -83,7 +83,7 @@ func (w *WordLine) RemoveWord(index int) {
 	}
 }
 
-func (w WordLine) GetCharacter(index int) *CTextCell {
+func (w WordLine) GetCharacter(index int) TextCell {
 	if index < w.CharacterCount() {
 		count := 0
 		for _, word := range w.words {
