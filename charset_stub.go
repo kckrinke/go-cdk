@@ -16,6 +16,6 @@
 
 package cdk
 
-func getCharset() string {
+func GetCharset() string {
 	return ""
 }
