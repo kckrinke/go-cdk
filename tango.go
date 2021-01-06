@@ -47,7 +47,15 @@ var (
 	TabStops = 4
 )
 
-type Tango struct {
+type Tango interface {
+	Raw() string
+	Clean() string
+	TextBuffer() TextBuffer
+	init() error
+	parseStyleAttrs(attrs []xml.Attr) (style Style)
+}
+
+type CTango struct {
 	raw    string
 	clean  string
 	style  Style
@@ -55,11 +63,11 @@ type Tango struct {
 	input  WordLine
 }
 
-func NewMarkup(text string, style Style) (markup *Tango, err error) {
+func NewMarkup(text string, style Style) (markup Tango, err error) {
 	if !strings.HasPrefix(text, "<markup") {
 		text = "<markup>" + text + "</markup>"
 	}
-	markup = &Tango{
+	markup = &CTango{
 		raw:   text,
 		style: style,
 	}
@@ -70,21 +78,21 @@ func NewMarkup(text string, style Style) (markup *Tango, err error) {
 	return
 }
 
-func (m *Tango) Raw() string {
+func (m *CTango) Raw() string {
 	return m.raw
 }
 
-func (m *Tango) Clean() string {
+func (m *CTango) Clean() string {
 	return m.clean
 }
 
-func (m *Tango) TextBuffer() TextBuffer {
+func (m *CTango) TextBuffer() TextBuffer {
 	tb := NewEmptyTextBuffer(m.style)
 	tb.SetInput(m.input)
 	return tb
 }
 
-func (m *Tango) init() error {
+func (m *CTango) init() error {
 	m.clean = ""
 	m.marked = []TextCell{}
 	m.input = NewEmptyWordLine()
@@ -169,7 +177,7 @@ func (m *Tango) init() error {
 	return nil
 }
 
-func (m *Tango) parseStyleAttrs(attrs []xml.Attr) (style Style) {
+func (m *CTango) parseStyleAttrs(attrs []xml.Attr) (style Style) {
 	style = m.style
 	for _, attr := range attrs {
 		switch attr.Name.Local {
