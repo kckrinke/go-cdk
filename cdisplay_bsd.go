@@ -1,5 +1,6 @@
 // +build freebsd netbsd openbsd dragonfly
 
+// Copyright 2021 The CDK Authors
 // Copyright 2019 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");

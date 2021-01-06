@@ -1,5 +1,6 @@
 // +build windows
 
+// Copyright 2021 The CDK Authors
 // Copyright 2020 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -108,22 +109,22 @@ var (
 // characters (Unicode) are in use.  The documentation refers to them
 // without this suffix, as the resolution is made via preprocessor.
 var (
-	procReadConsoleInput           = k32.NewProc("ReadConsoleInputW")
-	procWaitForMultipleObjects     = k32.NewProc("WaitForMultipleObjects")
-	procCreateEvent                = k32.NewProc("CreateEventW")
-	procSetEvent                   = k32.NewProc("SetEvent")
-	procGetConsoleCursorInfo       = k32.NewProc("GetConsoleCursorInfo")
-	procSetConsoleCursorInfo       = k32.NewProc("SetConsoleCursorInfo")
-	procSetConsoleCursorPosition   = k32.NewProc("SetConsoleCursorPosition")
-	procSetConsoleMode             = k32.NewProc("SetConsoleMode")
-	procGetConsoleMode             = k32.NewProc("GetConsoleMode")
+	procReadConsoleInput            = k32.NewProc("ReadConsoleInputW")
+	procWaitForMultipleObjects      = k32.NewProc("WaitForMultipleObjects")
+	procCreateEvent                 = k32.NewProc("CreateEventW")
+	procSetEvent                    = k32.NewProc("SetEvent")
+	procGetConsoleCursorInfo        = k32.NewProc("GetConsoleCursorInfo")
+	procSetConsoleCursorInfo        = k32.NewProc("SetConsoleCursorInfo")
+	procSetConsoleCursorPosition    = k32.NewProc("SetConsoleCursorPosition")
+	procSetConsoleMode              = k32.NewProc("SetConsoleMode")
+	procGetConsoleMode              = k32.NewProc("GetConsoleMode")
 	procGetConsoleDisplayBufferInfo = k32.NewProc("GetConsoleDisplayBufferInfo")
-	procFillConsoleOutputAttribute = k32.NewProc("FillConsoleOutputAttribute")
-	procFillConsoleOutputCharacter = k32.NewProc("FillConsoleOutputCharacterW")
-	procSetConsoleWindowInfo       = k32.NewProc("SetConsoleWindowInfo")
+	procFillConsoleOutputAttribute  = k32.NewProc("FillConsoleOutputAttribute")
+	procFillConsoleOutputCharacter  = k32.NewProc("FillConsoleOutputCharacterW")
+	procSetConsoleWindowInfo        = k32.NewProc("SetConsoleWindowInfo")
 	procSetConsoleDisplayBufferSize = k32.NewProc("SetConsoleDisplayBufferSize")
-	procSetConsoleTextAttribute    = k32.NewProc("SetConsoleTextAttribute")
-	procMessageBeep                = u32.NewProc("MessageBeep")
+	procSetConsoleTextAttribute     = k32.NewProc("SetConsoleTextAttribute")
+	procMessageBeep                 = u32.NewProc("MessageBeep")
 )
 
 const (
