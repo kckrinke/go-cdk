@@ -217,7 +217,7 @@ func (w WordLine) applyTypographicJustify(justify Justification, maxChars int, f
 		fallthrough
 	default:
 		// each non-empty line has leading space removed
-		output = w.applyTypographicJustifyLeft(maxChars, fillerStyle, input)
+		output = w.applyTypographicJustifyLeft(input)
 	}
 	return
 }

@@ -86,7 +86,7 @@ func (w WordLine) applyTypographicJustifyRight(maxChars int, fillerStyle Style, 
 	return
 }
 
-func (w WordLine) applyTypographicJustifyLeft(maxChars int, fillerStyle Style, input []*WordLine) (output []*WordLine) {
+func (w WordLine) applyTypographicJustifyLeft(input []*WordLine) (output []*WordLine) {
 	// trim left space for each line
 	wid, lid := 0, 0
 	for _, line := range input {
