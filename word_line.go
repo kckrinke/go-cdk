@@ -15,26 +15,45 @@
 package cdk
 
 import (
+	"fmt"
 	"unicode"
 )
 
-type WordLine struct {
+type WordLine interface {
+	SetLine(line string, style Style)
+	AppendWord(word string, style Style)
+	AppendWordCell(word WordCell)
+	AppendWordRune(wordIndex int, char rune, style Style) error
+	GetWord(index int) WordCell
+	RemoveWord(index int)
+	GetCharacter(index int) TextCell
+	Words() []WordCell
+	Len() (wordSpaceCount int)
+	CharacterCount() (count int)
+	WordCount() (wordCount int)
+	HasSpace() bool
+	Value() (s string)
+	String() (s string)
+	Make(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style) (lines []WordLine)
+}
+
+type CWordLine struct {
 	words []WordCell
 }
 
-func NewEmptyWordLine() *WordLine {
-	return &WordLine{
+func NewEmptyWordLine() WordLine {
+	return &CWordLine{
 		words: make([]WordCell, 0),
 	}
 }
 
-func NewWordLine(line string, style Style) *WordLine {
-	wl := &WordLine{}
+func NewWordLine(line string, style Style) WordLine {
+	wl := &CWordLine{}
 	wl.SetLine(line, style)
 	return wl
 }
 
-func (w *WordLine) SetLine(line string, style Style) {
+func (w *CWordLine) SetLine(line string, style Style) {
 	w.words = make([]WordCell, 0)
 	isWord := false
 	wid := 0
@@ -59,22 +78,30 @@ func (w *WordLine) SetLine(line string, style Style) {
 	}
 }
 
-func (w *WordLine) AppendWord(word string, style Style) {
+func (w *CWordLine) AppendWord(word string, style Style) {
 	w.words = append(w.words, NewWordCell(word, style))
 }
 
-func (w *WordLine) AppendWordCell(word WordCell) {
+func (w *CWordLine) AppendWordCell(word WordCell) {
 	w.words = append(w.words, word)
 }
 
-func (w *WordLine) GetWord(index int) WordCell {
+func (w *CWordLine) AppendWordRune(wordIndex int, char rune, style Style) error {
+	if wordIndex < len(w.words) {
+		w.words[wordIndex].AppendRune(char, style)
+		return nil
+	}
+	return fmt.Errorf("word at index %d not found", wordIndex)
+}
+
+func (w *CWordLine) GetWord(index int) WordCell {
 	if index < len(w.words) {
 		return w.words[index]
 	}
 	return nil
 }
 
-func (w *WordLine) RemoveWord(index int) {
+func (w *CWordLine) RemoveWord(index int) {
 	if index < len(w.words) {
 		w.words = append(
 			w.words[:index],
@@ -83,7 +110,7 @@ func (w *WordLine) RemoveWord(index int) {
 	}
 }
 
-func (w *WordLine) GetCharacter(index int) TextCell {
+func (w *CWordLine) GetCharacter(index int) TextCell {
 	if index < w.CharacterCount() {
 		count := 0
 		for _, word := range w.words {
@@ -98,22 +125,22 @@ func (w *WordLine) GetCharacter(index int) TextCell {
 	return nil
 }
 
-func (w *WordLine) Words() []WordCell {
+func (w *CWordLine) Words() []WordCell {
 	return w.words
 }
 
-func (w *WordLine) Len() (wordSpaceCount int) {
+func (w *CWordLine) Len() (wordSpaceCount int) {
 	return len(w.words)
 }
 
-func (w *WordLine) CharacterCount() (count int) {
+func (w *CWordLine) CharacterCount() (count int) {
 	for _, word := range w.words {
 		count += word.Len()
 	}
 	return
 }
 
-func (w *WordLine) WordCount() (wordCount int) {
+func (w *CWordLine) WordCount() (wordCount int) {
 	for _, word := range w.words {
 		if !word.IsSpace() {
 			wordCount++
@@ -122,7 +149,7 @@ func (w *WordLine) WordCount() (wordCount int) {
 	return
 }
 
-func (w *WordLine) HasSpace() bool {
+func (w *CWordLine) HasSpace() bool {
 	for _, word := range w.words {
 		if word.IsSpace() {
 			return true
@@ -131,14 +158,14 @@ func (w *WordLine) HasSpace() bool {
 	return false
 }
 
-func (w *WordLine) Value() (s string) {
+func (w *CWordLine) Value() (s string) {
 	for _, c := range w.words {
 		s += c.Value()
 	}
 	return
 }
 
-func (w *WordLine) String() (s string) {
+func (w *CWordLine) String() (s string) {
 	s = "{"
 	for i, c := range w.words {
 		if i > 0 {
@@ -151,7 +178,7 @@ func (w *WordLine) String() (s string) {
 }
 
 // wrap, justify and align the set input, with filler style
-func (w *WordLine) Make(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style) (lines []*WordLine) {
+func (w *CWordLine) Make(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style) (lines []WordLine) {
 	lines = append(lines, NewEmptyWordLine())
 	cid, wid, lid := 0, 0, 0
 	for _, word := range w.words {
@@ -165,7 +192,7 @@ func (w *WordLine) Make(wrap WrapMode, justify Justification, maxChars int, fill
 				if wid >= lines[lid].Len() {
 					lines[lid].AppendWordCell(NewEmptyWordCell())
 				}
-				lines[lid].words[wid].AppendRune(c.Value(), c.Style())
+				lines[lid].AppendWordRune(wid, c.Value(), c.Style())
 			}
 			cid++
 		}
@@ -175,13 +202,13 @@ func (w *WordLine) Make(wrap WrapMode, justify Justification, maxChars int, fill
 	return
 }
 
-func (w *WordLine) applyTypography(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypography(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
 	output = w.applyTypographicWrap(wrap, maxChars, input)
 	output = w.applyTypographicJustify(justify, maxChars, fillerStyle, output)
 	return
 }
 
-func (w *WordLine) applyTypographicWrap(wrap WrapMode, maxChars int, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicWrap(wrap WrapMode, maxChars int, input []WordLine) (output []WordLine) {
 	// all space-words must be applied as 1 width
 	switch wrap {
 	case WRAP_WORD:
@@ -202,7 +229,7 @@ func (w *WordLine) applyTypographicWrap(wrap WrapMode, maxChars int, input []*Wo
 	return
 }
 
-func (w *WordLine) applyTypographicJustify(justify Justification, maxChars int, fillerStyle Style, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicJustify(justify Justification, maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
 	switch justify {
 	case JUSTIFY_FILL:
 		// each non-empty line is space-expanded to fill maxChars

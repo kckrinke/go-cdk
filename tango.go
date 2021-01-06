@@ -52,7 +52,7 @@ type Tango struct {
 	clean  string
 	style  Style
 	marked []TextCell
-	input  *WordLine
+	input  WordLine
 }
 
 func NewMarkup(text string, style Style) (markup *Tango, err error) {
@@ -157,7 +157,7 @@ func (m *Tango) init() error {
 				if wid >= m.input.Len() {
 					m.input.AppendWordCell(NewEmptyWordCell())
 				}
-				m.input.words[wid].AppendRune(v, cstyle)
+				m.input.AppendWordRune(wid, v, cstyle)
 			} // for idx len(content)
 		case xml.Comment:
 		case xml.ProcInst:

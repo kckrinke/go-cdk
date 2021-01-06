@@ -26,7 +26,7 @@ var (
 
 type TextBuffer interface {
 	Set(input string, style Style)
-	SetInput(input *WordLine)
+	SetInput(input WordLine)
 	Style() Style
 	CharacterCount() (cellCount int)
 	WordCount() (wordCount int)
@@ -34,7 +34,7 @@ type TextBuffer interface {
 }
 
 type CTextBuffer struct {
-	input *WordLine
+	input WordLine
 	style Style
 
 	sync.Mutex
@@ -58,7 +58,7 @@ func (b *CTextBuffer) Set(input string, style Style) {
 	b.input = NewWordLine(input, style)
 }
 
-func (b *CTextBuffer) SetInput(input *WordLine) {
+func (b *CTextBuffer) SetInput(input WordLine) {
 	b.input = input
 }
 

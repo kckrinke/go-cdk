@@ -1,7 +1,7 @@
 package cdk
 
 // wrap the input lines on the nearest word to maxChars
-func (w *WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicWrapWord(maxChars int, input []WordLine) (output []WordLine) {
 	cid, wid, lid := 0, 0, 0
 	for _, line := range input {
 		if lid >= len(output) {
@@ -19,7 +19,7 @@ func (w *WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (ou
 							lid = len(output) // don't append trailing NEWLs
 							break
 						}
-						output[lid].words[wid].AppendRune(c.Value(), c.Style())
+						output[lid].AppendWordRune(wid, c.Value(), c.Style())
 						cid++
 					}
 					wid++
@@ -68,14 +68,14 @@ func (w *WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (ou
 
 // wrap the input lines on the nearest word to maxChars if the line has space,
 // else, truncate at maxChars
-func (w *WordLine) applyTypographicWrapWordChar(maxChars int, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicWrapWordChar(maxChars int, input []WordLine) (output []WordLine) {
 	for lid, line := range input {
 		if lid >= len(output) {
 			output = append(output, NewEmptyWordLine())
 		}
 		if line.CharacterCount() > maxChars {
 			if !line.HasSpace() {
-				wrapped := w.applyTypographicWrapChar(maxChars, []*WordLine{line})
+				wrapped := w.applyTypographicWrapChar(maxChars, []WordLine{line})
 				for wLid, wLine := range wrapped {
 					id := lid + wLid
 					if id >= len(output) {
@@ -88,7 +88,7 @@ func (w *WordLine) applyTypographicWrapWordChar(maxChars int, input []*WordLine)
 				continue
 			}
 		}
-		wrapped := w.applyTypographicWrapWord(maxChars, []*WordLine{line})
+		wrapped := w.applyTypographicWrapWord(maxChars, []WordLine{line})
 		for wLid, wLine := range wrapped {
 			id := lid + wLid
 			if id >= len(output) {
@@ -103,7 +103,7 @@ func (w *WordLine) applyTypographicWrapWordChar(maxChars int, input []*WordLine)
 }
 
 // wrap the input lines on the nearest character to maxChars
-func (w *WordLine) applyTypographicWrapChar(maxChars int, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicWrapChar(maxChars int, input []WordLine) (output []WordLine) {
 	cid, wid, lid := 0, 0, 0
 	for _, line := range input {
 		if lid >= len(output) {
@@ -153,7 +153,7 @@ func (w *WordLine) applyTypographicWrapChar(maxChars int, input []*WordLine) (ou
 }
 
 // truncate the input lines on the nearest character to maxChars
-func (w *WordLine) applyTypographicWrapNone(maxChars int, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicWrapNone(maxChars int, input []WordLine) (output []WordLine) {
 	cid, lid := 0, 0
 	for _, line := range input {
 		if lid >= len(output) {

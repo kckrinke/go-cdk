@@ -8,29 +8,6 @@ import (
 
 func TestWordLine(t *testing.T) {
 	Convey("Word Lines with...", t, func() {
-		Convey("Empty Strings", func() {
-			wl := NewWordLine("", DefaultMonoCdkStyle)
-			So(wl, ShouldNotBeNil)
-			So(wl.Value(), ShouldEqual, "")
-			So(wl.String(), ShouldEqual, "{}")
-			So(wl.Words(), ShouldHaveLength, 0)
-			So(wl.Len(), ShouldEqual, 0)
-		})
-		Convey("One Word", func() {
-			wl := NewWordLine("word", DefaultMonoCdkStyle)
-			So(wl, ShouldNotBeNil)
-			So(wl.Value(), ShouldEqual, "word")
-			So(wl.Words(), ShouldHaveLength, 1)
-			So(wl.CharacterCount(), ShouldEqual, 4)
-			So(wl.WordCount(), ShouldEqual, 1)
-		})
-		Convey("More Than One Word", func() {
-			wl := NewWordLine("more than words", DefaultMonoCdkStyle)
-			So(wl, ShouldNotBeNil)
-			So(wl.Value(), ShouldEqual, "more than words")
-			So(wl.Words(), ShouldHaveLength, 5)
-			So(wl.CharacterCount(), ShouldEqual, 15)
-		})
 		Convey("Basic checks", func() {
 			wl := NewEmptyWordLine()
 			So(wl, ShouldNotBeNil)
@@ -68,6 +45,35 @@ func TestWordLine(t *testing.T) {
 			So(wl.HasSpace(), ShouldEqual, true)
 			wl.RemoveWord(0)
 			So(wl.HasSpace(), ShouldEqual, false)
+		})
+		Convey("Empty Strings", func() {
+			wl := NewWordLine("", DefaultMonoCdkStyle)
+			So(wl, ShouldNotBeNil)
+			So(wl.Value(), ShouldEqual, "")
+			So(wl.String(), ShouldEqual, "{}")
+			So(wl.Words(), ShouldHaveLength, 0)
+			So(wl.Len(), ShouldEqual, 0)
+		})
+		Convey("One Word", func() {
+			wl := NewWordLine("word", DefaultMonoCdkStyle)
+			So(wl, ShouldNotBeNil)
+			So(wl.Value(), ShouldEqual, "word")
+			So(wl.Words(), ShouldHaveLength, 1)
+			So(wl.CharacterCount(), ShouldEqual, 4)
+			So(wl.WordCount(), ShouldEqual, 1)
+			err := wl.AppendWordRune(0, '!', DefaultMonoCdkStyle)
+			So(err, ShouldBeNil)
+			So(wl.Value(), ShouldEqual, "word!")
+			err = wl.AppendWordRune(1, '#', DefaultMonoCdkStyle)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "word at index 1 not found")
+		})
+		Convey("More Than One Word", func() {
+			wl := NewWordLine("more than words", DefaultMonoCdkStyle)
+			So(wl, ShouldNotBeNil)
+			So(wl.Value(), ShouldEqual, "more than words")
+			So(wl.Words(), ShouldHaveLength, 5)
+			So(wl.CharacterCount(), ShouldEqual, 15)
 		})
 		// maxChars, fillerStyle
 		// wrap: word, word-char, char, none

@@ -7,7 +7,7 @@ import (
 // return output lines where each line of input is full-width justified. For
 // each input line, spread the words across the maxChars by increasing the sizes
 // of the gaps (one or more spaces)
-func (w *WordLine) applyTypographicJustifyFill(maxChars int, fillerStyle Style, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicJustifyFill(maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
 	// trim left/right space for each line, maximize gaps
 	lid := 0
 	for _, line := range input {
@@ -43,7 +43,7 @@ func (w *WordLine) applyTypographicJustifyFill(maxChars int, fillerStyle Style, 
 
 // return output lines where each line of input is centered on the full-width of
 // maxChars per-line
-func (w *WordLine) applyTypographicJustifyCenter(maxChars int, fillerStyle Style, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicJustifyCenter(maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
 	// trim left space for each line
 	wid, lid := 0, 0
 	for _, line := range input {
@@ -70,7 +70,7 @@ func (w *WordLine) applyTypographicJustifyCenter(maxChars int, fillerStyle Style
 
 // return output lines where for each input line the content is left-padded with
 // spaces such that the last character of content is aligned to maxChars
-func (w *WordLine) applyTypographicJustifyRight(maxChars int, fillerStyle Style, input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicJustifyRight(maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
 	// trim left space for each line, assume no line needs wrapping or truncation
 	wid, lid := 0, 0
 	for _, line := range input {
@@ -94,7 +94,7 @@ func (w *WordLine) applyTypographicJustifyRight(maxChars int, fillerStyle Style,
 }
 
 // return output lines where for each input line, any leading space is removed
-func (w *WordLine) applyTypographicJustifyLeft(input []*WordLine) (output []*WordLine) {
+func (w *CWordLine) applyTypographicJustifyLeft(input []WordLine) (output []WordLine) {
 	// trim left space for each line
 	wid, lid := 0, 0
 	for _, line := range input {
