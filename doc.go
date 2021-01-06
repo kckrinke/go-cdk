@@ -134,7 +134,9 @@ the concept of an `origin` point for painting upon a canvas).
 This sets up a variable holding a `Rectangle` configured to be half the size
 of the canvas itself.
 
-        canvas.DrawText(textPoint, textSize, cdk.JUSTIFY_CENTER, false, cdk.WRAP_WORD, cdk.DefaultColorTheme.Normal, true, content)
+        canvas.DrawText(textPoint, textSize, cdk.JUSTIFY_CENTER, false,
+                        cdk.WRAP_WORD, cdk.DefaultColorTheme.Normal, true,
+                        content)
 
 This last command within the `Draw` method paints the textual-content
 prepared earlier onto the canvas provided, center-justified, wrapping on
@@ -201,7 +203,7 @@ simple to implement.
             cdk.AddTimeout(time.Second, func() cdk.EventFlag {
                 d.RequestDraw()
                 d.RequestShow()
-                return cdk.EVENT_PASS keep looping every second
+                return cdk.EVENT_PASS // keep looping every second
             })
             return nil
         },
