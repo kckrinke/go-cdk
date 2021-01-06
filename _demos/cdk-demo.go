@@ -28,14 +28,8 @@ func (w *CdkDemoWindow) Draw(canvas cdk.Canvas) cdk.EventFlag {
 	content := "<b><u>H</u><span foreground=\"gold\">ello</span> <i>W</i><span foreground=\"brown\">orld</span></b>\n"
 	content += "<span foreground=\"grey\" background=\"cyan\">(press CTRL+c to exit)</span>\n"
 	content += "<span foreground=\"silver\" background=\"darkblue\">" + time.Now().Format("2006-01-02 15:04:05") + "</span>"
-	textPoint := cdk.Point2I{
-		X: size.W / 2 / 2,
-		Y: size.H/2 - 1,
-	}
-	textSize := cdk.Rectangle{
-		W: size.W / 2,
-		H: size.H / 2,
-	}
+	textPoint := cdk.MakePoint2I(size.W/2/2, size.H/2-1)
+	textSize := cdk.MakeRectangle(size.W/2, size.H/2)
 	canvas.DrawText(textPoint, textSize, cdk.JUSTIFY_CENTER, false, cdk.WRAP_WORD, cdk.DefaultColorTheme.Normal, true, content)
 	return cdk.EVENT_STOP
 }
