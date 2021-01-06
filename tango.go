@@ -78,9 +78,9 @@ func (m *Tango) Clean() string {
 	return m.clean
 }
 
-func (m *Tango) TextBuffer() *CTextBuffer {
+func (m *Tango) TextBuffer() TextBuffer {
 	tb := NewEmptyTextBuffer(m.style)
-	tb.input = m.input
+	tb.SetInput(m.input)
 	return tb
 }
 

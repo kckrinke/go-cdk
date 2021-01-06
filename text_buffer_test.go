@@ -11,7 +11,7 @@ func TestTextBuffer(t *testing.T) {
 		Convey("Basic checks", func() {
 			tb := NewEmptyTextBuffer(DefaultMonoCdkStyle)
 			So(tb, ShouldNotBeNil)
-			So(tb.style.String(), ShouldEqual, DefaultMonoCdkStyle.String())
+			So(tb.Style().String(), ShouldEqual, DefaultMonoCdkStyle.String())
 			So(tb.CharacterCount(), ShouldEqual, 0)
 			So(tb.WordCount(), ShouldEqual, 0)
 			tb = NewTextBuffer("test", DefaultMonoCdkStyle)

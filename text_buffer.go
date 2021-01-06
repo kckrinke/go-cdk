@@ -26,9 +26,11 @@ var (
 
 type TextBuffer interface {
 	Set(input string, style Style)
+	SetInput(input *WordLine)
+	Style() Style
 	CharacterCount() (cellCount int)
 	WordCount() (wordCount int)
-	Draw(canvas *Canvas, singleLineMode bool, wordWrap WrapMode, justify Justification, align VerticalAlignment) EventFlag
+	Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag
 }
 
 type CTextBuffer struct {
@@ -38,13 +40,13 @@ type CTextBuffer struct {
 	sync.Mutex
 }
 
-func NewEmptyTextBuffer(style Style) *CTextBuffer {
+func NewEmptyTextBuffer(style Style) TextBuffer {
 	return &CTextBuffer{
 		style: style,
 	}
 }
 
-func NewTextBuffer(input string, style Style) *CTextBuffer {
+func NewTextBuffer(input string, style Style) TextBuffer {
 	tb := &CTextBuffer{
 		style: style,
 	}
@@ -54,6 +56,14 @@ func NewTextBuffer(input string, style Style) *CTextBuffer {
 
 func (b *CTextBuffer) Set(input string, style Style) {
 	b.input = NewWordLine(input, style)
+}
+
+func (b *CTextBuffer) SetInput(input *WordLine) {
+	b.input = input
+}
+
+func (b *CTextBuffer) Style() Style {
+	return b.style
 }
 
 func (b *CTextBuffer) CharacterCount() (cellCount int) {
