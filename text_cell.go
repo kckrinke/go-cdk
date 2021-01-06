@@ -32,7 +32,7 @@ type TextCell interface {
 }
 
 type CTextCell struct {
-	char  *CTextChar
+	char  TextChar
 	style Style
 	dirty bool
 
@@ -43,7 +43,7 @@ func NewRuneCell(char rune, style Style) TextCell {
 	return NewTextCell(NewTextChar([]byte(string(char))), style)
 }
 
-func NewTextCell(char *CTextChar, style Style) TextCell {
+func NewTextCell(char TextChar, style Style) TextCell {
 	return &CTextCell{
 		char:  char,
 		style: style,

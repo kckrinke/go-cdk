@@ -37,7 +37,7 @@ type CTextChar struct {
 	sync.RWMutex
 }
 
-func NewTextChar(b []byte) *CTextChar {
+func NewTextChar(b []byte) TextChar {
 	t := &CTextChar{}
 	t.SetByte(b)
 	return t
