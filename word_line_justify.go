@@ -101,7 +101,15 @@ func (w WordLine) applyTypographicJustifyLeft(maxChars int, fillerStyle Style, i
 				}
 				start = false
 			}
-			output[lid].AppendWordCell(word)
+			if word.IsSpace() {
+				if c := word.GetCharacter(0); c != nil {
+					wc := NewEmptyWordCell()
+					wc.AppendRune(c.Value(), c.Style())
+					output[lid].AppendWordCell(wc)
+				}
+			} else {
+				output[lid].AppendWordCell(word)
+			}
 			wid++
 		}
 		lid++

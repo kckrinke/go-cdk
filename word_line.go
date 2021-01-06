@@ -132,24 +132,21 @@ func (w WordLine) HasSpace() bool {
 }
 
 func (w WordLine) Value() (s string) {
-	s = ""
-	for i, c := range w.words {
-		if i > 0 {
-			s += " "
-		}
+	for _, c := range w.words {
 		s += c.Value()
 	}
 	return
 }
 
 func (w WordLine) String() (s string) {
-	s = ""
+	s = "{"
 	for i, c := range w.words {
 		if i > 0 {
-			s += " "
+			s += ","
 		}
 		s += c.String()
 	}
+	s += "}"
 	return
 }
 
@@ -158,15 +155,12 @@ func (w WordLine) Make(wrap WrapMode, justify Justification, maxChars int, fille
 	lines = append(lines, NewEmptyWordLine())
 	cid, wid, lid := 0, 0, 0
 	for _, word := range w.words {
-		if wid >= lines[lid].Len() {
-			lines[lid].AppendWordCell(NewEmptyWordCell())
-		}
 		for _, c := range word.characters {
 			switch c.Value() {
 			case '\n':
 				lines = append(lines, NewEmptyWordLine())
 				lid = len(lines) - 1
-				wid = 0
+				wid = -1
 			default:
 				if wid >= lines[lid].Len() {
 					lines[lid].AppendWordCell(NewEmptyWordCell())

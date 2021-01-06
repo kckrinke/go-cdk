@@ -6,10 +6,9 @@ func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (out
 		if lid >= len(output) {
 			output = append(output, NewEmptyWordLine())
 		}
-		if line.Len() > maxChars {
+		if line.CharacterCount() > maxChars {
 			if !line.HasSpace() {
 				// nothing to break on, truncate on maxChars
-			truncateWrapWord:
 				for _, word := range line.Words() {
 					if wid >= output[lid].Len() {
 						output[lid].AppendWordCell(NewEmptyWordCell())
@@ -17,10 +16,16 @@ func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (out
 					for _, c := range word.Characters() {
 						if cid > maxChars {
 							lid = len(output) // don't append trailing NEWLs
-							break truncateWrapWord
+							break
 						}
 						output[lid].words[wid].AppendRune(c.Value(), c.Style())
 						cid++
+					}
+					if cid > maxChars {
+						lid = len(output) // don't append trailing NEWLs
+						wid = 0
+						cid = 0
+						break
 					}
 					wid++
 				}
@@ -28,37 +33,41 @@ func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (out
 			}
 		}
 		for _, word := range line.Words() {
-			if wid >= output[lid].Len() {
-				output[lid].AppendWordCell(NewEmptyWordCell())
-			}
+			// if wid >= output[lid].Len() {
+			// 	output[lid].AppendWordCell(NewEmptyWordCell())
+			// }
 			wordLen := word.Len()
-			if word.IsSpace() {
+			if word.IsSpace() && wordLen > 1 {
 				wordLen = 1
 			}
-			if cid+wordLen >= maxChars {
+			if cid+wordLen > maxChars {
 				output = append(output, NewEmptyWordLine())
 				lid = len(output) - 1
-				wid = 0
+				wid = -1
 				if !word.IsSpace() {
 					output[lid].AppendWordCell(word)
 					wid = output[lid].Len() - 1
 				}
-				continue
-			}
-			if word.IsSpace() {
-				c := word.GetCharacter(0)
-				wc := NewEmptyWordCell()
-				wc.AppendRune(c.Value(), c.Style())
-				output[lid].AppendWordCell(wc)
-				cid += wc.Len()
+			} else if word.IsSpace() && cid + wordLen + 1 > maxChars {
+				// continue
 			} else {
-				output[lid].AppendWordCell(word)
-				cid += word.Len()
+				if word.IsSpace() {
+					if c := word.GetCharacter(0); c != nil {
+						wc := NewEmptyWordCell()
+						wc.AppendRune(c.Value(), c.Style())
+						output[lid].AppendWordCell(wc)
+						cid += wc.Len()
+					}
+				} else {
+					output[lid].AppendWordCell(word)
+					cid += word.Len()
+				}
 			}
 			wid++
 		}
 		lid++
 		cid = 0
+		wid = 0
 	}
 	return
 }
