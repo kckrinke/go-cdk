@@ -32,6 +32,8 @@ github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7
 github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
 github.com/kckrinke/go-term v1.2.1 h1:TJEoYRmaqlMdCQAr4fHhJiJq9cONQLWXoMwD1jwJ6nA=
 github.com/kckrinke/go-term v1.2.1/go.mod h1:59z0I/v9Dgq6QIv+wYXv525qdOH9Bx34AXZLOPsON4Y=
+github.com/kckrinke/go-terminfo v1.0.0 h1:Ewy3lmV86f5le1cC/BVCaDVXGChKmlESSgZXLeIyTRk=
+github.com/kckrinke/go-terminfo v1.0.0/go.mod h1:XJjkRsFy8CZbbAKu/YtSzxI5nGMyxzp5Spo5897CmEA=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=

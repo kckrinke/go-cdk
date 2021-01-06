@@ -29,10 +29,10 @@ import (
 
 	"github.com/kckrinke/go-term"
 
-	"github.com/kckrinke/go-cdk/terminfo"
+	"github.com/kckrinke/go-terminfo"
 
 	// import the stock terminals
-	_ "github.com/kckrinke/go-cdk/terminfo/base"
+	_ "github.com/kckrinke/go-terminfo/base"
 )
 
 var (

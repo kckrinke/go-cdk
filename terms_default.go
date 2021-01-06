@@ -20,5 +20,5 @@ package cdk
 import (
 	// This imports the default terminal entries.  To disable, use the
 	// tcell_minimal build tag.
-	_ "github.com/kckrinke/go-cdk/terminfo/extended"
+	_ "github.com/kckrinke/go-terminfo/extended"
 )

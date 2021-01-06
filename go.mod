@@ -6,6 +6,7 @@ require (
 	github.com/gdamore/encoding v1.0.0
 	github.com/gobuffalo/envy v1.9.0
 	github.com/kckrinke/go-term v1.2.1
+	github.com/kckrinke/go-terminfo v1.0.0
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.9
