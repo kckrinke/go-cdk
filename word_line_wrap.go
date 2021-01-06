@@ -1,5 +1,6 @@
 package cdk
 
+// wrap the input lines on the nearest word to maxChars
 func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (output []*WordLine) {
 	cid, wid, lid := 0, 0, 0
 	for _, line := range input {
@@ -64,6 +65,9 @@ func (w WordLine) applyTypographicWrapWord(maxChars int, input []*WordLine) (out
 	}
 	return
 }
+
+// wrap the input lines on the nearest word to maxChars if the line has space,
+// else, truncate at maxChars
 func (w WordLine) applyTypographicWrapWordChar(maxChars int, input []*WordLine) (output []*WordLine) {
 	for lid, line := range input {
 		if lid >= len(output) {
@@ -98,6 +102,7 @@ func (w WordLine) applyTypographicWrapWordChar(maxChars int, input []*WordLine) 
 	return
 }
 
+// wrap the input lines on the nearest character to maxChars
 func (w WordLine) applyTypographicWrapChar(maxChars int, input []*WordLine) (output []*WordLine) {
 	cid, wid, lid := 0, 0, 0
 	for _, line := range input {
@@ -147,6 +152,7 @@ func (w WordLine) applyTypographicWrapChar(maxChars int, input []*WordLine) (out
 	return
 }
 
+// truncate the input lines on the nearest character to maxChars
 func (w WordLine) applyTypographicWrapNone(maxChars int, input []*WordLine) (output []*WordLine) {
 	cid, lid := 0, 0
 	for _, line := range input {
