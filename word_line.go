@@ -19,12 +19,12 @@ import (
 )
 
 type WordLine struct {
-	words []*WordCell
+	words []WordCell
 }
 
 func NewEmptyWordLine() *WordLine {
 	return &WordLine{
-		words: make([]*WordCell, 0),
+		words: make([]WordCell, 0),
 	}
 }
 
@@ -35,7 +35,7 @@ func NewWordLine(line string, style Style) *WordLine {
 }
 
 func (w *WordLine) SetLine(line string, style Style) {
-	w.words = make([]*WordCell, 0)
+	w.words = make([]WordCell, 0)
 	isWord := false
 	wid := 0
 	for _, c := range line {
@@ -63,11 +63,11 @@ func (w *WordLine) AppendWord(word string, style Style) {
 	w.words = append(w.words, NewWordCell(word, style))
 }
 
-func (w *WordLine) AppendWordCell(word *WordCell) {
+func (w *WordLine) AppendWordCell(word WordCell) {
 	w.words = append(w.words, word)
 }
 
-func (w WordLine) GetWord(index int) *WordCell {
+func (w WordLine) GetWord(index int) WordCell {
 	if index < len(w.words) {
 		return w.words[index]
 	}
@@ -87,7 +87,7 @@ func (w WordLine) GetCharacter(index int) TextCell {
 	if index < w.CharacterCount() {
 		count := 0
 		for _, word := range w.words {
-			for _, c := range word.characters {
+			for _, c := range word.Characters() {
 				if count == index {
 					return c
 				}
@@ -98,7 +98,7 @@ func (w WordLine) GetCharacter(index int) TextCell {
 	return nil
 }
 
-func (w WordLine) Words() []*WordCell {
+func (w WordLine) Words() []WordCell {
 	return w.words
 }
 
@@ -155,7 +155,7 @@ func (w WordLine) Make(wrap WrapMode, justify Justification, maxChars int, fille
 	lines = append(lines, NewEmptyWordLine())
 	cid, wid, lid := 0, 0, 0
 	for _, word := range w.words {
-		for _, c := range word.characters {
+		for _, c := range word.Characters() {
 			switch c.Value() {
 			case '\n':
 				lines = append(lines, NewEmptyWordLine())

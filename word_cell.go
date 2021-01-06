@@ -16,27 +16,40 @@ package cdk
 
 // WordCell holds a list of characters making up a word or a gap (space)
 
-type WordCell struct {
+type WordCell interface {
+	Characters() []TextCell
+	Set(word string, style Style)
+	GetCharacter(index int) (char TextCell)
+	AppendRune(r rune, style Style)
+	IsSpace() bool
+	HasSpace() bool
+	Len() (count int)
+	CompactLen() (count int)
+	Value() (word string)
+	String() (s string)
+}
+
+type CWordCell struct {
 	characters []TextCell
 }
 
-func NewEmptyWordCell() *WordCell {
-	return &WordCell{
+func NewEmptyWordCell() WordCell {
+	return &CWordCell{
 		characters: make([]TextCell, 0),
 	}
 }
 
-func NewWordCell(word string, style Style) *WordCell {
-	w := &WordCell{}
+func NewWordCell(word string, style Style) WordCell {
+	w := &CWordCell{}
 	w.Set(word, style)
 	return w
 }
 
-func (w WordCell) Characters() []TextCell {
+func (w CWordCell) Characters() []TextCell {
 	return w.characters
 }
 
-func (w *WordCell) Set(word string, style Style) {
+func (w *CWordCell) Set(word string, style Style) {
 	w.characters = make([]TextCell, len(word))
 	for i, c := range word {
 		w.characters[i] = NewRuneCell(c, style)
@@ -44,21 +57,21 @@ func (w *WordCell) Set(word string, style Style) {
 	return
 }
 
-func (w *WordCell) GetCharacter(index int) (char TextCell) {
+func (w *CWordCell) GetCharacter(index int) (char TextCell) {
 	if index < len(w.characters) {
 		char = w.characters[index]
 	}
 	return
 }
 
-func (w *WordCell) AppendRune(r rune, style Style) {
+func (w *CWordCell) AppendRune(r rune, style Style) {
 	w.characters = append(
 		w.characters,
 		NewRuneCell(r, style),
 	)
 }
 
-func (w *WordCell) IsSpace() bool {
+func (w *CWordCell) IsSpace() bool {
 	for _, c := range w.characters {
 		if !c.IsSpace() {
 			return false
@@ -67,7 +80,7 @@ func (w *WordCell) IsSpace() bool {
 	return true
 }
 
-func (w *WordCell) HasSpace() bool {
+func (w *CWordCell) HasSpace() bool {
 	for _, c := range w.characters {
 		if c.IsSpace() {
 			return true
@@ -77,7 +90,7 @@ func (w *WordCell) HasSpace() bool {
 }
 
 // the total number of characters in this word
-func (w WordCell) Len() (count int) {
+func (w CWordCell) Len() (count int) {
 	count = 0
 	for _, c := range w.characters {
 		count += c.Width()
@@ -87,7 +100,7 @@ func (w WordCell) Len() (count int) {
 
 // same as `Len()` with space-words being treated as 1 character wide rather
 // than the literal number of spaces from the input string
-func (w WordCell) CompactLen() (count int) {
+func (w CWordCell) CompactLen() (count int) {
 	if w.IsSpace() {
 		count = 1
 		return
@@ -97,7 +110,7 @@ func (w WordCell) CompactLen() (count int) {
 }
 
 // returns the literal string value of the word
-func (w WordCell) Value() (word string) {
+func (w CWordCell) Value() (word string) {
 	word = ""
 	for _, c := range w.characters {
 		word += string(c.Value())
@@ -106,7 +119,7 @@ func (w WordCell) Value() (word string) {
 }
 
 // returns the debuggable value of the word
-func (w WordCell) String() (s string) {
+func (w CWordCell) String() (s string) {
 	s = ""
 	for _, c := range w.characters {
 		s += c.String()
