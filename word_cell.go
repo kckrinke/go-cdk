@@ -45,7 +45,7 @@ func NewWordCell(word string, style Style) WordCell {
 	return w
 }
 
-func (w CWordCell) Characters() []TextCell {
+func (w *CWordCell) Characters() []TextCell {
 	return w.characters
 }
 
@@ -90,7 +90,7 @@ func (w *CWordCell) HasSpace() bool {
 }
 
 // the total number of characters in this word
-func (w CWordCell) Len() (count int) {
+func (w *CWordCell) Len() (count int) {
 	count = 0
 	for _, c := range w.characters {
 		count += c.Width()
@@ -100,7 +100,7 @@ func (w CWordCell) Len() (count int) {
 
 // same as `Len()` with space-words being treated as 1 character wide rather
 // than the literal number of spaces from the input string
-func (w CWordCell) CompactLen() (count int) {
+func (w *CWordCell) CompactLen() (count int) {
 	if w.IsSpace() {
 		count = 1
 		return
@@ -110,7 +110,7 @@ func (w CWordCell) CompactLen() (count int) {
 }
 
 // returns the literal string value of the word
-func (w CWordCell) Value() (word string) {
+func (w *CWordCell) Value() (word string) {
 	word = ""
 	for _, c := range w.characters {
 		word += string(c.Value())
@@ -119,7 +119,7 @@ func (w CWordCell) Value() (word string) {
 }
 
 // returns the debuggable value of the word
-func (w CWordCell) String() (s string) {
+func (w *CWordCell) String() (s string) {
 	s = ""
 	for _, c := range w.characters {
 		s += c.String()
