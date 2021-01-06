@@ -35,7 +35,7 @@ type Window interface {
 	GetDisplayManager() DisplayManager
 	SetDisplayManager(d DisplayManager)
 
-	Draw(canvas *Canvas) EventFlag
+	Draw(canvas Canvas) EventFlag
 	ProcessEvent(evt Event) EventFlag
 }
 
@@ -84,7 +84,7 @@ func (w *CWindow) SetDisplayManager(d DisplayManager) {
 	}
 }
 
-func (w *CWindow) Draw(canvas *Canvas) EventFlag {
+func (w *CWindow) Draw(canvas Canvas) EventFlag {
 	return w.Emit(SignalDraw, w, canvas)
 }
 

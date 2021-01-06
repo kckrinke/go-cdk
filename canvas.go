@@ -21,7 +21,39 @@ import (
 	"github.com/kckrinke/go-cdk/utils"
 )
 
-type Canvas struct {
+type Canvas interface {
+	String() string
+	Resize(size Rectangle)
+	GetContent(x, y int) (textCell TextCell)
+	SetContent(x, y int, char string, s Style) error
+	SetRune(x, y int, r rune, s Style) error
+	SetOrigin(origin Point2I)
+	GetOrigin() Point2I
+	SetSize(size Rectangle)
+	GetSize() Rectangle
+	Width() (width int)
+	Height() (height int)
+	SetTheme(style Theme)
+	GetTheme() Theme
+	SetFill(fill rune)
+	GetFill() rune
+	Equals(onlyDirty bool, v Canvas) bool
+	Composite(v Canvas) error
+	Render(screen Display) error
+	ForEach(fn CanvasForEachFn) EventFlag
+	DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, style Style, markup bool, text string)
+	DrawSingleLineText(pos Point2I, maxChars int, justify Justification, style Style, markup bool, text string)
+	DrawLine(pos Point2I, length int, orient Orientation, style Style)
+	DrawHorizontalLine(pos Point2I, length int, style Style)
+	DrawVerticalLine(pos Point2I, length int, style Style)
+	Box(pos Point2I, size Rectangle, border bool, fill bool, theme Theme)
+	DebugBox(color Color, format string, argv ...interface{})
+	Fill(s Theme)
+	FillBorder(dim bool, border bool)
+	FillBorderTitle(dim bool, title string, justify Justification)
+}
+
+type CCanvas struct {
 	buffer CanvasBuffer
 	origin Point2I
 	size   Rectangle
@@ -29,8 +61,8 @@ type Canvas struct {
 	fill   rune
 }
 
-func NewCanvas(origin Point2I, size Rectangle, theme Theme) *Canvas {
-	return &Canvas{
+func NewCanvas(origin Point2I, size Rectangle, theme Theme) Canvas {
+	return &CCanvas{
 		buffer: NewCanvasBuffer(size, theme.Normal),
 		origin: origin,
 		size:   size,
@@ -39,7 +71,7 @@ func NewCanvas(origin Point2I, size Rectangle, theme Theme) *Canvas {
 	}
 }
 
-func (c Canvas) String() string {
+func (c CCanvas) String() string {
 	return fmt.Sprintf(
 		"{Origin=%s,Size=%s,Theme=%s,Fill=%v,Buffer=%v}",
 		c.origin,
@@ -50,65 +82,75 @@ func (c Canvas) String() string {
 	)
 }
 
-/* Canvas Methods */
+/* CCanvas Methods */
 
-func (c *Canvas) Resize(size Rectangle) {
+func (c *CCanvas) Resize(size Rectangle) {
 	c.buffer.Resize(size)
 	c.size = size
 }
 
-func (c *Canvas) GetContent(x, y int) (textCell TextCell) {
+func (c *CCanvas) GetContent(x, y int) (textCell TextCell) {
 	return c.buffer.GetContent(x, y)
 }
 
-func (c *Canvas) SetContent(x, y int, char string, s Style) error {
+func (c *CCanvas) SetContent(x, y int, char string, s Style) error {
 	r, _ := utf8.DecodeRune([]byte(char))
 	return c.buffer.SetContent(x, y, r, s)
 }
 
-func (c *Canvas) SetRune(x, y int, r rune, s Style) error {
+func (c *CCanvas) SetRune(x, y int, r rune, s Style) error {
 	return c.buffer.SetContent(x, y, r, s)
 }
 
-func (c *Canvas) SetOrigin(origin Point2I) {
+func (c *CCanvas) SetOrigin(origin Point2I) {
 	c.origin = origin
 }
 
-func (c *Canvas) GetOrigin() Point2I {
+func (c *CCanvas) GetOrigin() Point2I {
 	return c.origin
 }
 
-func (c *Canvas) SetSize(size Rectangle) {
+func (c *CCanvas) SetSize(size Rectangle) {
 	c.size = size
 }
 
-func (c *Canvas) GetSize() Rectangle {
+func (c *CCanvas) GetSize() Rectangle {
 	return c.size
 }
 
-func (c *Canvas) SetTheme(style Theme) {
+func (c *CCanvas) Width() (width int) {
+	return c.size.W
+}
+
+func (c *CCanvas) Height() (height int) {
+	return c.size.H
+}
+
+func (c *CCanvas) SetTheme(style Theme) {
 	c.theme = style
 }
 
-func (c *Canvas) GetTheme() Theme {
+func (c *CCanvas) GetTheme() Theme {
 	return c.theme
 }
 
-func (c *Canvas) SetFill(fill rune) {
+func (c *CCanvas) SetFill(fill rune) {
 	c.fill = fill
 }
 
-func (c *Canvas) GetFill() rune {
+func (c *CCanvas) GetFill() rune {
 	return c.fill
 }
 
-func (c *Canvas) Equals(onlyDirty bool, v *Canvas) bool {
-	if c.origin.Equals2I(v.origin) {
-		if c.size.EqualsR(v.size) {
-			for x := 0; x < v.size.W; x++ {
-				for y := 0; y < v.size.H; y++ {
-					ca := c.buffer.Cell(x, y)
-					va := v.buffer.Cell(x, y)
+func (c *CCanvas) Equals(onlyDirty bool, v Canvas) bool {
+	vOrigin := v.GetOrigin()
+	vSize := v.GetSize()
+	if c.origin.Equals2I(vOrigin) {
+		if c.size.EqualsR(vSize) {
+			for x := 0; x < vSize.W; x++ {
+				for y := 0; y < vSize.H; y++ {
+					ca := c.GetContent(x, y)
+					va := v.GetContent(x, y)
 					if !onlyDirty || (onlyDirty && va.Dirty()) {
 						if ca.Style() != va.Style() {
 							return false
@@ -124,15 +166,16 @@ func (c *Canvas) Equals(onlyDirty bool, v *Canvas) bool {
 	return true
 }
 
-func (c *Canvas) Composite(v *Canvas) error {
-	for x := 0; x < v.buffer.Width(); x++ {
-		for y := 0; y < v.buffer.Height(); y++ {
-			cell := v.buffer.Cell(x, y)
+func (c *CCanvas) Composite(v Canvas) error {
+	vOrigin := v.GetOrigin()
+	for x := 0; x < v.Width(); x++ {
+		for y := 0; y < v.Height(); y++ {
+			cell := v.GetContent(x, y)
 			if cell != nil {
 				if cell.Dirty() {
 					if err := c.buffer.SetContent(
-						v.origin.X+x,
-						v.origin.Y+y,
+						vOrigin.X+x,
+						vOrigin.Y+y,
 						cell.Value(),
 						cell.Style(),
 					); err != nil {
@@ -147,7 +190,7 @@ func (c *Canvas) Composite(v *Canvas) error {
 	return nil
 }
 
-func (c *Canvas) Render(screen Display) error {
+func (c *CCanvas) Render(screen Display) error {
 	for x := 0; x < c.size.W; x++ {
 		for y := 0; y < c.size.H; y++ {
 			cell := c.buffer.Cell(x, y)
@@ -159,7 +202,7 @@ func (c *Canvas) Render(screen Display) error {
 
 type CanvasForEachFn = func(x, y int, cell TextCell) EventFlag
 
-func (c *Canvas) ForEach(fn CanvasForEachFn) EventFlag {
+func (c *CCanvas) ForEach(fn CanvasForEachFn) EventFlag {
 	for x := 0; x < c.buffer.Width(); x++ {
 		for y := 0; y < c.buffer.Height(); y++ {
 			if f := fn(x, y, c.buffer.Cell(x, y)); f == EVENT_STOP {
@@ -175,7 +218,7 @@ func (c *Canvas) ForEach(fn CanvasForEachFn) EventFlag {
 // Write text to the canvas buffer
 // origin is the top-left coordinate for the text area being rendered
 // alignment is based on origin.X boxed by maxChars or canvas size.W
-func (c *Canvas) DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, style Style, markup bool, text string) {
+func (c *CCanvas) DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, style Style, markup bool, text string) {
 	var tb TextBuffer
 	if markup {
 		m, err := NewMarkup(text, style)
@@ -196,11 +239,11 @@ func (c *Canvas) DrawText(pos Point2I, size Rectangle, justify Justification, si
 	}
 }
 
-func (c *Canvas) DrawSingleLineText(pos Point2I, maxChars int, justify Justification, style Style, markup bool, text string) {
+func (c *CCanvas) DrawSingleLineText(pos Point2I, maxChars int, justify Justification, style Style, markup bool, text string) {
 	c.DrawText(pos, MakeRectangle(maxChars, 1), justify, true, WRAP_NONE, style, markup, text)
 }
 
-func (c *Canvas) DrawLine(pos Point2I, length int, orient Orientation, style Style) {
+func (c *CCanvas) DrawLine(pos Point2I, length int, orient Orientation, style Style) {
 	TraceF("c.Line(%v,%v,%v,%v)", pos, length, orient, style)
 	switch orient {
 	case ORIENTATION_HORIZONTAL:
@@ -210,7 +253,7 @@ func (c *Canvas) DrawLine(pos Point2I, length int, orient Orientation, style Sty
 	}
 }
 
-func (c *Canvas) DrawHorizontalLine(pos Point2I, length int, style Style) {
+func (c *CCanvas) DrawHorizontalLine(pos Point2I, length int, style Style) {
 	length = utils.ClampI(length, pos.X, c.size.W-pos.X)
 	end := pos.X + length
 	for i := pos.X; i < end; i++ {
@@ -218,7 +261,7 @@ func (c *Canvas) DrawHorizontalLine(pos Point2I, length int, style Style) {
 	}
 }
 
-func (c *Canvas) DrawVerticalLine(pos Point2I, length int, style Style) {
+func (c *CCanvas) DrawVerticalLine(pos Point2I, length int, style Style) {
 	length = utils.ClampI(length, pos.Y, c.size.H-pos.Y)
 	end := pos.Y + length
 	for i := pos.Y; i < end; i++ {
@@ -226,21 +269,7 @@ func (c *Canvas) DrawVerticalLine(pos Point2I, length int, style Style) {
 	}
 }
 
-func (c *Canvas) DebugBox(color Color, format string, argv ...interface{}) {
-	text := fmt.Sprintf(format, argv...)
-	bs := DefaultMonoTheme
-	bs.Border = bs.Border.Foreground(color)
-	c.Box(
-		MakePoint2I(0, 0),
-		c.size,
-		true,
-		false,
-		bs,
-	)
-	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, JUSTIFY_LEFT, bs.Border, false, text)
-}
-
-func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme Theme) {
+func (c *CCanvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme Theme) {
 	TraceDF(1, "c.Box(%v,%v,%v,%v)", pos, size, border, theme)
 	endx := pos.X + size.W - 1
 	endy := pos.Y + size.H - 1
@@ -313,12 +342,26 @@ func (c *Canvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme 
 
 /* Draw Features */
 
-func (c *Canvas) Fill(s Theme) {
+func (c *CCanvas) DebugBox(color Color, format string, argv ...interface{}) {
+	text := fmt.Sprintf(format, argv...)
+	bs := DefaultMonoTheme
+	bs.Border = bs.Border.Foreground(color)
+	c.Box(
+		MakePoint2I(0, 0),
+		c.size,
+		true,
+		false,
+		bs,
+	)
+	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, JUSTIFY_LEFT, bs.Border, false, text)
+}
+
+func (c *CCanvas) Fill(s Theme) {
 	TraceF("c.fill(%v,%v)", s)
 	c.Box(MakePoint2I(0, 0), c.size, false, true, s)
 }
 
-func (c *Canvas) FillBorder(dim bool, border bool) {
+func (c *CCanvas) FillBorder(dim bool, border bool) {
 	TraceF("c.FillBorder(%v,%v): origin=%v, size=%v", dim, border, c.origin, c.size)
 	s := c.theme
 	if dim {
@@ -334,7 +377,7 @@ func (c *Canvas) FillBorder(dim bool, border bool) {
 	)
 }
 
-func (c *Canvas) FillBorderTitle(dim bool, title string, justify Justification) {
+func (c *CCanvas) FillBorderTitle(dim bool, title string, justify Justification) {
 	TraceF("c.FillBorderTitle(%v)", dim)
 	s := c.theme
 	if dim {

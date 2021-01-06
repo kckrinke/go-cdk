@@ -30,7 +30,7 @@ type TextBuffer interface {
 	Style() Style
 	CharacterCount() (cellCount int)
 	WordCount() (wordCount int)
-	Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag
+	Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag
 }
 
 type CTextBuffer struct {
@@ -80,7 +80,7 @@ func (b *CTextBuffer) WordCount() (wordCount int) {
 	return
 }
 
-func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag {
+func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag {
 	if b.input == nil || b.input.CharacterCount() == 0 {
 		// non-operation
 		return EVENT_PASS
@@ -90,7 +90,7 @@ func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, j
 		wordWrap = WRAP_NONE
 	}
 
-	maxChars := canvas.size.W
+	maxChars := canvas.Width()
 	lines := b.input.Make(wordWrap, justify, maxChars, b.style)
 	size := canvas.GetSize()
 	if size.W <= 0 || size.H <= 0 {
