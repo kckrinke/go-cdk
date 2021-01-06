@@ -1,6 +1,6 @@
 module github.com/kckrinke/go-cdk
 
-go 1.12
+go 1.15
 
 require (
 	github.com/gdamore/encoding v1.0.0
