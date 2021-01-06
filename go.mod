@@ -2,8 +2,6 @@ module github.com/kckrinke/go-cdk
 
 go 1.12
 
-replace github.com/kckrinke/go-term => ../go-term
-
 require (
 	github.com/gdamore/encoding v1.0.0
 	github.com/gobuffalo/envy v1.9.0
