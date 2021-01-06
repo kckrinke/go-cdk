@@ -1,6 +1,12 @@
+[![Made with Go](https://img.shields.io/badge/Made%20with-Go-1f425f.svg)](http://golang.org)
+[![Go version number](https://img.shields.io/github/go-mod/go-version/kckrinke/go-cdk.svg)](https://github.com/kckrinke/go-cdk)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/kckrinke/go-cdk)
 [![Go Reference](https://pkg.go.dev/badge/github.com/kckrinke/go-cdk.svg)](https://pkg.go.dev/github.com/kckrinke/go-cdk)
-[![status](https://github.com/kckrinke/go-cdk/workflows/codecov/badge.svg)](https://github.com/kckrinke/go-cdk/actions?query=workflow%3Acodecov)
+
+[![GoReportCard](https://goreportcard.com/badge/github.com/kckrinke/go-cdk)](https://goreportcard.com/report/github.com/kckrinke/go-cdk)
+[![Build status](https://github.com/kckrinke/go-cdk/workflows/codecov/badge.svg)](https://github.com/kckrinke/go-cdk/actions?query=workflow%3Acodecov)
 [![codecov](https://codecov.io/gh/kckrinke/go-cdk/branch/trunk/graph/badge.svg?token=8AVBADVD1S)](https://codecov.io/gh/kckrinke/go-cdk)
+
 
 # CDK - Curses Development Kit
 
@@ -19,7 +25,7 @@ go get -u github.com/kckrinke/go-cdk
 A makefile has been included to assist in the development workflow.
 
 ```
-$ make help
+> make help
 usage: make {help|test|clean|demos}
 
   test: perform all available tests
