@@ -22,7 +22,7 @@ import (
 )
 
 type Canvas struct {
-	buffer *CanvasBuffer
+	buffer CanvasBuffer
 	origin Point2I
 	size   Rectangle
 	theme  Theme
@@ -125,8 +125,8 @@ func (c *Canvas) Equals(onlyDirty bool, v *Canvas) bool {
 }
 
 func (c *Canvas) Composite(v *Canvas) error {
-	for x := 0; x < v.buffer.size.W; x++ {
-		for y := 0; y < v.buffer.size.H; y++ {
+	for x := 0; x < v.buffer.Width(); x++ {
+		for y := 0; y < v.buffer.Height(); y++ {
 			cell := v.buffer.Cell(x, y)
 			if cell != nil {
 				if cell.Dirty() {
@@ -160,8 +160,8 @@ func (c *Canvas) Render(screen Display) error {
 type CanvasForEachFn = func(x, y int, cell TextCell) EventFlag
 
 func (c *Canvas) ForEach(fn CanvasForEachFn) EventFlag {
-	for x := 0; x < c.buffer.size.W; x++ {
-		for y := 0; y < c.buffer.size.H; y++ {
+	for x := 0; x < c.buffer.Width(); x++ {
+		for y := 0; y < c.buffer.Height(); y++ {
 			if f := fn(x, y, c.buffer.Cell(x, y)); f == EVENT_STOP {
 				return EVENT_STOP
 			}
