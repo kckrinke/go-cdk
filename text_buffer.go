@@ -57,17 +57,21 @@ func (b *CTextBuffer) Set(input string, style Style) {
 }
 
 func (b *CTextBuffer) CharacterCount() (cellCount int) {
-	cellCount = b.input.CharacterCount()
+	if b.input != nil {
+		cellCount = b.input.CharacterCount()
+	}
 	return
 }
 
 func (b *CTextBuffer) WordCount() (wordCount int) {
-	wordCount = b.input.WordCount()
+	if b.input != nil {
+		wordCount = b.input.WordCount()
+	}
 	return
 }
 
 func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag {
-	if b.input.CharacterCount() == 0 {
+	if b.input == nil || b.input.CharacterCount() == 0 {
 		// non-operation
 		return EVENT_PASS
 	}
@@ -90,38 +94,29 @@ func (b *CTextBuffer) Draw(canvas *Canvas, singleLine bool, wordWrap WrapMode, j
 		lenLines = 1
 	}
 
-	var atCanvasLine, fromInputLine int
+	var atCanvasLine, fromInputLine int = 0, 0
 	switch vAlign {
 	case ALIGN_BOTTOM:
 		numLines := lenLines
 		if numLines > size.H {
-			delta := utils.FloorI(numLines - size.H, 0)
-			atCanvasLine = 0
+			delta := utils.FloorI(numLines-size.H, 0)
 			fromInputLine = delta
 		} else {
 			delta := size.H - numLines
 			atCanvasLine = delta
-			fromInputLine = 0
 		}
 	case ALIGN_MIDDLE:
 		numLines := lenLines
 		halfLines := numLines / 2
 		halfCanvas := size.H / 2
-		delta := utils.FloorI(halfCanvas - halfLines, 0)
-		if delta < 0 {
-			delta = 0
-		}
+		delta := utils.FloorI(halfCanvas-halfLines, 0)
 		if numLines > size.H {
-			atCanvasLine = 0
 			fromInputLine = delta
 		} else {
 			atCanvasLine = delta
-			fromInputLine = 0
 		}
 	case ALIGN_TOP:
 	default:
-		atCanvasLine = 0
-		fromInputLine = 0
 	}
 
 	y := atCanvasLine
