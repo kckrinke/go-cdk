@@ -21,6 +21,7 @@ import (
 	"github.com/kckrinke/go-cdk/utils"
 )
 
+// a Canvas is the primary means of drawing to the terminal display within CDK
 type Canvas interface {
 	String() string
 	Resize(size Rectangle)
@@ -29,7 +30,6 @@ type Canvas interface {
 	SetRune(x, y int, r rune, s Style) error
 	SetOrigin(origin Point2I)
 	GetOrigin() Point2I
-	SetSize(size Rectangle)
 	GetSize() Rectangle
 	Width() (width int)
 	Height() (height int)
@@ -39,7 +39,7 @@ type Canvas interface {
 	GetFill() rune
 	Equals(onlyDirty bool, v Canvas) bool
 	Composite(v Canvas) error
-	Render(screen Display) error
+	Render(display Display) error
 	ForEach(fn CanvasForEachFn) EventFlag
 	DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, style Style, markup bool, text string)
 	DrawSingleLineText(pos Point2I, maxChars int, justify Justification, style Style, markup bool, text string)
@@ -53,6 +53,7 @@ type Canvas interface {
 	FillBorderTitle(dim bool, title string, justify Justification)
 }
 
+// concrete implementation of the Canvas interface
 type CCanvas struct {
 	buffer CanvasBuffer
 	origin Point2I
@@ -61,6 +62,7 @@ type CCanvas struct {
 	fill   rune
 }
 
+// create a new canvas object with the given origin point, size and theme
 func NewCanvas(origin Point2I, size Rectangle, theme Theme) Canvas {
 	return &CCanvas{
 		buffer: NewCanvasBuffer(size, theme.Normal),
@@ -71,6 +73,7 @@ func NewCanvas(origin Point2I, size Rectangle, theme Theme) Canvas {
 	}
 }
 
+// return a string describing the canvas metadata, useful for debugging
 func (c CCanvas) String() string {
 	return fmt.Sprintf(
 		"{Origin=%s,Size=%s,Theme=%s,Fill=%v,Buffer=%v}",
@@ -82,66 +85,79 @@ func (c CCanvas) String() string {
 	)
 }
 
-/* CCanvas Methods */
-
+// change the size of the canvas, not recommended to do this in practice
 func (c *CCanvas) Resize(size Rectangle) {
 	c.buffer.Resize(size)
 	c.size = size
 }
 
+// get the text cell at the given coordinates
 func (c *CCanvas) GetContent(x, y int) (textCell TextCell) {
 	return c.buffer.GetContent(x, y)
 }
 
+// from the given string, set the character and style of the cell at the given
+// coordinates. note that only the first UTF-8 byte is used
 func (c *CCanvas) SetContent(x, y int, char string, s Style) error {
 	r, _ := utf8.DecodeRune([]byte(char))
 	return c.buffer.SetContent(x, y, r, s)
 }
 
+// set the rune and the style of the cell at the given coordinates
 func (c *CCanvas) SetRune(x, y int, r rune, s Style) error {
 	return c.buffer.SetContent(x, y, r, s)
 }
 
+// set the origin (top-left corner) position of the canvas, used when
+// compositing one canvas with another
 func (c *CCanvas) SetOrigin(origin Point2I) {
 	c.origin = origin
 }
 
+// get the origin point of the canvas
 func (c *CCanvas) GetOrigin() Point2I {
 	return c.origin
 }
 
-func (c *CCanvas) SetSize(size Rectangle) {
-	c.size = size
-}
-
+// get the rectangle size of the canvas
 func (c *CCanvas) GetSize() Rectangle {
 	return c.size
 }
 
+// convenience method to get just the width of the canvas
 func (c *CCanvas) Width() (width int) {
 	return c.size.W
 }
 
+// convenience method to get just the height of the canvas
 func (c *CCanvas) Height() (height int) {
 	return c.size.H
 }
 
+// set the default theme for the canvas, used in cases where there's no inherent
+// style available during a fill process for example
 func (c *CCanvas) SetTheme(style Theme) {
 	c.theme = style
 }
 
+// return the default theme for this canvas
 func (c *CCanvas) GetTheme() Theme {
 	return c.theme
 }
 
+// set the rune used to fill in areas, typically a space character " "
 func (c *CCanvas) SetFill(fill rune) {
 	c.fill = fill
 }
 
+// get the rune used to file in areas
 func (c *CCanvas) GetFill() rune {
 	return c.fill
 }
 
+// returns true if the given canvas is painted the same as this one, can compare
+// for only cells that were "set" (dirty) or compare every cell of the two
+// canvases
 func (c *CCanvas) Equals(onlyDirty bool, v Canvas) bool {
 	vOrigin := v.GetOrigin()
 	vSize := v.GetSize()
@@ -166,6 +182,9 @@ func (c *CCanvas) Equals(onlyDirty bool, v Canvas) bool {
 	return true
 }
 
+// apply the given canvas to this canvas, at the given one's origin. returns
+// an error if the underlying buffer write failed or if the given canvas is
+// beyond the bounds of this canvas
 func (c *CCanvas) Composite(v Canvas) error {
 	vOrigin := v.GetOrigin()
 	for x := 0; x < v.Width(); x++ {
@@ -190,18 +209,23 @@ func (c *CCanvas) Composite(v Canvas) error {
 	return nil
 }
 
-func (c *CCanvas) Render(screen Display) error {
+// render this canvas upon the given display
+func (c *CCanvas) Render(display Display) error {
 	for x := 0; x < c.size.W; x++ {
 		for y := 0; y < c.size.H; y++ {
 			cell := c.buffer.Cell(x, y)
-			screen.SetContent(x, y, cell.Value(), nil, cell.Style())
+			display.SetContent(x, y, cell.Value(), nil, cell.Style())
 		}
 	}
 	return nil
 }
 
+// func signature used when iterating over each cell
 type CanvasForEachFn = func(x, y int, cell TextCell) EventFlag
 
+// convenience method to iterate of each cell of the canvas, if the given fn
+// returns EVENT_STOP then the iteration is halted, otherwise EVEN_PASS will
+// allow for the next iteration to proceed
 func (c *CCanvas) ForEach(fn CanvasForEachFn) EventFlag {
 	for x := 0; x < c.buffer.Width(); x++ {
 		for y := 0; y < c.buffer.Height(); y++ {
@@ -212,8 +236,6 @@ func (c *CCanvas) ForEach(fn CanvasForEachFn) EventFlag {
 	}
 	return EVENT_PASS
 }
-
-/* Draw Primitives */
 
 // Write text to the canvas buffer
 // origin is the top-left coordinate for the text area being rendered
@@ -239,10 +261,13 @@ func (c *CCanvas) DrawText(pos Point2I, size Rectangle, justify Justification, s
 	}
 }
 
-func (c *CCanvas) DrawSingleLineText(pos Point2I, maxChars int, justify Justification, style Style, markup bool, text string) {
-	c.DrawText(pos, MakeRectangle(maxChars, 1), justify, true, WRAP_NONE, style, markup, text)
+// write a single line of text to the canvas at the given position, of at most
+// maxChars, with the text justified and styled. supports Tango markup content
+func (c *CCanvas) DrawSingleLineText(position Point2I, maxChars int, justify Justification, style Style, markup bool, text string) {
+	c.DrawText(position, MakeRectangle(maxChars, 1), justify, true, WRAP_NONE, style, markup, text)
 }
 
+// draw a line vertically or horizontally with the given style
 func (c *CCanvas) DrawLine(pos Point2I, length int, orient Orientation, style Style) {
 	TraceF("c.Line(%v,%v,%v,%v)", pos, length, orient, style)
 	switch orient {
@@ -253,6 +278,7 @@ func (c *CCanvas) DrawLine(pos Point2I, length int, orient Orientation, style St
 	}
 }
 
+// convenience method to draw a horizontal line
 func (c *CCanvas) DrawHorizontalLine(pos Point2I, length int, style Style) {
 	length = utils.ClampI(length, pos.X, c.size.W-pos.X)
 	end := pos.X + length
@@ -261,6 +287,7 @@ func (c *CCanvas) DrawHorizontalLine(pos Point2I, length int, style Style) {
 	}
 }
 
+// convenience method to draw a vertical line
 func (c *CCanvas) DrawVerticalLine(pos Point2I, length int, style Style) {
 	length = utils.ClampI(length, pos.Y, c.size.H-pos.Y)
 	end := pos.Y + length
@@ -269,6 +296,8 @@ func (c *CCanvas) DrawVerticalLine(pos Point2I, length int, style Style) {
 	}
 }
 
+// draw a box, at position, of size, with or without a border, with or without
+// being filled in and following the given theme
 func (c *CCanvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme Theme) {
 	TraceDF(1, "c.Box(%v,%v,%v,%v)", pos, size, border, theme)
 	endx := pos.X + size.W - 1
@@ -340,8 +369,9 @@ func (c *CCanvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme
 	} // for ix
 }
 
-/* Draw Features */
-
+// draw a box with Sprintf-formatted text along the top-left of the box, useful
+// for debugging more than anything else as the normal draw primitives are far
+// more flexible
 func (c *CCanvas) DebugBox(color Color, format string, argv ...interface{}) {
 	text := fmt.Sprintf(format, argv...)
 	bs := DefaultMonoTheme
@@ -356,11 +386,14 @@ func (c *CCanvas) DebugBox(color Color, format string, argv ...interface{}) {
 	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, JUSTIFY_LEFT, bs.Border, false, text)
 }
 
+// fill the entire canvas according to the given theme
 func (c *CCanvas) Fill(s Theme) {
 	TraceF("c.fill(%v,%v)", s)
 	c.Box(MakePoint2I(0, 0), c.size, false, true, s)
 }
 
+// fill the entire canvas, with or without 'dim' styling, with or without a
+// border
 func (c *CCanvas) FillBorder(dim bool, border bool) {
 	TraceF("c.FillBorder(%v,%v): origin=%v, size=%v", dim, border, c.origin, c.size)
 	s := c.theme
@@ -377,6 +410,8 @@ func (c *CCanvas) FillBorder(dim bool, border bool) {
 	)
 }
 
+// fill the entire canvas, with or without 'dim' styling, with plain text
+// justified across the top border
 func (c *CCanvas) FillBorderTitle(dim bool, title string, justify Justification) {
 	TraceF("c.FillBorderTitle(%v)", dim)
 	s := c.theme

@@ -59,42 +59,46 @@ type IButtonMask interface {
 	String() string
 }
 
+// check if the mask has the given flag(s)
 func (i ButtonMask) Has(m ButtonMask) bool {
 	return i&m != 0
 }
 
+// return a button mask with the given flags set, does not modify itself
 func (i ButtonMask) Set(m ButtonMask) ButtonMask {
 	return i | m
 }
 
+// return a button mask with the given flags cleared, does not modify itself
 func (i ButtonMask) Clear(m ButtonMask) ButtonMask {
 	return i &^ m
 }
 
+// return a button mask with the give flags reversed, does not modify itself
 func (i ButtonMask) Toggle(m ButtonMask) ButtonMask {
 	return i ^ m
 }
 
-const _ButtonMask_name = "ButtonNoneButton1Button2Button3Button4Button5Button6Button7Button8WheelUpWheelDownWheelLeftWheelRight"
+const buttonMaskName = "ButtonNoneButton1Button2Button3Button4Button5Button6Button7Button8WheelUpWheelDownWheelLeftWheelRight"
 
-var _ButtonMask_map = map[ButtonMask]string{
-	0:    _ButtonMask_name[0:10],
-	1:    _ButtonMask_name[10:17],
-	2:    _ButtonMask_name[17:24],
-	4:    _ButtonMask_name[24:31],
-	8:    _ButtonMask_name[31:38],
-	16:   _ButtonMask_name[38:45],
-	32:   _ButtonMask_name[45:52],
-	64:   _ButtonMask_name[52:59],
-	128:  _ButtonMask_name[59:66],
-	256:  _ButtonMask_name[66:73],
-	512:  _ButtonMask_name[73:82],
-	1024: _ButtonMask_name[82:91],
-	2048: _ButtonMask_name[91:101],
+var buttonMaskMap = map[ButtonMask]string{
+	0:    buttonMaskName[0:10],
+	1:    buttonMaskName[10:17],
+	2:    buttonMaskName[17:24],
+	4:    buttonMaskName[24:31],
+	8:    buttonMaskName[31:38],
+	16:   buttonMaskName[38:45],
+	32:   buttonMaskName[45:52],
+	64:   buttonMaskName[52:59],
+	128:  buttonMaskName[59:66],
+	256:  buttonMaskName[66:73],
+	512:  buttonMaskName[73:82],
+	1024: buttonMaskName[82:91],
+	2048: buttonMaskName[91:101],
 }
 
 func (i ButtonMask) String() string {
-	if str, ok := _ButtonMask_map[i]; ok {
+	if str, ok := buttonMaskMap[i]; ok {
 		return str
 	}
 	return "ButtonMask(" + strconv.FormatInt(int64(i), 10) + ")"

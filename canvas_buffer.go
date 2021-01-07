@@ -19,6 +19,7 @@ import (
 	"sync"
 )
 
+// provide an underlying buffer for Canvases
 type CanvasBuffer interface {
 	String() string
 	Size() (size Rectangle)
@@ -33,6 +34,7 @@ type CanvasBuffer interface {
 	LoadData(d [][]TextCell)
 }
 
+// concrete implementation of the CanvasBuffer interface
 type CCanvasBuffer struct {
 	data  [][]TextCell
 	size  Rectangle
@@ -41,6 +43,7 @@ type CCanvasBuffer struct {
 	sync.Mutex
 }
 
+// construct a new canvas buffer
 func NewCanvasBuffer(size Rectangle, style Style) CanvasBuffer {
 	b := &CCanvasBuffer{
 		data: make([][]TextCell, size.W),
@@ -51,6 +54,7 @@ func NewCanvasBuffer(size Rectangle, style Style) CanvasBuffer {
 	return b
 }
 
+// return a string describing the buffer, only useful for debugging purposes
 func (b *CCanvasBuffer) String() string {
 	return fmt.Sprintf(
 		"{Size=%s,Style=%s}",
@@ -59,18 +63,22 @@ func (b *CCanvasBuffer) String() string {
 	)
 }
 
+// return the rectangle size of the buffer
 func (b *CCanvasBuffer) Size() (size Rectangle) {
 	return b.size
 }
 
+// return just the width of the buffer
 func (b *CCanvasBuffer) Width() (width int) {
 	return b.size.W
 }
 
+// return just the height of the buffer
 func (b *CCanvasBuffer) Height() (height int) {
 	return b.size.H
 }
 
+// resize the buffer
 func (b *CCanvasBuffer) Resize(size Rectangle) {
 	b.Lock()
 	defer b.Unlock()
@@ -95,13 +103,15 @@ func (b *CCanvasBuffer) Resize(size Rectangle) {
 	b.size = size
 }
 
+// return the text cell at the given coordinates, nil if not found
 func (b *CCanvasBuffer) Cell(x int, y int) TextCell {
-	if b.size.W > x && b.size.H > y {
+	if x >= 0 && y >= 0 && x < b.size.W && y < b.size.H {
 		return b.data[x][y]
 	}
 	return nil
 }
 
+// return true if the given coordinates are styled 'dim', false otherwise
 func (b *CCanvasBuffer) GetDim(x, y int) bool {
 	c := b.GetContent(x, y)
 	s := c.Style()
@@ -109,6 +119,7 @@ func (b *CCanvasBuffer) GetDim(x, y int) bool {
 	return a.IsDim()
 }
 
+// return the background color at the given coordinates
 func (b *CCanvasBuffer) GetBgColor(x, y int) (bg Color) {
 	c := b.GetContent(x, y)
 	s := c.Style()
@@ -116,13 +127,14 @@ func (b *CCanvasBuffer) GetBgColor(x, y int) (bg Color) {
 	return
 }
 
+// convenience method, returns the results of calling Cell() with the given
+// coordinates
 func (b *CCanvasBuffer) GetContent(x, y int) (textCell TextCell) {
-	if x >= 0 && y >= 0 && x < b.size.W && y < b.size.H {
-		textCell = b.data[x][y]
-	}
+	textCell = b.Cell(x, y)
 	return
 }
 
+// set the cell content at the given coordinates
 func (b *CCanvasBuffer) SetContent(x int, y int, mainc rune, style Style) error {
 	dlen := len(b.data)
 	if x >= 0 && x < dlen {
@@ -137,6 +149,7 @@ func (b *CCanvasBuffer) SetContent(x int, y int, mainc rune, style Style) error 
 	return fmt.Errorf("x=%v not in range [0-%d]", x, len(b.data)-1)
 }
 
+// given matrix array of text cells, load that data in this canvas space
 func (b *CCanvasBuffer) LoadData(d [][]TextCell) {
 	for x := 0; x < len(d); x++ {
 		for y := 0; y < len(d[x]); y++ {
