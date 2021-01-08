@@ -187,18 +187,22 @@ func (c *CCanvas) Equals(onlyDirty bool, v Canvas) bool {
 // beyond the bounds of this canvas
 func (c *CCanvas) Composite(v Canvas) error {
 	vOrigin := v.GetOrigin()
-	for x := 0; x < v.Width(); x++ {
-		for y := 0; y < v.Height(); y++ {
+	bSize := c.buffer.Size()
+	for y := 0; y < v.Height(); y++ {
+		for x := 0; x < v.Width(); x++ {
 			cell := v.GetContent(x, y)
 			if cell != nil {
 				if cell.Dirty() {
-					if err := c.buffer.SetContent(
-						vOrigin.X+x,
-						vOrigin.Y+y,
-						cell.Value(),
-						cell.Style(),
-					); err != nil {
-						return err
+					oX, oY := vOrigin.X+x, vOrigin.Y+y
+					if oX >= 0 && oX < bSize.W && oY >= 0 && oY < bSize.H {
+						if err := c.buffer.SetContent(
+							oX,
+							oY,
+							cell.Value(),
+							cell.Style(),
+						); err != nil {
+							return err
+						}
 					}
 				}
 			} else {
