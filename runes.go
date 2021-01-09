@@ -51,6 +51,20 @@ const (
 	RuneULCorner = '┌'
 	RuneURCorner = '┐'
 	RuneVLine    = '│'
+	// Extra Arrow-Type Things
+	RuneLeftwardsTwoHeadedArrowWithTriangleArrowheads  = '⯬'
+	RuneUpwardsTwoHeadedArrowWithTriangleArrowheads    = '⯭'
+	RuneRightwardsTwoHeadedArrowWithTriangleArrowheads = '⯮'
+	RuneDownwardsTwoHeadedArrowWithTriangleArrowheads  = '⯯'
+	RuneBlackSquareCentred                             = '⯀'
+	RuneBlackMediumUpPointingTriangleCentred           = '⯅'
+	RuneBlackMediumDownPointingTriangleCentred         = '⯆'
+	RuneBlackMediumLeftPointingTriangleCentred         = '⯇'
+	RuneBlackMediumRightPointingTriangleCentred        = '⯈'
+	RuneLeftwardsBlackCircledWhiteArrow                = '⮈'
+	RuneUpwardsBlackCircledWhiteArrow                  = '⮉'
+	RuneRightwardsBlackCircledWhiteArrow               = '⮊'
+	RuneDownwardsBlackCircledWhiteArrow                = '⮋'
 )
 
 // RuneFallbacks is the default map of fallback strings that will be
@@ -108,4 +122,18 @@ var RuneFallbacks = map[rune]string{
 	RuneULCorner: "+",
 	RuneURCorner: "+",
 	RuneVLine:    "|",
+	// Extra Arrow-Type Things
+	RuneLeftwardsTwoHeadedArrowWithTriangleArrowheads:  "<",
+	RuneUpwardsTwoHeadedArrowWithTriangleArrowheads:    "^",
+	RuneRightwardsTwoHeadedArrowWithTriangleArrowheads: ">",
+	RuneDownwardsTwoHeadedArrowWithTriangleArrowheads:  "v",
+	RuneBlackSquareCentred:                             "#",
+	RuneBlackMediumUpPointingTriangleCentred:           "^",
+	RuneBlackMediumDownPointingTriangleCentred:         "v",
+	RuneBlackMediumLeftPointingTriangleCentred:         "<",
+	RuneBlackMediumRightPointingTriangleCentred:        ">",
+	RuneLeftwardsBlackCircledWhiteArrow:                "<",
+	RuneUpwardsBlackCircledWhiteArrow:                  "^",
+	RuneRightwardsBlackCircledWhiteArrow:               ">",
+	RuneDownwardsBlackCircledWhiteArrow:                "v",
 }
