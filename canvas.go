@@ -273,7 +273,7 @@ func (c *CCanvas) DrawSingleLineText(position Point2I, maxChars int, justify Jus
 
 // draw a line vertically or horizontally with the given style
 func (c *CCanvas) DrawLine(pos Point2I, length int, orient Orientation, style Style) {
-	TraceF("c.Line(%v,%v,%v,%v)", pos, length, orient, style)
+	TraceF("c.DrawLine(%v,%v,%v,%v)", pos, length, orient, style)
 	switch orient {
 	case ORIENTATION_HORIZONTAL:
 		c.DrawHorizontalLine(pos, length, style)
