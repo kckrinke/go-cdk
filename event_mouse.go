@@ -102,7 +102,7 @@ func (ev *EventMouse) Modifiers() ModMask {
 
 // Position returns the mouse position in character cells.  The origin
 // 0, 0 is at the upper left corner.
-func (ev *EventMouse) Position() (int, int) {
+func (ev *EventMouse) Position() (x, y int) {
 	return ev.x, ev.y
 }
 
