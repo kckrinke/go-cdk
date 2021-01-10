@@ -87,7 +87,7 @@ func (o *CSignaling) Disconnect(signal, handle Signal) error {
 	if id == -1 {
 		return fmt.Errorf("unknown signal handle: %v", handle)
 	}
-	o.LogDebug("disconnecting(%v) from signal(%v)", handle, signal)
+	o.LogTrace("disconnecting(%v) from signal(%v)", handle, signal)
 	o.listeners[signal] = append(
 		o.listeners[signal][:id],
 		o.listeners[signal][id+1:]...,
@@ -118,7 +118,7 @@ func (o *CSignaling) Emit(signal Signal, argv ...interface{}) EventFlag {
 // Disable propagation of the given signal
 func (o *CSignaling) StopSignal(signal Signal) {
 	if !o.IsSignalStopped(signal) {
-		o.LogDebug("stopping signal(%v)", signal)
+		o.LogTrace("stopping signal(%v)", signal)
 		o.stopped = append(o.stopped, signal)
 	}
 }
@@ -138,7 +138,7 @@ func (o *CSignaling) getSignalStopIndex(signal Signal) int {
 
 func (o *CSignaling) PassSignal(signal Signal) {
 	if !o.IsSignalPassed(signal) {
-		o.LogDebug("passing signal(%v)", signal)
+		o.LogTrace("passing signal(%v)", signal)
 		o.passed = append(o.passed, signal)
 	}
 }
@@ -160,7 +160,7 @@ func (o *CSignaling) getSignalPassIndex(signal Signal) int {
 func (o *CSignaling) ResumeSignal(signal Signal) {
 	id := o.getSignalStopIndex(signal)
 	if id >= 0 {
-		o.LogDebug("resuming signal(%v) from being stopped", signal)
+		o.LogTrace("resuming signal(%v) from being stopped", signal)
 		o.stopped = append(
 			o.stopped[:id],
 			o.stopped[id+1:]...,
