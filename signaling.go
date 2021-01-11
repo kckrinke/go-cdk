@@ -161,19 +161,27 @@ func (o *CSignaling) ResumeSignal(signal Signal) {
 	id := o.getSignalStopIndex(signal)
 	if id >= 0 {
 		o.LogTrace("resuming signal(%v) from being stopped", signal)
-		o.stopped = append(
-			o.stopped[:id],
-			o.stopped[id+1:]...,
-		)
+		if len(o.stopped) > 1 {
+			o.stopped = append(
+				o.stopped[:id],
+				o.stopped[id+1:]...,
+			)
+		} else {
+			o.stopped = []Signal{}
+		}
 		return
 	}
 	id = o.getSignalPassIndex(signal)
 	if id >= 0 {
-		o.LogDebug("resuming signal(%v) from being passed", signal)
-		o.passed = append(
-			o.passed[:id],
-			o.passed[id+1:]...,
-		)
+		o.LogTrace("resuming signal(%v) from being passed", signal)
+		if len(o.passed) > 1 {
+			o.passed = append(
+				o.passed[:id],
+				o.passed[id+1:]...,
+			)
+		} else {
+			o.passed = []Signal{}
+		}
 		return
 	}
 	if _, ok := o.listeners[signal]; ok {
