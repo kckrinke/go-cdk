@@ -28,6 +28,7 @@ import (
 
 var (
 	DisplayCallQueueCapacity = 16
+	cdkDisplayManager        DisplayManager
 )
 
 const (
@@ -122,14 +123,19 @@ func NewDisplayManager(title string, ttyPath string) *CDisplayManager {
 	return d
 }
 
+func GetDisplayManager() (dm DisplayManager) {
+	dm = cdkDisplayManager
+	return
+}
+
 // Initialization
 func (d *CDisplayManager) Init() (already bool) {
-	if d.InitTypeItem(TypeDisplayManager) {
-		return true
-	}
 	check := TypesManager.GetTypeItems(TypeDisplayManager)
 	if len(check) > 0 {
 		FatalF("only one display permitted at a time")
+	}
+	if d.InitTypeItem(TypeDisplayManager) {
+		return true
 	}
 	d.CObject.Init()
 
@@ -144,6 +150,8 @@ func (d *CDisplayManager) Init() (already bool) {
 	d.windows = []Window{}
 	d.active = -1
 	d.SetTheme(DefaultColorTheme)
+
+	cdkDisplayManager = d
 	d.Emit(SignalDisplayInit, d)
 	return false
 }
