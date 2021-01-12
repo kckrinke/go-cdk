@@ -17,6 +17,19 @@ func ClampI(value, min, max int) int {
 	return min
 }
 
+// Returns the `value` given unless it's smaller than `min` or greater than
+// `max`. If it's less than `min`, `min` is returned and if it's greater than
+// `max` it returns max.
+func ClampF(value, min, max float64) float64 {
+	if value >= min && value <= max {
+		return value
+	}
+	if value > max {
+		return max
+	}
+	return min
+}
+
 // Returns the `value` given unless it's less than `min`, in which case it
 // returns `min`.
 func FloorI(v, min int) int {
