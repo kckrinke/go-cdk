@@ -214,8 +214,14 @@ func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
 	d.display.EnableMouse()
 	d.display.EnablePaste()
 	d.display.Clear()
+	theme := d.GetTheme()
+	if CurrentTheme != theme {
+		CurrentTheme = theme
+	}
 	if CurrentTheme == DefaultNilTheme {
-		CurrentTheme = d.DefaultTheme()
+		def := d.DefaultTheme()
+		d.LogTrace("setting current theme to default: %v", def)
+		CurrentTheme = def
 	}
 	d.SetTheme(CurrentTheme)
 	d.captured = true
