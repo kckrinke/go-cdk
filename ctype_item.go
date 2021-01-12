@@ -127,9 +127,9 @@ func (o *CTypeItem) DestroyObject() error {
 
 func (o *CTypeItem) LogTag() string {
 	if len(o.name) > 0 {
-		return fmt.Sprintf("[%v:%v:%v]", o.typeTag, o.ObjectID(), o.name)
+		return fmt.Sprintf("[%v.%v.%v]", o.typeTag, o.ObjectID(), o.name)
 	}
-	return fmt.Sprintf("[%v:%v]", o.typeTag, o.ObjectID())
+	return fmt.Sprintf("[%v.%v]", o.typeTag, o.ObjectID())
 }
 
 func (o *CTypeItem) LogTrace(format string, argv ...interface{}) {
