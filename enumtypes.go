@@ -171,6 +171,7 @@ const (
 type Orientation uint64
 
 const (
-	ORIENTATION_HORIZONTAL Orientation = iota
+	ORIENTATION_NONE Orientation = iota
+	ORIENTATION_HORIZONTAL
 	ORIENTATION_VERTICAL
 )
