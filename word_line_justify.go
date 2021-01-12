@@ -18,12 +18,27 @@ import (
 	"github.com/kckrinke/go-cdk/utils"
 )
 
+func (w *CWordLine) longestLineLen(input []WordLine) (maxChars int) {
+	maxChars = 0
+	for _, line := range input {
+		lcc := line.CharacterCount()
+		if maxChars < lcc {
+			maxChars = lcc
+		}
+	}
+	return
+}
+
 // return output lines where each line of input is full-width justified. For
 // each input line, spread the words across the maxChars by increasing the sizes
-// of the gaps (one or more spaces)
+// of the gaps (one or more spaces). if maxChars is -1, then the length of the
+// longest line is determined and that value used in place of maxChars
 func (w *CWordLine) applyTypographicJustifyFill(maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
 	// trim left/right space for each line, maximize gaps
 	lid := 0
+	if maxChars <= -1 {
+		maxChars = w.longestLineLen(input)
+	}
 	for _, line := range input {
 		if lid >= len(output) {
 			output = append(output, NewEmptyWordLine())
@@ -56,10 +71,14 @@ func (w *CWordLine) applyTypographicJustifyFill(maxChars int, fillerStyle Style,
 }
 
 // return output lines where each line of input is centered on the full-width of
-// maxChars per-line
+// maxChars per-line. if maxChars is -1, then the length of the
+// // longest line is determined and that value used in place of maxChars
 func (w *CWordLine) applyTypographicJustifyCenter(maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
 	// trim left space for each line
 	wid, lid := 0, 0
+	if maxChars <= -1 {
+		maxChars = w.longestLineLen(input)
+	}
 	for _, line := range input {
 		if lid >= len(output) {
 			output = append(output, NewEmptyWordLine())
@@ -83,10 +102,15 @@ func (w *CWordLine) applyTypographicJustifyCenter(maxChars int, fillerStyle Styl
 }
 
 // return output lines where for each input line the content is left-padded with
-// spaces such that the last character of content is aligned to maxChars
+// spaces such that the last character of content is aligned to maxChars. if
+// maxChars is -1, then the length of the longest line is determined and that
+// value used in place of maxChars
 func (w *CWordLine) applyTypographicJustifyRight(maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
 	// trim left space for each line, assume no line needs wrapping or truncation
 	wid, lid := 0, 0
+	if maxChars <= -1 {
+		maxChars = w.longestLineLen(input)
+	}
 	for _, line := range input {
 		if lid >= len(output) {
 			output = append(output, NewEmptyWordLine())

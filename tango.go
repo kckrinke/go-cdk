@@ -49,15 +49,11 @@ var (
 
 type Tango interface {
 	Raw() string
-	Clean() string
 	TextBuffer() TextBuffer
-	init() error
-	parseStyleAttrs(attrs []xml.Attr) (style Style)
 }
 
 type CTango struct {
 	raw    string
-	clean  string
 	style  Style
 	marked []TextCell
 	input  WordLine
@@ -67,12 +63,13 @@ func NewMarkup(text string, style Style) (markup Tango, err error) {
 	if !strings.HasPrefix(text, "<markup") {
 		text = "<markup>" + text + "</markup>"
 	}
-	markup = &CTango{
+	m := &CTango{
 		raw:   text,
 		style: style,
 	}
-	err = markup.init()
-	if err != nil {
+	if err = m.init(); err == nil {
+		markup = m
+	} else {
 		markup = nil
 	}
 	return
@@ -82,10 +79,6 @@ func (m *CTango) Raw() string {
 	return m.raw
 }
 
-func (m *CTango) Clean() string {
-	return m.clean
-}
-
 func (m *CTango) TextBuffer() TextBuffer {
 	tb := NewEmptyTextBuffer(m.style)
 	tb.SetInput(m.input)
@@ -93,7 +86,6 @@ func (m *CTango) TextBuffer() TextBuffer {
 }
 
 func (m *CTango) init() error {
-	m.clean = ""
 	m.marked = []TextCell{}
 	m.input = NewEmptyWordLine()
 	r := strings.NewReader(m.raw)
@@ -147,7 +139,6 @@ func (m *CTango) init() error {
 			content := xml.CharData(t) // CharData []byte
 			for idx := 0; idx < len(content); idx++ {
 				v, _ := utf8.DecodeRune(content[idx:])
-				m.clean += string(v)
 				m.marked = append(m.marked, NewRuneCell(v, cstyle))
 				if unicode.IsSpace(v) {
 					if isWord {

@@ -30,6 +30,7 @@ type TextBuffer interface {
 	Style() Style
 	CharacterCount() (cellCount int)
 	WordCount() (wordCount int)
+	PlainText(wordWrap WrapMode, justify Justification, maxChars int) (plain string)
 	Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag
 }
 
@@ -80,7 +81,24 @@ func (b *CTextBuffer) WordCount() (wordCount int) {
 	return
 }
 
+func (b *CTextBuffer) PlainText(wordWrap WrapMode, justify Justification, maxChars int) (plain string) {
+	lines := b.input.Make(wordWrap, justify, maxChars, DefaultMonoCdkStyle)
+	for _, line := range lines {
+		if len(plain) > 0 {
+			plain += "\n"
+		}
+		for _, word := range line.Words() {
+			for _, char := range word.Characters() {
+				plain += string(char.Value())
+			}
+		}
+	}
+	return
+}
+
 func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag {
+	b.Lock()
+	defer b.Unlock()
 	if b.input == nil || b.input.CharacterCount() == 0 {
 		// non-operation
 		return EVENT_PASS
