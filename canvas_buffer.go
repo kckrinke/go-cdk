@@ -25,12 +25,12 @@ type CanvasBuffer interface {
 	Size() (size Rectangle)
 	Width() (width int)
 	Height() (height int)
-	Resize(size Rectangle)
+	Resize(size Rectangle, style Style)
 	Cell(x int, y int) TextCell
 	GetDim(x, y int) bool
 	GetBgColor(x, y int) (bg Color)
 	GetContent(x, y int) (textCell TextCell)
-	SetContent(x int, y int, mainc rune, style Style) error
+	SetContent(x int, y int, r rune, style Style) error
 	LoadData(d [][]TextCell)
 }
 
@@ -49,17 +49,15 @@ func NewCanvasBuffer(size Rectangle, style Style) CanvasBuffer {
 		data: make([][]TextCell, size.W),
 		size: MakeRectangle(0, 0),
 	}
-	b.style = style
-	b.Resize(size)
+	b.Resize(size, style)
 	return b
 }
 
 // return a string describing the buffer, only useful for debugging purposes
 func (b *CCanvasBuffer) String() string {
 	return fmt.Sprintf(
-		"{Size=%s,Style=%s}",
+		"{Size=%s}",
 		b.size,
-		b.style.String(),
 	)
 }
 
@@ -79,7 +77,7 @@ func (b *CCanvasBuffer) Height() (height int) {
 }
 
 // resize the buffer
-func (b *CCanvasBuffer) Resize(size Rectangle) {
+func (b *CCanvasBuffer) Resize(size Rectangle, style Style) {
 	b.Lock()
 	defer b.Unlock()
 	for x := 0; x < size.W; x++ {
@@ -88,7 +86,7 @@ func (b *CCanvasBuffer) Resize(size Rectangle) {
 		}
 		for y := 0; y < size.H; y++ {
 			if len(b.data[x]) <= y {
-				b.data[x] = append(b.data[x], NewRuneCell(' ', b.style))
+				b.data[x] = append(b.data[x], NewRuneCell(' ', style))
 			}
 		}
 	}
@@ -135,12 +133,12 @@ func (b *CCanvasBuffer) GetContent(x, y int) (textCell TextCell) {
 }
 
 // set the cell content at the given coordinates
-func (b *CCanvasBuffer) SetContent(x int, y int, mainc rune, style Style) error {
-	dlen := len(b.data)
-	if x >= 0 && x < dlen {
-		dxlen := len(b.data[x])
-		if y >= 0 && y < dxlen {
-			b.data[x][y].Set(mainc)
+func (b *CCanvasBuffer) SetContent(x int, y int, r rune, style Style) error {
+	dLen := len(b.data)
+	if x >= 0 && x < dLen {
+		dxLen := len(b.data[x])
+		if y >= 0 && y < dxLen {
+			b.data[x][y].Set(r)
 			b.data[x][y].SetStyle(style)
 			return nil
 		}

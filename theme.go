@@ -19,12 +19,10 @@ import (
 )
 
 var (
-	DefaultFillRune            rune  = ' '
-	DefaultMonoStyle           Style = StyleDefault.Reverse(false).Dim(true)
-	DefaultMonoAccessoryStyle  Style = StyleDefault.Reverse(true).Dim(true)
-	DefaultColorStyle          Style = StyleDefault.Foreground(ColorWhite).Background(ColorNavy)
-	DefaultColorAccessoryStyle Style = StyleDefault.Foreground(ColorWhite).Background(ColorDarkSlateBlue)
-	DefaultBorderRune                = BorderRuneSet{
+	DefaultFillRune   = ' '
+	DefaultMonoStyle  = StyleDefault.Reverse(false).Dim(true)
+	DefaultColorStyle = StyleDefault.Foreground(ColorWhite).Background(ColorNavy)
+	DefaultBorderRune = BorderRuneSet{
 		TopLeft:     RuneULCorner,
 		Top:         RuneHLine,
 		TopRight:    RuneURCorner,
@@ -50,27 +48,31 @@ var (
 
 var (
 	DefaultNilTheme  = Theme{}
-	DefaultMonoTheme = Theme{
+	DefaultMonoThemeAspect = ThemeAspect{
 		Normal:      DefaultMonoStyle,
-		Border:      DefaultMonoStyle.Dim(true),
 		Focused:     DefaultMonoStyle.Dim(false),
 		Active:      DefaultMonoStyle.Dim(false).Reverse(true),
-		Accessory:   DefaultMonoAccessoryStyle,
 		FillRune:    DefaultFillRune,
 		BorderRunes: DefaultBorderRune,
 		ArrowRunes:  DefaultArrowRune,
 		Overlay:     false,
 	}
-	DefaultColorTheme = Theme{
+	DefaultColorThemeAspect = ThemeAspect{
 		Normal:      DefaultColorStyle.Dim(true),
-		Border:      DefaultColorStyle.Dim(true),
 		Focused:     DefaultColorStyle.Dim(false),
 		Active:      DefaultColorStyle.Dim(false).Reverse(true),
-		Accessory:   DefaultColorAccessoryStyle,
 		FillRune:    DefaultFillRune,
 		BorderRunes: DefaultBorderRune,
 		ArrowRunes:  DefaultArrowRune,
 		Overlay:     false,
+	}
+	DefaultMonoTheme = Theme{
+		Content: DefaultMonoThemeAspect,
+		Border:  DefaultMonoThemeAspect,
+	}
+	DefaultColorTheme = Theme{
+		Content: DefaultColorThemeAspect,
+		Border:  DefaultColorThemeAspect,
 	}
 )
 
@@ -116,29 +118,38 @@ func (b ArrowRuneSet) String() string {
 	)
 }
 
-type Theme struct {
+type ThemeAspect struct {
 	Normal      Style
-	Border      Style
 	Focused     Style
 	Active      Style
-	Accessory   Style
 	FillRune    rune
 	BorderRunes BorderRuneSet
 	ArrowRunes  ArrowRuneSet
 	Overlay     bool // keep existing background
 }
 
-func (t Theme) String() string {
+func (t ThemeAspect) String() string {
 	return fmt.Sprintf(
-		"{Normal=%v,Border=%v,Focused=%v,Active=%v,Accessory=%v,FillRune=%v,BorderRunes=%v,ArrowRunes=%v,Overlay=%v}",
+		"{Normal=%v,Focused=%v,Active=%v,FillRune=%v,BorderRunes=%v,ArrowRunes=%v,Overlay=%v}",
 		t.Normal,
-		t.Border,
 		t.Focused,
 		t.Active,
-		t.Accessory,
 		t.FillRune,
 		t.BorderRunes,
 		t.ArrowRunes,
 		t.Overlay,
+	)
+}
+
+type Theme struct {
+	Content ThemeAspect
+	Border  ThemeAspect
+}
+
+func (t Theme) String() string {
+	return fmt.Sprintf(
+		"{Content=%v,Border=%v}",
+		t.Content,
+		t.Border,
 	)
 }

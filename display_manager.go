@@ -129,7 +129,7 @@ func GetDisplayManager() (dm DisplayManager) {
 }
 
 func GetCurrentTheme() (theme Theme) {
-	theme = DefaultNilTheme
+	theme = DefaultColorTheme
 	if cdkDisplayManager != nil {
 		theme = cdkDisplayManager.GetTheme()
 	}
@@ -228,12 +228,6 @@ func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
 	d.display.EnableMouse()
 	d.display.EnablePaste()
 	d.display.Clear()
-	theme := d.GetTheme()
-	if theme == DefaultNilTheme {
-		def := d.DefaultTheme()
-		d.LogTrace("setting current theme to default: %v", def)
-		d.SetTheme(def)
-	}
 	d.captured = true
 	d.Emit(SignalDisplayCaptured, d)
 }
@@ -400,7 +394,7 @@ func (d *CDisplayManager) DrawScreen() EventFlag {
 		return EVENT_PASS
 	}
 	w, h := d.display.Size()
-	canvas := NewCanvas(MakePoint2I(0, 0), MakeRectangle(w, h), d.GetTheme())
+	canvas := NewCanvas(MakePoint2I(0, 0), MakeRectangle(w, h), d.GetTheme().Content.Normal)
 	if f := window.Draw(canvas); f == EVENT_STOP {
 		if err := canvas.Render(d.display); err != nil {
 			d.LogErr(err)

@@ -24,7 +24,7 @@ import (
 // a Canvas is the primary means of drawing to the terminal display within CDK
 type Canvas interface {
 	String() string
-	Resize(size Rectangle)
+	Resize(size Rectangle, style Style)
 	GetContent(x, y int) (textCell TextCell)
 	SetContent(x, y int, char string, s Style) error
 	SetRune(x, y int, r rune, s Style) error
@@ -33,24 +33,21 @@ type Canvas interface {
 	GetSize() Rectangle
 	Width() (width int)
 	Height() (height int)
-	SetTheme(style Theme)
-	GetTheme() Theme
-	SetFill(fill rune)
-	GetFill() rune
 	Equals(onlyDirty bool, v Canvas) bool
 	Composite(v Canvas) error
 	Render(display Display) error
 	ForEach(fn CanvasForEachFn) EventFlag
 	DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, style Style, markup bool, text string)
-	DrawSingleLineText(pos Point2I, maxChars int, justify Justification, style Style, markup bool, text string)
+	DrawSingleLineText(position Point2I, maxChars int, justify Justification, style Style, markup bool, text string)
 	DrawLine(pos Point2I, length int, orient Orientation, style Style)
 	DrawHorizontalLine(pos Point2I, length int, style Style)
 	DrawVerticalLine(pos Point2I, length int, style Style)
-	Box(pos Point2I, size Rectangle, border bool, fill bool, theme Theme)
+	Box(pos Point2I, size Rectangle, border, fill, overlay bool, fillRune rune, contentStyle, borderStyle Style, borderRunes BorderRuneSet)
+	BoxWithTheme(pos Point2I, size Rectangle, border, fill bool, theme Theme)
 	DebugBox(color Color, format string, argv ...interface{})
-	Fill(s Theme)
-	FillBorder(dim bool, border bool)
-	FillBorderTitle(dim bool, title string, justify Justification)
+	Fill(theme Theme)
+	FillBorder(dim, border bool, theme Theme)
+	FillBorderTitle(dim bool, title string, justify Justification, theme Theme)
 }
 
 // concrete implementation of the Canvas interface
@@ -58,17 +55,15 @@ type CCanvas struct {
 	buffer CanvasBuffer
 	origin Point2I
 	size   Rectangle
-	theme  Theme
 	fill   rune
 }
 
 // create a new canvas object with the given origin point, size and theme
-func NewCanvas(origin Point2I, size Rectangle, theme Theme) Canvas {
+func NewCanvas(origin Point2I, size Rectangle, style Style) Canvas {
 	return &CCanvas{
-		buffer: NewCanvasBuffer(size, theme.Normal),
+		buffer: NewCanvasBuffer(size, style),
 		origin: origin,
 		size:   size,
-		theme:  theme,
 		fill:   ' ',
 	}
 }
@@ -76,18 +71,17 @@ func NewCanvas(origin Point2I, size Rectangle, theme Theme) Canvas {
 // return a string describing the canvas metadata, useful for debugging
 func (c CCanvas) String() string {
 	return fmt.Sprintf(
-		"{Origin=%s,Size=%s,Theme=%s,Fill=%v,Buffer=%v}",
+		"{Origin=%s,Size=%s,Fill=%v,Buffer=%v}",
 		c.origin,
 		c.size,
-		c.theme,
 		c.fill,
 		c.buffer.String(),
 	)
 }
 
 // change the size of the canvas, not recommended to do this in practice
-func (c *CCanvas) Resize(size Rectangle) {
-	c.buffer.Resize(size)
+func (c *CCanvas) Resize(size Rectangle, style Style) {
+	c.buffer.Resize(size, style)
 	c.size = size
 }
 
@@ -132,27 +126,6 @@ func (c *CCanvas) Width() (width int) {
 // convenience method to get just the height of the canvas
 func (c *CCanvas) Height() (height int) {
 	return c.size.H
-}
-
-// set the default theme for the canvas, used in cases where there's no inherent
-// style available during a fill process for example
-func (c *CCanvas) SetTheme(style Theme) {
-	c.theme = style
-}
-
-// return the default theme for this canvas
-func (c *CCanvas) GetTheme() Theme {
-	return c.theme
-}
-
-// set the rune used to fill in areas, typically a space character " "
-func (c *CCanvas) SetFill(fill rune) {
-	c.fill = fill
-}
-
-// get the rune used to file in areas
-func (c *CCanvas) GetFill() rune {
-	return c.fill
 }
 
 // returns true if the given canvas is painted the same as this one, can compare
@@ -258,7 +231,7 @@ func (c *CCanvas) DrawText(pos Point2I, size Rectangle, justify Justification, s
 	if size.W == -1 || size.W >= c.size.W {
 		size.W = c.size.W
 	}
-	v := NewCanvas(pos, size, c.theme)
+	v := NewCanvas(pos, size, style)
 	tb.Draw(v, singleLineMode, wrap, justify, ALIGN_TOP)
 	if err := c.Composite(v); err != nil {
 		ErrorF("composite error: %v", err)
@@ -287,7 +260,7 @@ func (c *CCanvas) DrawHorizontalLine(pos Point2I, length int, style Style) {
 	length = utils.ClampI(length, pos.X, c.size.W-pos.X)
 	end := pos.X + length
 	for i := pos.X; i < end; i++ {
-		c.SetRune(i, pos.Y, RuneHLine, style)
+		_ = c.SetRune(i, pos.Y, RuneHLine, style)
 	}
 }
 
@@ -296,25 +269,25 @@ func (c *CCanvas) DrawVerticalLine(pos Point2I, length int, style Style) {
 	length = utils.ClampI(length, pos.Y, c.size.H-pos.Y)
 	end := pos.Y + length
 	for i := pos.Y; i < end; i++ {
-		c.SetRune(i, pos.Y, RuneVLine, style)
+		_ = c.SetRune(i, pos.Y, RuneVLine, style)
 	}
 }
 
 // draw a box, at position, of size, with or without a border, with or without
 // being filled in and following the given theme
-func (c *CCanvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme Theme) {
-	TraceDF(1, "c.Box(%v,%v,%v,%v)", pos, size, border, theme)
-	endx := pos.X + size.W - 1
-	endy := pos.Y + size.H - 1
+func (c *CCanvas) Box(pos Point2I, size Rectangle, border, fill, overlay bool, fillRune rune, contentStyle, borderStyle Style, borderRunes BorderRuneSet) {
+	TraceDF(1, "c.Box(%v,%v,%v,%v,%v,%v,%v,%v,%v)", pos, size, border, fill, overlay, fillRune, contentStyle, borderStyle, borderRunes)
+	xEnd := pos.X + size.W - 1
+	yEnd := pos.Y + size.H - 1
 	// for each column
 	for ix := pos.X; ix < (pos.X + size.W); ix++ {
 		// for each row
 		for iy := pos.Y; iy < (pos.Y + size.H); iy++ {
-			if theme.Overlay {
-				theme.Border = theme.Border.
+			if overlay {
+				borderStyle = borderStyle.
 					Background(c.buffer.GetBgColor(ix, iy)).
 					Dim(c.buffer.GetDim(ix, iy))
-				theme.Normal = theme.Normal.
+				contentStyle = contentStyle.
 					Background(c.buffer.GetBgColor(ix, iy)).
 					Dim(c.buffer.GetDim(ix, iy))
 			}
@@ -324,33 +297,33 @@ func (c *CCanvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme
 				switch {
 				case iy == pos.Y && border:
 					// top left corner
-					c.SetRune(ix, iy, theme.BorderRunes.TopLeft, theme.Border)
-				case iy == endy && border:
+					_ = c.SetRune(ix, iy, borderRunes.TopLeft, borderStyle)
+				case iy == yEnd && border:
 					// bottom left corner
-					c.SetRune(ix, iy, theme.BorderRunes.BottomLeft, theme.Border)
+					_ = c.SetRune(ix, iy, borderRunes.BottomLeft, borderStyle)
 				default:
 					// left border
 					if border {
-						c.SetRune(ix, iy, theme.BorderRunes.Left, theme.Border)
+						_ = c.SetRune(ix, iy, borderRunes.Left, borderStyle)
 					} else if fill {
-						c.SetRune(ix, iy, theme.FillRune, theme.Normal)
+						_ = c.SetRune(ix, iy, fillRune, contentStyle)
 					}
 				} // left column switch
-			case ix == endx:
+			case ix == xEnd:
 				// right column
 				switch {
 				case iy == pos.Y && border:
 					// top right corner
-					c.SetRune(ix, iy, theme.BorderRunes.TopRight, theme.Border)
-				case iy == endy && border:
+					_ = c.SetRune(ix, iy, borderRunes.TopRight, borderStyle)
+				case iy == yEnd && border:
 					// bottom right corner
-					c.SetRune(ix, iy, theme.BorderRunes.BottomRight, theme.Border)
+					_ = c.SetRune(ix, iy, borderRunes.BottomRight, borderStyle)
 				default:
 					// right border
 					if border {
-						c.SetRune(ix, iy, theme.BorderRunes.Right, theme.Border)
+						_ = c.SetRune(ix, iy, borderRunes.Right, borderStyle)
 					} else if fill {
-						c.SetRune(ix, iy, theme.FillRune, theme.Normal)
+						_ = c.SetRune(ix, iy, fillRune, contentStyle)
 					}
 				} // right column switch
 			default:
@@ -358,19 +331,33 @@ func (c *CCanvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme
 				switch {
 				case iy == pos.Y && border:
 					// top middle
-					c.SetRune(ix, iy, theme.BorderRunes.Top, theme.Border)
-				case iy == endy && border:
+					_ = c.SetRune(ix, iy, borderRunes.Top, borderStyle)
+				case iy == yEnd && border:
 					// bottom middle
-					c.SetRune(ix, iy, theme.BorderRunes.Bottom, theme.Border)
+					_ = c.SetRune(ix, iy, borderRunes.Bottom, borderStyle)
 				default:
 					// middle middle
 					if fill {
-						c.SetRune(ix, iy, theme.FillRune, theme.Normal)
+						_ = c.SetRune(ix, iy, fillRune, contentStyle)
 					}
 				} // middle columns switch
 			} // draw switch
 		} // for iy
 	} // for ix
+}
+
+func (c *CCanvas) BoxWithTheme(pos Point2I, size Rectangle, border, fill bool, theme Theme) {
+	c.Box(
+		MakePoint2I(0, 0),
+		c.size,
+		true,
+		false,
+		false,
+		theme.Border.FillRune,
+		theme.Border.Normal,
+		theme.Border.Normal,
+		theme.Border.BorderRunes,
+	)
 }
 
 // draw a box with Sprintf-formatted text along the top-left of the box, useful
@@ -379,56 +366,71 @@ func (c *CCanvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme
 func (c *CCanvas) DebugBox(color Color, format string, argv ...interface{}) {
 	text := fmt.Sprintf(format, argv...)
 	bs := DefaultMonoTheme // intentionally mono
-	bs.Border = bs.Border.Foreground(color)
+	bs.Border.Normal = bs.Border.Normal.Foreground(color)
 	c.Box(
 		MakePoint2I(0, 0),
 		c.size,
 		true,
 		false,
-		bs,
+		false,
+		bs.Border.FillRune,
+		bs.Border.Normal,
+		bs.Border.Normal,
+		bs.Border.BorderRunes,
 	)
-	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, JUSTIFY_LEFT, bs.Border, false, text)
+	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, JUSTIFY_LEFT, bs.Border.Normal, false, text)
 }
 
 // fill the entire canvas according to the given theme
-func (c *CCanvas) Fill(s Theme) {
-	TraceF("c.fill(%v,%v)", s)
-	c.Box(MakePoint2I(0, 0), c.size, false, true, s)
+func (c *CCanvas) Fill(theme Theme) {
+	TraceF("c.Fill(%v,%v)", theme)
+	c.Box(
+		MakePoint2I(0, 0),
+		c.size,
+		false, true,
+		theme.Content.Overlay,
+		theme.Content.FillRune,
+		theme.Content.Normal,
+		theme.Border.Normal,
+		theme.Border.BorderRunes,
+	)
 }
 
 // fill the entire canvas, with or without 'dim' styling, with or without a
 // border
-func (c *CCanvas) FillBorder(dim bool, border bool) {
-	TraceF("c.FillBorder(%v,%v): origin=%v, size=%v", dim, border, c.origin, c.size)
-	s := c.theme
-	if dim {
-		s.Normal = s.Normal.Dim(true)
-		s.Border = s.Border.Dim(true)
-	}
+func (c *CCanvas) FillBorder(dim, border bool, theme Theme) {
+	TraceF("c.FillBorder(%v,%v): origin=%v, size=%v", border, theme, c.origin, c.size)
+	theme.Content.Normal = theme.Content.Normal.Dim(dim)
+	theme.Border.Normal = theme.Border.Normal.Dim(dim)
 	c.Box(
 		MakePoint2I(0, 0),
 		c.size,
 		border,
 		true,
-		c.theme,
+		theme.Content.Overlay,
+		theme.Content.FillRune,
+		theme.Content.Normal,
+		theme.Border.Normal,
+		theme.Border.BorderRunes,
 	)
 }
 
 // fill the entire canvas, with or without 'dim' styling, with plain text
 // justified across the top border
-func (c *CCanvas) FillBorderTitle(dim bool, title string, justify Justification) {
-	TraceF("c.FillBorderTitle(%v)", dim)
-	s := c.theme
-	if dim {
-		s.Normal = s.Normal.Dim(true)
-		s.Border = s.Border.Dim(true)
-	}
+func (c *CCanvas) FillBorderTitle(dim bool, title string, justify Justification, theme Theme) {
+	TraceF("c.FillBorderTitle(%v,%v,%v)", title, justify, theme)
+	theme.Content.Normal = theme.Content.Normal.Dim(dim)
+	theme.Border.Normal = theme.Border.Normal.Dim(dim)
 	c.Box(
 		MakePoint2I(0, 0),
 		c.size,
 		true,
 		true,
-		c.theme,
+		theme.Content.Overlay,
+		theme.Content.FillRune,
+		theme.Content.Normal,
+		theme.Border.Normal,
+		theme.Border.BorderRunes,
 	)
-	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, justify, c.theme.Normal.Dim(dim), false, title)
+	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, justify, theme.Content.Normal.Dim(dim), false, title)
 }
