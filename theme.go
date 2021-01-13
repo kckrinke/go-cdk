@@ -19,10 +19,12 @@ import (
 )
 
 var (
-	DefaultFillRune      rune  = ' '
-	DefaultMonoCdkStyle  Style = StyleDefault.Dim(true)
-	DefaultColorCdkStyle Style = StyleDefault.Foreground(ColorWhite).Background(ColorNavy)
-	DefaultBorderRune          = BorderRune{
+	DefaultFillRune            rune  = ' '
+	DefaultMonoStyle           Style = StyleDefault.Reverse(false).Dim(true)
+	DefaultMonoAccessoryStyle  Style = StyleDefault.Reverse(true).Dim(true)
+	DefaultColorStyle          Style = StyleDefault.Foreground(ColorWhite).Background(ColorNavy)
+	DefaultColorAccessoryStyle Style = StyleDefault.Foreground(ColorWhite).Background(ColorDarkSlateBlue)
+	DefaultBorderRune                = BorderRuneSet{
 		TopLeft:     RuneULCorner,
 		Top:         RuneHLine,
 		TopRight:    RuneURCorner,
@@ -32,32 +34,47 @@ var (
 		Bottom:      RuneHLine,
 		BottomRight: RuneLRCorner,
 	}
+	DefaultArrowRune = ArrowRuneSet{
+		Up:    RuneUArrow,
+		Left:  RuneLArrow,
+		Down:  RuneDArrow,
+		Right: RuneRArrow,
+	}
+	FancyArrowRune = ArrowRuneSet{
+		Up:    RuneBlackMediumUpPointingTriangleCentred,
+		Left:  RuneBlackMediumLeftPointingTriangleCentred,
+		Down:  RuneBlackMediumDownPointingTriangleCentred,
+		Right: RuneBlackMediumRightPointingTriangleCentred,
+	}
 )
 
 var (
 	DefaultNilTheme  = Theme{}
 	DefaultMonoTheme = Theme{
-		Normal:      DefaultMonoCdkStyle,
-		Border:      DefaultMonoCdkStyle.Dim(true),
-		Focused:     DefaultMonoCdkStyle.Dim(false),
-		Active:      DefaultMonoCdkStyle.Dim(false).Reverse(true),
+		Normal:      DefaultMonoStyle,
+		Border:      DefaultMonoStyle.Dim(true),
+		Focused:     DefaultMonoStyle.Dim(false),
+		Active:      DefaultMonoStyle.Dim(false).Reverse(true),
+		Accessory:   DefaultMonoAccessoryStyle,
 		FillRune:    DefaultFillRune,
 		BorderRunes: DefaultBorderRune,
+		ArrowRunes:  DefaultArrowRune,
 		Overlay:     false,
 	}
 	DefaultColorTheme = Theme{
-		Normal:      DefaultColorCdkStyle.Dim(true),
-		Border:      DefaultColorCdkStyle.Dim(true),
-		Focused:     DefaultColorCdkStyle.Dim(false),
-		Active:      DefaultColorCdkStyle.Dim(false).Reverse(true),
+		Normal:      DefaultColorStyle.Dim(true),
+		Border:      DefaultColorStyle.Dim(true),
+		Focused:     DefaultColorStyle.Dim(false),
+		Active:      DefaultColorStyle.Dim(false).Reverse(true),
+		Accessory:   DefaultColorAccessoryStyle,
 		FillRune:    DefaultFillRune,
 		BorderRunes: DefaultBorderRune,
+		ArrowRunes:  DefaultArrowRune,
 		Overlay:     false,
 	}
-	CurrentTheme = DefaultNilTheme
 )
 
-type BorderRune struct {
+type BorderRuneSet struct {
 	TopLeft     rune
 	Top         rune
 	TopRight    rune
@@ -68,7 +85,7 @@ type BorderRune struct {
 	BottomRight rune
 }
 
-func (b BorderRune) String() string {
+func (b BorderRuneSet) String() string {
 	return fmt.Sprintf(
 		"{BorderRunes=%v,%v,%v,%v,%v,%v,%v,%v}",
 		b.TopRight,
@@ -82,25 +99,46 @@ func (b BorderRune) String() string {
 	)
 }
 
+type ArrowRuneSet struct {
+	Up    rune
+	Left  rune
+	Down  rune
+	Right rune
+}
+
+func (b ArrowRuneSet) String() string {
+	return fmt.Sprintf(
+		"{ArrowRunes=%v,%v,%v,%v}",
+		b.Up,
+		b.Left,
+		b.Down,
+		b.Right,
+	)
+}
+
 type Theme struct {
 	Normal      Style
 	Border      Style
 	Focused     Style
 	Active      Style
+	Accessory   Style
 	FillRune    rune
-	BorderRunes BorderRune
+	BorderRunes BorderRuneSet
+	ArrowRunes  ArrowRuneSet
 	Overlay     bool // keep existing background
 }
 
 func (t Theme) String() string {
 	return fmt.Sprintf(
-		"{Normal=%v,Border=%v,Focused=%v,Active=%v,FillRune=%v,BorderRunes=%v,Overlay=%v}",
+		"{Normal=%v,Border=%v,Focused=%v,Active=%v,Accessory=%v,FillRune=%v,BorderRunes=%v,ArrowRunes=%v,Overlay=%v}",
 		t.Normal,
 		t.Border,
 		t.Focused,
 		t.Active,
+		t.Accessory,
 		t.FillRune,
 		t.BorderRunes,
+		t.ArrowRunes,
 		t.Overlay,
 	)
 }

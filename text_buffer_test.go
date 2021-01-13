@@ -23,24 +23,24 @@ import (
 func TestTextBuffer(t *testing.T) {
 	Convey("Text Buffers with...", t, func() {
 		Convey("Basic checks", func() {
-			tb := NewEmptyTextBuffer(DefaultMonoCdkStyle)
+			tb := NewEmptyTextBuffer(DefaultMonoStyle)
 			So(tb, ShouldNotBeNil)
-			So(tb.Style().String(), ShouldEqual, DefaultMonoCdkStyle.String())
+			So(tb.Style().String(), ShouldEqual, DefaultMonoStyle.String())
 			So(tb.CharacterCount(), ShouldEqual, 0)
 			So(tb.WordCount(), ShouldEqual, 0)
-			tb = NewTextBuffer("test", DefaultMonoCdkStyle)
+			tb = NewTextBuffer("test", DefaultMonoStyle)
 			So(tb, ShouldNotBeNil)
 			So(tb.CharacterCount(), ShouldEqual, 4)
 			So(tb.WordCount(), ShouldEqual, 1)
 		})
 		Convey("Draw checks", func() {
-			tb := NewEmptyTextBuffer(DefaultMonoCdkStyle)
+			tb := NewEmptyTextBuffer(DefaultMonoStyle)
 			So(tb, ShouldNotBeNil)
 			canvas := NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme)
 			f := tb.Draw(canvas, true, WRAP_NONE, JUSTIFY_LEFT, ALIGN_TOP)
 			So(f, ShouldEqual, EVENT_PASS)
 
-			tb = NewTextBuffer("test", DefaultMonoCdkStyle)
+			tb = NewTextBuffer("test", DefaultMonoStyle)
 			So(tb, ShouldNotBeNil)
 			canvas = NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme)
 			f = tb.Draw(canvas, true, WRAP_NONE, JUSTIFY_LEFT, ALIGN_TOP)

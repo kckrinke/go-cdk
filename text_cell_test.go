@@ -22,11 +22,11 @@ import (
 
 func TestTextCell(t *testing.T) {
 	Convey("Basic checks", t, func() {
-		tc := NewRuneCell('*', DefaultMonoCdkStyle)
+		tc := NewRuneCell('*', DefaultMonoStyle)
 		So(tc, ShouldNotBeNil)
 		So(tc.IsSpace(), ShouldEqual, false)
 		So(tc.Width(), ShouldEqual, 1)
-		So(tc.Style().String(), ShouldEqual, DefaultMonoCdkStyle.String())
+		So(tc.Style().String(), ShouldEqual, DefaultMonoStyle.String())
 		So(tc.Dirty(), ShouldEqual, false)
 		So(tc.Value(), ShouldEqual, '*')
 		So(tc.String(), ShouldEqual, "{Char=*,Style={fg=unnamed[-1],bg=unnamed[-1],attrs=16}}")
@@ -37,8 +37,8 @@ func TestTextCell(t *testing.T) {
 		tc.SetByte([]byte{'0'})
 		So(tc.IsSpace(), ShouldEqual, false)
 		So(tc.Dirty(), ShouldEqual, true)
-		tc.SetStyle(DefaultColorCdkStyle)
+		tc.SetStyle(DefaultColorStyle)
 		So(tc.Dirty(), ShouldEqual, true)
-		So(tc.Style().String(), ShouldEqual, DefaultColorCdkStyle.String())
+		So(tc.Style().String(), ShouldEqual, DefaultColorStyle.String())
 	})
 }
