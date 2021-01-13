@@ -45,6 +45,7 @@ type CCanvasBuffer struct {
 
 // construct a new canvas buffer
 func NewCanvasBuffer(size Rectangle, style Style) CanvasBuffer {
+	size.Floor(0, 0)
 	b := &CCanvasBuffer{
 		data: make([][]TextCell, size.W),
 		size: MakeRectangle(0, 0),
@@ -80,6 +81,7 @@ func (b *CCanvasBuffer) Height() (height int) {
 func (b *CCanvasBuffer) Resize(size Rectangle, style Style) {
 	b.Lock()
 	defer b.Unlock()
+	size.Floor(0, 0)
 	for x := 0; x < size.W; x++ {
 		if len(b.data) <= x {
 			b.data = append(b.data, make([]TextCell, size.H))
@@ -95,7 +97,12 @@ func (b *CCanvasBuffer) Resize(size Rectangle, style Style) {
 	}
 	if b.size.H > size.H {
 		for x := 0; x < size.W; x++ {
-			b.data[x] = b.data[x][:size.H]
+			if len(b.data) <= x {
+				b.data = append(b.data, make([]TextCell, size.H))
+			}
+			if len(b.data[x]) >= size.H {
+				b.data[x] = b.data[x][:size.H]
+			}
 		}
 	}
 	b.size = size
