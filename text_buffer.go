@@ -31,6 +31,7 @@ type TextBuffer interface {
 	CharacterCount() (cellCount int)
 	WordCount() (wordCount int)
 	PlainText(wordWrap WrapMode, justify Justification, maxChars int) (plain string)
+	PlainTextInfo(wordWrap WrapMode, justify Justification, maxChars int) (longestLine, lineCount int)
 	Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag
 }
 
@@ -91,6 +92,18 @@ func (b *CTextBuffer) PlainText(wordWrap WrapMode, justify Justification, maxCha
 			for _, char := range word.Characters() {
 				plain += string(char.Value())
 			}
+		}
+	}
+	return
+}
+
+func (b *CTextBuffer) PlainTextInfo(wordWrap WrapMode, justify Justification, maxChars int) (longestLine, lineCount int) {
+	lines := b.input.Make(wordWrap, justify, maxChars, DefaultMonoCdkStyle)
+	lineCount = len(lines)
+	for _, line := range lines {
+		lcc := line.CharacterCount()
+		if longestLine < lcc {
+			longestLine = lcc
 		}
 	}
 	return
