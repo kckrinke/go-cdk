@@ -263,10 +263,12 @@ func (d *CDisplayManager) ReleaseCtrlC() {
 }
 
 func (d *CDisplayManager) DefaultTheme() Theme {
-	if d.display != nil && d.display.Colors() > 0 {
-		return DefaultColorTheme
+	if d.display != nil {
+		if d.display.Colors() <= 0 {
+			return DefaultMonoTheme
+		}
 	}
-	return DefaultMonoTheme
+	return DefaultColorTheme
 }
 
 func (d *CDisplayManager) ActiveWindow() Window {
