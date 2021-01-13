@@ -128,6 +128,20 @@ func GetDisplayManager() (dm DisplayManager) {
 	return
 }
 
+func GetCurrentTheme() (theme Theme) {
+	theme = DefaultNilTheme
+	if cdkDisplayManager != nil {
+		theme = cdkDisplayManager.GetTheme()
+	}
+	return
+}
+
+func SetCurrentTheme(theme Theme) {
+	if cdkDisplayManager != nil {
+		cdkDisplayManager.SetTheme(theme)
+	}
+}
+
 // Initialization
 func (d *CDisplayManager) Init() (already bool) {
 	check := TypesManager.GetTypeItems(TypeDisplayManager)

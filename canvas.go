@@ -378,7 +378,7 @@ func (c *CCanvas) Box(pos Point2I, size Rectangle, border bool, fill bool, theme
 // more flexible
 func (c *CCanvas) DebugBox(color Color, format string, argv ...interface{}) {
 	text := fmt.Sprintf(format, argv...)
-	bs := DefaultMonoTheme
+	bs := DefaultMonoTheme // intentionally mono
 	bs.Border = bs.Border.Foreground(color)
 	c.Box(
 		MakePoint2I(0, 0),
