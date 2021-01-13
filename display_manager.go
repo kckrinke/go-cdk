@@ -492,8 +492,8 @@ func (d *CDisplayManager) screenRequestWorker() {
 			}
 		case QuitRequest:
 			d.running = false
-			d.process <- nil
 			d.done <- true
+			d.process <- nil
 		}
 	}
 }
@@ -513,7 +513,7 @@ func (d *CDisplayManager) Run() error {
 	if err := d.PostEvent(NewEventResize(d.display.Size())); err != nil {
 		Error(err)
 	}
-	for {
+	for d.running {
 		select {
 		case fn := <-d.queue:
 			if err := fn(d); err != nil {
@@ -528,6 +528,7 @@ func (d *CDisplayManager) Run() error {
 			return nil
 		}
 	}
+	return nil
 }
 
 func (d *CDisplayManager) IsRunning() bool {
