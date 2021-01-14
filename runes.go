@@ -65,6 +65,8 @@ const (
 	RuneUpwardsBlackCircledWhiteArrow                  = '⮉'
 	RuneRightwardsBlackCircledWhiteArrow               = '⮊'
 	RuneDownwardsBlackCircledWhiteArrow                = '⮋'
+	// Punctuation, typography
+	RuneEllipsis = '…'
 )
 
 // RuneFallbacks is the default map of fallback strings that will be
@@ -136,4 +138,6 @@ var RuneFallbacks = map[rune]string{
 	RuneUpwardsBlackCircledWhiteArrow:                  "^",
 	RuneRightwardsBlackCircledWhiteArrow:               ">",
 	RuneDownwardsBlackCircledWhiteArrow:                "v",
+	// Punctuation, typography
+	RuneEllipsis: "...",
 }
