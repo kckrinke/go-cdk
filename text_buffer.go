@@ -28,6 +28,7 @@ type TextBuffer interface {
 	Set(input string, style Style)
 	SetInput(input WordLine)
 	Style() Style
+	SetStyle(style Style)
 	CharacterCount() (cellCount int)
 	WordCount() (wordCount int)
 	PlainText(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (plain string)
@@ -36,6 +37,7 @@ type TextBuffer interface {
 }
 
 type CTextBuffer struct {
+	raw   string
 	input WordLine
 	style Style
 
@@ -57,15 +59,26 @@ func NewTextBuffer(input string, style Style) TextBuffer {
 }
 
 func (b *CTextBuffer) Set(input string, style Style) {
+	b.raw = input
 	b.input = NewWordLine(input, style)
 }
 
 func (b *CTextBuffer) SetInput(input WordLine) {
 	b.input = input
+	b.raw = input.Value()
 }
 
 func (b *CTextBuffer) Style() Style {
 	return b.style
+}
+
+func (b *CTextBuffer) SetStyle(style Style) {
+	if b.style.String() != style.String() {
+		b.style = style
+		if b.input != nil {
+			b.input = NewWordLine(b.raw, style)
+		}
+	}
 }
 
 func (b *CTextBuffer) CharacterCount() (cellCount int) {
