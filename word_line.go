@@ -27,6 +27,7 @@ type WordLine interface {
 	GetWord(index int) WordCell
 	RemoveWord(index int)
 	GetCharacter(index int) TextCell
+	SetCharacter(index int, r rune)
 	Words() []WordCell
 	Len() (wordSpaceCount int)
 	CharacterCount() (count int)
@@ -137,6 +138,21 @@ func (w *CWordLine) GetCharacter(index int) TextCell {
 		}
 	}
 	return nil
+}
+
+func (w *CWordLine) SetCharacter(index int, r rune) {
+	if index < w.CharacterCount() {
+		count := 0
+		for _, word := range w.words {
+			for _, c := range word.Characters() {
+				if count == index {
+					c.Set(r)
+					return
+				}
+				count++
+			}
+		}
+	}
 }
 
 func (w *CWordLine) Words() []WordCell {
