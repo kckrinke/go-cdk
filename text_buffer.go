@@ -30,9 +30,9 @@ type TextBuffer interface {
 	Style() Style
 	CharacterCount() (cellCount int)
 	WordCount() (wordCount int)
-	PlainText(wordWrap WrapMode, justify Justification, maxChars int) (plain string)
-	PlainTextInfo(wordWrap WrapMode, justify Justification, maxChars int) (longestLine, lineCount int)
-	Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag
+	PlainText(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (plain string)
+	PlainTextInfo(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (longestLine, lineCount int)
+	Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, ellipsize bool, justify Justification, vAlign VerticalAlignment) EventFlag
 }
 
 type CTextBuffer struct {
@@ -82,8 +82,8 @@ func (b *CTextBuffer) WordCount() (wordCount int) {
 	return
 }
 
-func (b *CTextBuffer) PlainText(wordWrap WrapMode, justify Justification, maxChars int) (plain string) {
-	lines := b.input.Make(wordWrap, justify, maxChars, b.style)
+func (b *CTextBuffer) PlainText(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (plain string) {
+	lines := b.input.Make(wordWrap, ellipsize, justify, maxChars, b.style)
 	for _, line := range lines {
 		if len(plain) > 0 {
 			plain += "\n"
@@ -97,8 +97,8 @@ func (b *CTextBuffer) PlainText(wordWrap WrapMode, justify Justification, maxCha
 	return
 }
 
-func (b *CTextBuffer) PlainTextInfo(wordWrap WrapMode, justify Justification, maxChars int) (longestLine, lineCount int) {
-	lines := b.input.Make(wordWrap, justify, maxChars, b.style)
+func (b *CTextBuffer) PlainTextInfo(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (longestLine, lineCount int) {
+	lines := b.input.Make(wordWrap, ellipsize, justify, maxChars, b.style)
 	lineCount = len(lines)
 	for _, line := range lines {
 		lcc := line.CharacterCount()
@@ -109,7 +109,7 @@ func (b *CTextBuffer) PlainTextInfo(wordWrap WrapMode, justify Justification, ma
 	return
 }
 
-func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, justify Justification, vAlign VerticalAlignment) EventFlag {
+func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, ellipsize bool, justify Justification, vAlign VerticalAlignment) EventFlag {
 	b.Lock()
 	defer b.Unlock()
 	if b.input == nil || b.input.CharacterCount() == 0 {
@@ -122,7 +122,7 @@ func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, ju
 	}
 
 	maxChars := canvas.Width()
-	lines := b.input.Make(wordWrap, justify, maxChars, b.style)
+	lines := b.input.Make(wordWrap, ellipsize, justify, maxChars, b.style)
 	size := canvas.GetSize()
 	if size.W <= 0 || size.H <= 0 {
 		return EVENT_PASS

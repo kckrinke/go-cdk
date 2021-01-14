@@ -33,7 +33,7 @@ func (w *CWordLine) applyTypographicWrapWord(maxChars int, input []WordLine) (ou
 							lid = len(output) // don't append trailing NEWLs
 							break
 						}
-						output[lid].AppendWordRune(wid, c.Value(), c.Style())
+						_ = output[lid].AppendWordRune(wid, c.Value(), c.Style())
 						cid++
 					}
 					wid++
@@ -168,7 +168,7 @@ func (w *CWordLine) applyTypographicWrapChar(maxChars int, input []WordLine) (ou
 }
 
 // truncate the input lines on the nearest character to maxChars
-func (w *CWordLine) applyTypographicWrapNone(maxChars int, input []WordLine) (output []WordLine) {
+func (w *CWordLine) applyTypographicWrapNone(ellipsize bool, maxChars int, input []WordLine) (output []WordLine) {
 	cid, lid := 0, 0
 	for _, line := range input {
 		if lid >= len(output) {
@@ -177,6 +177,11 @@ func (w *CWordLine) applyTypographicWrapNone(maxChars int, input []WordLine) (ou
 		for _, word := range line.Words() {
 			if word.IsSpace() {
 				if maxChars > -1 && cid+1 > maxChars {
+					// ellipsize here
+					eStartIndex := output[lid].CharacterCount() - 1
+					if eStartIndex > 0 {
+						output[lid].SetCharacter(eStartIndex, RuneEllipsis)
+					}
 					break
 				}
 				if c := word.GetCharacter(0); c != nil {
@@ -197,6 +202,11 @@ func (w *CWordLine) applyTypographicWrapNone(maxChars int, input []WordLine) (ou
 					}
 					if wc.Len() > 0 {
 						output[lid].AppendWordCell(wc)
+						// ellipsize here
+						eStartIndex := output[lid].CharacterCount() - 1
+						if eStartIndex > 0 {
+							output[lid].SetCharacter(eStartIndex, RuneEllipsis)
+						}
 						break
 					}
 				} else {

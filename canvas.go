@@ -37,8 +37,8 @@ type Canvas interface {
 	Composite(v Canvas) error
 	Render(display Display) error
 	ForEach(fn CanvasForEachFn) EventFlag
-	DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, style Style, markup bool, text string)
-	DrawSingleLineText(position Point2I, maxChars int, justify Justification, style Style, markup bool, text string)
+	DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, ellipsize bool, style Style, markup bool, text string)
+	DrawSingleLineText(position Point2I, maxChars int, ellipsize bool, justify Justification, style Style, markup bool, text string)
 	DrawLine(pos Point2I, length int, orient Orientation, style Style)
 	DrawHorizontalLine(pos Point2I, length int, style Style)
 	DrawVerticalLine(pos Point2I, length int, style Style)
@@ -217,7 +217,7 @@ func (c *CCanvas) ForEach(fn CanvasForEachFn) EventFlag {
 // Write text to the canvas buffer
 // origin is the top-left coordinate for the text area being rendered
 // alignment is based on origin.X boxed by maxChars or canvas size.W
-func (c *CCanvas) DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, style Style, markup bool, text string) {
+func (c *CCanvas) DrawText(pos Point2I, size Rectangle, justify Justification, singleLineMode bool, wrap WrapMode, ellipsize bool, style Style, markup bool, text string) {
 	var tb TextBuffer
 	if markup {
 		m, err := NewMarkup(text, style)
@@ -232,7 +232,7 @@ func (c *CCanvas) DrawText(pos Point2I, size Rectangle, justify Justification, s
 		size.W = c.size.W
 	}
 	v := NewCanvas(pos, size, style)
-	tb.Draw(v, singleLineMode, wrap, justify, ALIGN_TOP)
+	tb.Draw(v, singleLineMode, wrap, ellipsize, justify, ALIGN_TOP)
 	if err := c.Composite(v); err != nil {
 		ErrorF("composite error: %v", err)
 	}
@@ -240,8 +240,8 @@ func (c *CCanvas) DrawText(pos Point2I, size Rectangle, justify Justification, s
 
 // write a single line of text to the canvas at the given position, of at most
 // maxChars, with the text justified and styled. supports Tango markup content
-func (c *CCanvas) DrawSingleLineText(position Point2I, maxChars int, justify Justification, style Style, markup bool, text string) {
-	c.DrawText(position, MakeRectangle(maxChars, 1), justify, true, WRAP_NONE, style, markup, text)
+func (c *CCanvas) DrawSingleLineText(position Point2I, maxChars int, ellipsize bool, justify Justification, style Style, markup bool, text string) {
+	c.DrawText(position, MakeRectangle(maxChars, 1), justify, true, WRAP_NONE, ellipsize, style, markup, text)
 }
 
 // draw a line vertically or horizontally with the given style
@@ -378,7 +378,7 @@ func (c *CCanvas) DebugBox(color Color, format string, argv ...interface{}) {
 		bs.Border.Normal,
 		bs.Border.BorderRunes,
 	)
-	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, JUSTIFY_LEFT, bs.Border.Normal, false, text)
+	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, false, JUSTIFY_LEFT, bs.Border.Normal, false, text)
 }
 
 // fill the entire canvas according to the given theme
@@ -432,5 +432,5 @@ func (c *CCanvas) FillBorderTitle(dim bool, title string, justify Justification,
 		theme.Border.Normal,
 		theme.Border.BorderRunes,
 	)
-	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, justify, theme.Content.Normal.Dim(dim), false, title)
+	c.DrawSingleLineText(MakePoint2I(1, 0), c.size.W-2, false, justify, theme.Content.Normal.Dim(dim), false, title)
 }

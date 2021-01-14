@@ -35,7 +35,7 @@ type WordLine interface {
 	HasSpace() bool
 	Value() (s string)
 	String() (s string)
-	Make(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style) (lines []WordLine)
+	Make(wrap WrapMode, ellipsize bool, justify Justification, maxChars int, fillerStyle Style) (lines []WordLine)
 }
 
 type CWordLine struct {
@@ -208,7 +208,7 @@ func (w *CWordLine) String() (s string) {
 }
 
 // wrap, justify and align the set input, with filler style
-func (w *CWordLine) Make(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style) (formatted []WordLine) {
+func (w *CWordLine) Make(wrap WrapMode, ellipsize bool, justify Justification, maxChars int, fillerStyle Style) (formatted []WordLine) {
 	return w.cache.Hit(MakeTag(wrap, justify, maxChars, fillerStyle), func() []WordLine {
 		var lines []WordLine
 		lines = append(lines, NewEmptyWordLine())
@@ -230,18 +230,18 @@ func (w *CWordLine) Make(wrap WrapMode, justify Justification, maxChars int, fil
 			}
 			wid++
 		}
-		lines = w.applyTypography(wrap, justify, maxChars, fillerStyle, lines)
+		lines = w.applyTypography(wrap, ellipsize, justify, maxChars, fillerStyle, lines)
 		return lines
 	})
 }
 
-func (w *CWordLine) applyTypography(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
-	output = w.applyTypographicWrap(wrap, maxChars, input)
+func (w *CWordLine) applyTypography(wrap WrapMode, ellipsize bool, justify Justification, maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
+	output = w.applyTypographicWrap(wrap, ellipsize, maxChars, input)
 	output = w.applyTypographicJustify(justify, maxChars, fillerStyle, output)
 	return
 }
 
-func (w *CWordLine) applyTypographicWrap(wrap WrapMode, maxChars int, input []WordLine) (output []WordLine) {
+func (w *CWordLine) applyTypographicWrap(wrap WrapMode, ellipsize bool, maxChars int, input []WordLine) (output []WordLine) {
 	// all space-words must be applied as 1 width
 	switch wrap {
 	case WRAP_WORD:
@@ -257,7 +257,7 @@ func (w *CWordLine) applyTypographicWrap(wrap WrapMode, maxChars int, input []Wo
 		output = w.applyTypographicWrapChar(maxChars, input)
 	case WRAP_NONE:
 		// truncate each line to maxChars
-		output = w.applyTypographicWrapNone(maxChars, input)
+		output = w.applyTypographicWrapNone(ellipsize, maxChars, input)
 	}
 	return
 }
