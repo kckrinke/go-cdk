@@ -39,21 +39,26 @@ type WordLine interface {
 
 type CWordLine struct {
 	words []WordCell
+	cache *CWordLineCache
 }
 
 func NewEmptyWordLine() WordLine {
 	return &CWordLine{
 		words: make([]WordCell, 0),
+		cache: NewWordPageCache(),
 	}
 }
 
 func NewWordLine(line string, style Style) WordLine {
-	wl := &CWordLine{}
+	wl := &CWordLine{
+		cache: NewWordPageCache(),
+	}
 	wl.SetLine(line, style)
 	return wl
 }
 
 func (w *CWordLine) SetLine(line string, style Style) {
+	w.cache.Clear()
 	w.words = make([]WordCell, 0)
 	isWord, wasNL := false, false
 	wid := 0
@@ -84,15 +89,18 @@ func (w *CWordLine) SetLine(line string, style Style) {
 }
 
 func (w *CWordLine) AppendWord(word string, style Style) {
+	w.cache.Clear()
 	w.words = append(w.words, NewWordCell(word, style))
 }
 
 func (w *CWordLine) AppendWordCell(word WordCell) {
+	w.cache.Clear()
 	w.words = append(w.words, word)
 }
 
 func (w *CWordLine) AppendWordRune(wordIndex int, char rune, style Style) error {
 	if wordIndex < len(w.words) {
+		w.cache.Clear()
 		w.words[wordIndex].AppendRune(char, style)
 		return nil
 	}
@@ -108,6 +116,7 @@ func (w *CWordLine) GetWord(index int) WordCell {
 
 func (w *CWordLine) RemoveWord(index int) {
 	if index < len(w.words) {
+		w.cache.Clear()
 		w.words = append(
 			w.words[:index],
 			w.words[index+1:]...,
@@ -183,28 +192,31 @@ func (w *CWordLine) String() (s string) {
 }
 
 // wrap, justify and align the set input, with filler style
-func (w *CWordLine) Make(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style) (lines []WordLine) {
-	lines = append(lines, NewEmptyWordLine())
-	cid, wid, lid := 0, 0, 0
-	for _, word := range w.words {
-		for _, c := range word.Characters() {
-			switch c.Value() {
-			case '\n':
-				lines = append(lines, NewEmptyWordLine())
-				lid = len(lines) - 1
-				wid = -1
-			default:
-				if wid >= lines[lid].Len() {
-					lines[lid].AppendWordCell(NewEmptyWordCell())
+func (w *CWordLine) Make(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style) (formatted []WordLine) {
+	return w.cache.Hit(MakeTag(wrap, justify, maxChars, fillerStyle), func() []WordLine {
+		var lines []WordLine
+		lines = append(lines, NewEmptyWordLine())
+		cid, wid, lid := 0, 0, 0
+		for _, word := range w.words {
+			for _, c := range word.Characters() {
+				switch c.Value() {
+				case '\n':
+					lines = append(lines, NewEmptyWordLine())
+					lid = len(lines) - 1
+					wid = -1
+				default:
+					if wid >= lines[lid].Len() {
+						lines[lid].AppendWordCell(NewEmptyWordCell())
+					}
+					lines[lid].AppendWordRune(wid, c.Value(), c.Style())
 				}
-				lines[lid].AppendWordRune(wid, c.Value(), c.Style())
+				cid++
 			}
-			cid++
+			wid++
 		}
-		wid++
-	}
-	lines = w.applyTypography(wrap, justify, maxChars, fillerStyle, lines)
-	return
+		lines = w.applyTypography(wrap, justify, maxChars, fillerStyle, lines)
+		return lines
+	})
 }
 
 func (w *CWordLine) applyTypography(wrap WrapMode, justify Justification, maxChars int, fillerStyle Style, input []WordLine) (output []WordLine) {
