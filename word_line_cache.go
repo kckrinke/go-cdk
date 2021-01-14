@@ -18,7 +18,7 @@ type CWordLineCache struct {
 	cache map[string]CWordPage
 }
 
-func NewWordPageCache() (wpc *CWordLineCache){
+func NewWordPageCache() (wpc *CWordLineCache) {
 	return &CWordLineCache{
 		cache: make(map[string]CWordPage),
 	}
@@ -33,7 +33,7 @@ func (c *CWordLineCache) Clear() {
 
 func (c *CWordLineCache) Hit(tag string, fn WordLineCacheFn) (lines []WordLine) {
 	if v, ok := c.cache[tag]; ok {
-		TraceF("WordLineCache.Hit(): returning cached value for \"%v\"", tag)
+		// TraceF("WordLineCache.Hit(): returning cached value for \"%v\"", tag)
 		return v
 	}
 	TraceF("WordLineCache.Hit(): caching new value for \"%v\"", tag)
