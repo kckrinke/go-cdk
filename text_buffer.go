@@ -83,7 +83,7 @@ func (b *CTextBuffer) WordCount() (wordCount int) {
 }
 
 func (b *CTextBuffer) PlainText(wordWrap WrapMode, justify Justification, maxChars int) (plain string) {
-	lines := b.input.Make(wordWrap, justify, maxChars, DefaultMonoStyle)
+	lines := b.input.Make(wordWrap, justify, maxChars, b.style)
 	for _, line := range lines {
 		if len(plain) > 0 {
 			plain += "\n"
@@ -98,7 +98,7 @@ func (b *CTextBuffer) PlainText(wordWrap WrapMode, justify Justification, maxCha
 }
 
 func (b *CTextBuffer) PlainTextInfo(wordWrap WrapMode, justify Justification, maxChars int) (longestLine, lineCount int) {
-	lines := b.input.Make(wordWrap, justify, maxChars, DefaultMonoStyle)
+	lines := b.input.Make(wordWrap, justify, maxChars, b.style)
 	lineCount = len(lines)
 	for _, line := range lines {
 		lcc := line.CharacterCount()
