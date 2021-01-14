@@ -462,6 +462,7 @@ func (d *CDisplayManager) processEventWorker() {
 	for d.running {
 		if evt := <-d.process; evt != nil {
 			if f := d.ProcessEvent(evt); f == EVENT_STOP {
+				// TODO: ProcessEvent must ONLY flag stop when UI changes
 				d.RequestDraw()
 				d.RequestShow()
 			}
@@ -491,9 +492,7 @@ func (d *CDisplayManager) screenRequestWorker() {
 				d.display.Sync()
 			}
 		case QuitRequest:
-			d.running = false
 			d.done <- true
-			d.process <- nil
 		}
 	}
 }
@@ -513,19 +512,33 @@ func (d *CDisplayManager) Run() error {
 	if err := d.PostEvent(NewEventResize(d.display.Size())); err != nil {
 		Error(err)
 	}
+	defer func() {
+		d.ReleaseDisplay()
+		close(d.done)
+		close(d.events)
+		close(d.queue)
+	}()
 	for d.running {
 		select {
-		case fn := <-d.queue:
+		case fn, ok := <-d.queue:
+			if !ok {
+				d.running = false
+				break
+			}
 			if err := fn(d); err != nil {
 				return err
 			}
-		case evt := <-d.events:
+		case evt, ok := <-d.events:
+			if !ok {
+				d.running = false
+				break
+			}
 			if err := d.display.PostEvent(evt); err != nil {
 				Error(err)
 			}
 		case <-d.done:
-			d.ReleaseDisplay()
-			return nil
+			d.running = false
+			break
 		}
 	}
 	return nil
