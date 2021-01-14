@@ -405,19 +405,35 @@ func (d *CDisplayManager) DrawScreen() EventFlag {
 }
 
 func (d *CDisplayManager) RequestDraw() {
-	d.requests <- DrawRequest
+	if d.running {
+		d.requests <- DrawRequest
+	} else {
+		ErrorF("application not running")
+	}
 }
 
 func (d *CDisplayManager) RequestShow() {
-	d.requests <- ShowRequest
+	if d.running {
+		d.requests <- ShowRequest
+	} else {
+		ErrorF("application not running")
+	}
 }
 
 func (d *CDisplayManager) RequestSync() {
-	d.requests <- SyncRequest
+	if d.running {
+		d.requests <- SyncRequest
+	} else {
+		ErrorF("application not running")
+	}
 }
 
 func (d *CDisplayManager) RequestQuit() {
-	d.requests <- QuitRequest
+	if d.running {
+		d.requests <- QuitRequest
+	} else {
+		ErrorF("application not running")
+	}
 }
 
 func (d *CDisplayManager) AsyncCall(fn DisplayCallbackFn) error {
@@ -455,7 +471,6 @@ func (d *CDisplayManager) pollEventWorker() {
 	for d.running {
 		d.process <- d.display.PollEvent()
 	}
-	d.done <- true
 }
 
 func (d *CDisplayManager) processEventWorker() {
