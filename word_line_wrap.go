@@ -177,10 +177,12 @@ func (w *CWordLine) applyTypographicWrapNone(ellipsize bool, maxChars int, input
 		for _, word := range line.Words() {
 			if word.IsSpace() {
 				if maxChars > -1 && cid+1 > maxChars {
-					// ellipsize here
-					eStartIndex := output[lid].CharacterCount() - 1
-					if eStartIndex > 0 {
-						output[lid].SetCharacter(eStartIndex, RuneEllipsis)
+					if ellipsize {
+						// ellipsize here
+						eStartIndex := output[lid].CharacterCount() - 1
+						if eStartIndex > 0 {
+							output[lid].SetCharacter(eStartIndex, RuneEllipsis)
+						}
 					}
 					break
 				}
@@ -202,10 +204,12 @@ func (w *CWordLine) applyTypographicWrapNone(ellipsize bool, maxChars int, input
 					}
 					if wc.Len() > 0 {
 						output[lid].AppendWordCell(wc)
-						// ellipsize here
-						eStartIndex := output[lid].CharacterCount() - 1
-						if eStartIndex > 0 {
-							output[lid].SetCharacter(eStartIndex, RuneEllipsis)
+						if ellipsize {
+							// ellipsize here
+							eStartIndex := output[lid].CharacterCount() - 1
+							if eStartIndex > 0 {
+								output[lid].SetCharacter(eStartIndex, RuneEllipsis)
+							}
 						}
 						break
 					}
