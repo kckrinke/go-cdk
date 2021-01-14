@@ -25,7 +25,7 @@ func TestTheme(t *testing.T) {
 		So(
 			DefaultMonoTheme.String(),
 			ShouldEqual,
-			"{Normal={fg=unnamed[-1],bg=unnamed[-1],attrs=16},Border={fg=unnamed[-1],bg=unnamed[-1],attrs=16},Focused={fg=unnamed[-1],bg=unnamed[-1],attrs=0},Active={fg=unnamed[-1],bg=unnamed[-1],attrs=4},FillRune=32,BorderRunes={BorderRunes=9488,9472,9484,9474,9492,9472,9496,9474},Overlay=false}",
+			"{Content={Normal={fg=unnamed[-1],bg=unnamed[-1],attrs=16},Focused={fg=unnamed[-1],bg=unnamed[-1],attrs=0},Active={fg=unnamed[-1],bg=unnamed[-1],attrs=4},FillRune=32,BorderRunes={BorderRunes=9488,9472,9484,9474,9492,9472,9496,9474},ArrowRunes={ArrowRunes=8593,8592,8595,8594},Overlay=false},Border={Normal={fg=unnamed[-1],bg=unnamed[-1],attrs=16},Focused={fg=unnamed[-1],bg=unnamed[-1],attrs=0},Active={fg=unnamed[-1],bg=unnamed[-1],attrs=4},FillRune=32,BorderRunes={BorderRunes=9488,9472,9484,9474,9492,9472,9496,9474},ArrowRunes={ArrowRunes=8593,8592,8595,8594},Overlay=false}}",
 		)
 	})
 }
