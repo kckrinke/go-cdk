@@ -36,13 +36,13 @@ func TestTextBuffer(t *testing.T) {
 		Convey("Draw checks", func() {
 			tb := NewEmptyTextBuffer(DefaultMonoStyle)
 			So(tb, ShouldNotBeNil)
-			canvas := NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme)
+			canvas := NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme.Content.Normal)
 			f := tb.Draw(canvas, true, WRAP_NONE, JUSTIFY_LEFT, ALIGN_TOP)
 			So(f, ShouldEqual, EVENT_PASS)
 
 			tb = NewTextBuffer("test", DefaultMonoStyle)
 			So(tb, ShouldNotBeNil)
-			canvas = NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme)
+			canvas = NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme.Content.Normal)
 			f = tb.Draw(canvas, true, WRAP_NONE, JUSTIFY_LEFT, ALIGN_TOP)
 			So(f, ShouldEqual, EVENT_STOP)
 			val := ""
@@ -57,7 +57,7 @@ func TestTextBuffer(t *testing.T) {
 			So(val, ShouldEqual, "test")
 			So(numSpaces, ShouldEqual, 6)
 
-			canvas = NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme)
+			canvas = NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme.Content.Normal)
 			f = tb.Draw(canvas, true, WRAP_NONE, JUSTIFY_LEFT, ALIGN_BOTTOM)
 			So(f, ShouldEqual, EVENT_STOP)
 			val = ""
@@ -72,7 +72,7 @@ func TestTextBuffer(t *testing.T) {
 			So(val, ShouldEqual, "test")
 			So(numSpaces, ShouldEqual, 6)
 
-			canvas = NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme)
+			canvas = NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme.Content.Normal)
 			f = tb.Draw(canvas, true, WRAP_NONE, JUSTIFY_LEFT, ALIGN_MIDDLE)
 			So(f, ShouldEqual, EVENT_STOP)
 			val = ""
