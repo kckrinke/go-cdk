@@ -82,6 +82,9 @@ func (b *CCanvasBuffer) Resize(size Rectangle, style Style) {
 	b.Lock()
 	defer b.Unlock()
 	size.Floor(0, 0)
+	if b.size.W == size.W && b.size.H == size.H {
+		return
+	}
 	for x := 0; x < size.W; x++ {
 		if len(b.data) <= x {
 			b.data = append(b.data, make([]TextCell, size.H))
