@@ -32,6 +32,8 @@ type CanvasBuffer interface {
 	GetContent(x, y int) (textCell TextCell)
 	SetContent(x int, y int, r rune, style Style) error
 	LoadData(d [][]TextCell)
+
+	sync.Locker
 }
 
 // concrete implementation of the CanvasBuffer interface
@@ -85,36 +87,67 @@ func (b *CCanvasBuffer) Resize(size Rectangle, style Style) {
 	if b.size.W == size.W && b.size.H == size.H {
 		return
 	}
+	// fill size, expanding as necessary
 	for x := 0; x < size.W; x++ {
 		if len(b.data) <= x {
+			// need more X space
 			b.data = append(b.data, make([]TextCell, size.H))
 		}
+		// fill in Y space for this X space
 		for y := 0; y < size.H; y++ {
 			if len(b.data[x]) <= y {
+				// add Y space
 				b.data[x] = append(b.data[x], NewRuneCell(' ', style))
 			} else if b.data[x][y] == nil {
+				// fill nil Y space
 				b.data[x][y] = NewRuneCell(' ', style)
+			} else {
+				// clear Y space
+				b.data[x][y].Set(' ')
+				b.data[x][y].SetStyle(style)
 			}
 		}
 	}
+	// truncate excess cells
 	if b.size.W > size.W {
+		// the previous size was larger than this one
+		// truncate X space
 		b.data = b.data[:size.W]
 	}
 	if b.size.H > size.H {
+		// previous size was larger than this one
 		for x := 0; x < size.W; x++ {
 			if len(b.data) <= x {
 				b.data = append(b.data, make([]TextCell, size.H))
 			}
 			if len(b.data[x]) >= size.H {
+				// truncate, too long
 				b.data[x] = b.data[x][:size.H]
+			} else {
+				for y := 0; y < size.H; y++ {
+					if len(b.data[x]) <= y {
+						// add Y space
+						b.data[x] = append(b.data[x], NewRuneCell(' ', style))
+					} else if b.data[x][y] == nil {
+						// fill nil Y space
+						b.data[x][y] = NewRuneCell(' ', style)
+					} else {
+						// clear Y space
+						b.data[x][y].Set(' ')
+						b.data[x][y].SetStyle(style)
+					}
+				}
 			}
 		}
 	}
+	// store the size
 	b.size = size
 }
 
 // return the text cell at the given coordinates, nil if not found
 func (b *CCanvasBuffer) Cell(x int, y int) TextCell {
+	b.Lock()
+	defer b.Unlock()
 	if x >= 0 && y >= 0 && x < b.size.W && y < b.size.H {
 		return b.data[x][y]
 	}
@@ -146,6 +179,8 @@ func (b *CCanvasBuffer) GetContent(x, y int) (textCell TextCell) {
 
 // set the cell content at the given coordinates
 func (b *CCanvasBuffer) SetContent(x int, y int, r rune, style Style) error {
+	b.Lock()
+	defer b.Unlock()
 	dLen := len(b.data)
 	if x >= 0 && x < dLen {
 		dxLen := len(b.data[x])
@@ -161,6 +196,8 @@ func (b *CCanvasBuffer) SetContent(x int, y int, r rune, style Style) error {
 
 // given matrix array of text cells, load that data in this canvas space
 func (b *CCanvasBuffer) LoadData(d [][]TextCell) {
+	b.Lock()
+	defer b.Unlock()
 	for x := 0; x < len(d); x++ {
 		for y := 0; y < len(d[x]); y++ {
 			if y >= len(b.data[x]) {

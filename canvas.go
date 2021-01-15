@@ -59,13 +59,14 @@ type CCanvas struct {
 }
 
 // create a new canvas object with the given origin point, size and theme
-func NewCanvas(origin Point2I, size Rectangle, style Style) Canvas {
-	return &CCanvas{
+func NewCanvas(origin Point2I, size Rectangle, style Style) *CCanvas {
+	c := &CCanvas{
 		buffer: NewCanvasBuffer(size, style),
 		origin: origin,
 		size:   size,
 		fill:   ' ',
 	}
+	return c
 }
 
 // return a string describing the canvas metadata, useful for debugging
