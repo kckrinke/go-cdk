@@ -98,7 +98,7 @@ func (cb *CellBuffer) Size() (w, h int) {
 
 // Invalidate marks all characters within the buffer as dirty.
 func (cb *CellBuffer) Invalidate() {
-	TraceF("invalidate called")
+	TraceF("processing invalidation")
 	cb.Lock()
 	defer cb.Unlock()
 	for i := range cb.cells {
@@ -163,7 +163,7 @@ func (cb *CellBuffer) SetDirty(x, y int, dirty bool) {
 // while preserving the original contents.  The cells will be invalidated
 // so that they can be redrawn.
 func (cb *CellBuffer) Resize(w, h int) {
-	DebugF("w=%d, h=%d", w, h)
+	TraceF("w=%d, h=%d", w, h)
 	if cb.h == h && cb.w == w {
 		return
 	}

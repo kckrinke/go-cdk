@@ -429,7 +429,7 @@ func (d *CDisplayManager) RequestDraw() {
 	if d.running {
 		d.requests <- DrawRequest
 	} else {
-		ErrorF("application not running")
+		TraceF("application not running")
 	}
 }
 
@@ -437,7 +437,7 @@ func (d *CDisplayManager) RequestShow() {
 	if d.running {
 		d.requests <- ShowRequest
 	} else {
-		ErrorF("application not running")
+		TraceF("application not running")
 	}
 }
 
@@ -445,7 +445,7 @@ func (d *CDisplayManager) RequestSync() {
 	if d.running {
 		d.requests <- SyncRequest
 	} else {
-		ErrorF("application not running")
+		TraceF("application not running")
 	}
 }
 
@@ -453,7 +453,7 @@ func (d *CDisplayManager) RequestQuit() {
 	if d.running {
 		d.requests <- QuitRequest
 	} else {
-		ErrorF("application not running")
+		TraceF("application not running")
 	}
 }
 
