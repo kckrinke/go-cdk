@@ -21,6 +21,7 @@ type WordCell interface {
 	Set(word string, style Style)
 	GetCharacter(index int) (char TextCell)
 	AppendRune(r rune, style Style)
+	IsNil() bool
 	IsSpace() bool
 	HasSpace() bool
 	Len() (count int)
@@ -75,6 +76,15 @@ func (w *CWordCell) AppendRune(r rune, style Style) {
 		w.characters,
 		NewRuneCell(r, style),
 	)
+}
+
+func (w *CWordCell) IsNil() bool {
+	for _, c := range w.characters {
+		if !c.IsNil() {
+			return false
+		}
+	}
+	return true
 }
 
 func (w *CWordCell) IsSpace() bool {

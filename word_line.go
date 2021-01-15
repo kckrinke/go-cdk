@@ -35,7 +35,7 @@ type WordLine interface {
 	HasSpace() bool
 	Value() (s string)
 	String() (s string)
-	Make(wrap WrapMode, ellipsize bool, justify Justification, maxChars int, fillerStyle Style) (lines []WordLine)
+	Make(wrap WrapMode, ellipsize bool, justify Justification, maxChars int, fillerStyle Style) (formatted []WordLine)
 }
 
 type CWordLine struct {
@@ -190,7 +190,11 @@ func (w *CWordLine) HasSpace() bool {
 
 func (w *CWordLine) Value() (s string) {
 	for _, c := range w.words {
-		s += c.Value()
+		if c.IsNil() {
+			s += " "
+		} else {
+			s += c.Value()
+		}
 	}
 	return
 }
