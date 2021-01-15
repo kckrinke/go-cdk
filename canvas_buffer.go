@@ -92,6 +92,8 @@ func (b *CCanvasBuffer) Resize(size Rectangle, style Style) {
 		for y := 0; y < size.H; y++ {
 			if len(b.data[x]) <= y {
 				b.data[x] = append(b.data[x], NewRuneCell(' ', style))
+			} else if b.data[x][y] == nil {
+				b.data[x][y] = NewRuneCell(' ', style)
 			}
 		}
 	}
