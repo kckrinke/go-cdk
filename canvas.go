@@ -69,6 +69,10 @@ func NewCanvas(origin Point2I, size Rectangle, style Style) *CCanvas {
 	return c
 }
 
+func (c *CCanvas) GetStyle() (style Style) {
+	return c.buffer.Style()
+}
+
 // return a string describing the canvas metadata, useful for debugging
 func (c CCanvas) String() string {
 	return fmt.Sprintf(

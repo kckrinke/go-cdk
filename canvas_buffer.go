@@ -22,6 +22,7 @@ import (
 // provide an underlying buffer for Canvases
 type CanvasBuffer interface {
 	String() string
+	Style() (style Style)
 	Size() (size Rectangle)
 	Width() (width int)
 	Height() (height int)
@@ -65,6 +66,11 @@ func (b *CCanvasBuffer) String() string {
 }
 
 // return the rectangle size of the buffer
+func (b *CCanvasBuffer) Style() (style Style) {
+	return b.style
+}
+
+// return the rectangle size of the buffer
 func (b *CCanvasBuffer) Size() (size Rectangle) {
 	return b.size
 }
@@ -84,7 +90,7 @@ func (b *CCanvasBuffer) Resize(size Rectangle, style Style) {
 	b.Lock()
 	defer b.Unlock()
 	size.Floor(0, 0)
-	if b.size.W == size.W && b.size.H == size.H {
+	if b.size.W == size.W && b.size.H == size.H && b.style.String() == style.String() {
 		return
 	}
 	// fill size, expanding as necessary
