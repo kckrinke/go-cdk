@@ -28,6 +28,7 @@ type TextCell interface {
 	Value() rune
 	String() string
 	Style() Style
+	IsNil() bool
 	IsSpace() bool
 }
 
@@ -94,6 +95,10 @@ func (t *CTextCell) String() string {
 
 func (t *CTextCell) Style() Style {
 	return t.style
+}
+
+func (t *CTextCell) IsNil() bool {
+	return t.char.Value() == rune(0)
 }
 
 func (t *CTextCell) IsSpace() bool {

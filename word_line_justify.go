@@ -89,7 +89,7 @@ func (w *CWordLine) applyTypographicJustifyCenter(maxChars int, fillerStyle Styl
 		delta := halfWay - halfWidth
 		if delta > 0 {
 			for i := 0; i < delta; i++ {
-				output[lid].AppendWordCell(NewWordCell(" ", fillerStyle))
+				output[lid].AppendWordCell(NewNilWordCell(fillerStyle))
 			}
 		}
 		for _, word := range line.Words() {
@@ -119,7 +119,7 @@ func (w *CWordLine) applyTypographicJustifyRight(maxChars int, fillerStyle Style
 		delta := maxChars - charCount
 		if delta > 0 {
 			for i := 0; i < delta; i++ {
-				output[lid].AppendWordCell(NewWordCell(" ", fillerStyle))
+				output[lid].AppendWordCell(NewNilWordCell(fillerStyle))
 			}
 		}
 		for _, word := range line.Words() {

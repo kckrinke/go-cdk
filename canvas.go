@@ -169,13 +169,15 @@ func (c *CCanvas) Composite(v Canvas) error {
 				if cell.Dirty() {
 					oX, oY := vOrigin.X+x, vOrigin.Y+y
 					if oX >= 0 && oX < bSize.W && oY >= 0 && oY < bSize.H {
-						if err := c.buffer.SetContent(
-							oX,
-							oY,
-							cell.Value(),
-							cell.Style(),
-						); err != nil {
-							return err
+						if !cell.IsNil() {
+							if err := c.buffer.SetContent(
+								oX,
+								oY,
+								cell.Value(),
+								cell.Style(),
+							); err != nil {
+								return err
+							}
 						}
 					}
 				}

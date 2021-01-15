@@ -39,6 +39,12 @@ func NewEmptyWordCell() WordCell {
 	}
 }
 
+func NewNilWordCell(style Style) WordCell {
+	return &CWordCell{
+		characters: []TextCell{NewRuneCell(rune(0), style)},
+	}
+}
+
 func NewWordCell(word string, style Style) WordCell {
 	w := &CWordCell{}
 	w.Set(word, style)

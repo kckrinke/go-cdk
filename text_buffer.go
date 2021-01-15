@@ -173,7 +173,6 @@ func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, el
 	default:
 	}
 
-	leading := true
 	y := atCanvasLine
 	for lid := fromInputLine; lid < lenLines; lid++ {
 		if lid >= len(lines) {
@@ -184,11 +183,6 @@ func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, el
 		}
 		x := 0
 		for _, word := range lines[lid].Words() {
-			if leading && word.IsSpace() {
-				x += word.Len()
-				continue
-			}
-			leading = false
 			for _, c := range word.Characters() {
 				if x <= size.W {
 					canvas.SetRune(x, y, c.Value(), c.Style())
