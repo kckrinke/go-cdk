@@ -16,6 +16,7 @@ package cdk
 
 import (
 	"fmt"
+	"time"
 )
 
 // display is really a wrapper around Display
@@ -99,8 +100,9 @@ type CDisplayManager struct {
 
 	captureCtrlC bool
 
-	active  int
-	windows []Window
+	active   int
+	windows  []Window
+	canvases []Canvas
 
 	app      *CApp
 	ttyPath  string
@@ -286,6 +288,17 @@ func (d *CDisplayManager) ActiveWindow() Window {
 	return d.windows[0]
 }
 
+func (d *CDisplayManager) windowIndex(w Window) (index int) {
+	var cw Window
+	for index, cw = range d.windows {
+		if w.ObjectID() == cw.ObjectID() {
+			return
+		}
+	}
+	index = -1
+	return
+}
+
 func (d *CDisplayManager) SetActiveWindow(w Window) {
 	d.Lock()
 	id := -1
@@ -319,6 +332,7 @@ func (d *CDisplayManager) AddWindow(w Window) int {
 		return id
 	}
 	d.windows = append(d.windows, w)
+	d.canvases = append(d.canvases, NewCanvas(Point2I{}, Rectangle{}, d.GetTheme().Content.Normal))
 	w.SetDisplayManager(d)
 	return len(d.windows) - 1
 }
@@ -366,8 +380,12 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 		}
 		return d.Emit(SignalEventMouse, d, e)
 	case *EventResize:
-		if w := d.ActiveWindow(); w != nil {
-			if f := w.ProcessEvent(evt); f == EVENT_STOP {
+		if aw := d.ActiveWindow(); aw != nil {
+			wid := d.windowIndex(aw)
+			w, h := d.display.Size()
+			alloc := MakeRectangle(w, h)
+			d.canvases[wid].Resize(alloc, d.GetTheme().Content.Normal)
+			if f := aw.ProcessEvent(evt); f == EVENT_STOP {
 				return EVENT_STOP
 			}
 		}
@@ -393,10 +411,13 @@ func (d *CDisplayManager) DrawScreen() EventFlag {
 		d.LogDebug("cannot draw the display, display missing a window")
 		return EVENT_PASS
 	}
-	w, h := d.display.Size()
-	canvas := NewCanvas(MakePoint2I(0, 0), MakeRectangle(w, h), d.GetTheme().Content.Normal)
-	if f := window.Draw(canvas); f == EVENT_STOP {
-		if err := canvas.Render(d.display); err != nil {
+	wid := d.windowIndex(window)
+	if len(d.canvases) < wid {
+		d.LogError("missing canvas for window: %v", window.ObjectName())
+		return EVENT_PASS
+	}
+	if f := window.Draw(d.canvases[wid]); f == EVENT_STOP {
+		if err := d.canvases[wid].Render(d.display); err != nil {
 			d.LogErr(err)
 		}
 		return EVENT_STOP
@@ -489,8 +510,7 @@ func (d *CDisplayManager) screenRequestWorker() {
 		if err := d.app.InitUI(); err != nil {
 			FatalDF(1, "%v", err)
 		}
-		d.RequestDraw()
-		d.RequestSync()
+
 	}
 	for d.running {
 		switch <-d.requests {
@@ -519,20 +539,22 @@ func (d *CDisplayManager) Run() error {
 	go d.processEventWorker()
 	go d.screenRequestWorker()
 	defer func() {
-		if p := recover(); p != nil {
-			d.ReleaseDisplay()
-			panic(p)
-		}
-	}()
-	if err := d.PostEvent(NewEventResize(d.display.Size())); err != nil {
-		Error(err)
-	}
-	defer func() {
 		d.ReleaseDisplay()
 		close(d.done)
 		close(d.events)
 		close(d.queue)
+		if p := recover(); p != nil {
+			panic(p)
+		}
 	}()
+	AddTimeout(time.Millisecond*50, func() EventFlag {
+		if err := d.display.PostEvent(NewEventResize(d.display.Size())); err != nil {
+			Error(err)
+		}
+		return EVENT_STOP
+	})
+	d.RequestDraw()
+	d.RequestSync()
 	for d.running {
 		select {
 		case fn, ok := <-d.queue:
