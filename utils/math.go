@@ -48,6 +48,21 @@ func SumInts(ints []int) (sum int) {
 	return
 }
 
+func EqInts(a, b []int) (same bool) {
+	same = true
+	if len(a) != len(b) {
+		same = false
+	} else {
+		for i, av := range a {
+			if av != b[i] {
+				same = false
+				break
+			}
+		}
+	}
+	return
+}
+
 // Round the given floating point number to the nearest larger integer and
 // return that as an integer.
 func CeilF2I(v float64) int {
