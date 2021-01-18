@@ -198,7 +198,18 @@ func (c *CCanvas) Render(display Display) error {
 	for x := 0; x < c.size.W; x++ {
 		for y := 0; y < c.size.H; y++ {
 			cell := c.buffer.Cell(x, y)
-			display.SetContent(x, y, cell.Value(), nil, cell.Style())
+			if cell != nil {
+				display.SetContent(x, y, cell.Value(), nil, cell.Style())
+			} else {
+				// display.SetContent(x, y, cell.Value(), nil, cell.Style())
+				bs := c.buffer.Size()
+				TraceF(
+					"invalid cell coordinates: x=%v, y=%v (valid: x=[%v-%v], y=[%v-%v])",
+					x, y,
+					0, bs.W-1,
+					0, bs.H-1,
+				)
+			}
 		}
 	}
 	return nil
