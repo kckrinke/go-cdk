@@ -100,9 +100,9 @@ type CDisplayManager struct {
 
 	captureCtrlC bool
 
-	active   int
-	windows  []Window
-	canvases []Canvas
+	active  int
+	windows []Window
+	wCanvas []Canvas
 
 	app      *CApp
 	ttyPath  string
@@ -110,6 +110,7 @@ type CDisplayManager struct {
 	captured bool
 
 	running  bool
+	waiting  bool
 	done     chan bool
 	queue    chan DisplayCallbackFn
 	events   chan Event
@@ -157,6 +158,7 @@ func (d *CDisplayManager) Init() (already bool) {
 
 	d.captured = false
 	d.running = false
+	d.waiting = true
 	d.done = make(chan bool)
 	d.queue = make(chan DisplayCallbackFn, DisplayCallQueueCapacity)
 	d.events = make(chan Event, DisplayCallQueueCapacity)
@@ -331,9 +333,13 @@ func (d *CDisplayManager) AddWindow(w Window) int {
 		d.LogError("display has window already: %v", w)
 		return id
 	}
-	d.windows = append(d.windows, w)
-	d.canvases = append(d.canvases, NewCanvas(Point2I{}, Rectangle{}, d.GetTheme().Content.Normal))
+	size := MakeRectangle(0, 0)
+	if d.display != nil {
+		size = MakeRectangle(d.display.Size())
+	}
+	d.wCanvas = append(d.wCanvas, NewCanvas(Point2I{}, size, d.GetTheme().Content.Normal))
 	w.SetDisplayManager(d)
+	d.windows = append(d.windows, w)
 	return len(d.windows) - 1
 }
 
@@ -384,9 +390,13 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 			wid := d.windowIndex(aw)
 			w, h := d.display.Size()
 			alloc := MakeRectangle(w, h)
-			d.canvases[wid].Resize(alloc, d.GetTheme().Content.Normal)
-			if f := aw.ProcessEvent(evt); f == EVENT_STOP {
-				return EVENT_STOP
+			if d.wCanvas[wid] != nil {
+				d.wCanvas[wid].Resize(alloc, d.GetTheme().Content.Normal)
+				if f := aw.ProcessEvent(evt); f == EVENT_STOP {
+					return EVENT_STOP
+				}
+			} else {
+				d.LogError("missing canvas for wid: %v", wid)
 			}
 		}
 		return d.Emit(SignalEventResize, d, e)
@@ -412,12 +422,12 @@ func (d *CDisplayManager) DrawScreen() EventFlag {
 		return EVENT_PASS
 	}
 	wid := d.windowIndex(window)
-	if len(d.canvases) < wid {
+	if len(d.wCanvas) < wid {
 		d.LogError("missing canvas for window: %v", window.ObjectName())
 		return EVENT_PASS
 	}
-	if f := window.Draw(d.canvases[wid]); f == EVENT_STOP {
-		if err := d.canvases[wid].Render(d.display); err != nil {
+	if f := window.Draw(d.wCanvas[wid]); f == EVENT_STOP {
+		if err := d.wCanvas[wid].Render(d.display); err != nil {
 			d.LogErr(err)
 		}
 		return EVENT_STOP
@@ -490,7 +500,9 @@ func (d *CDisplayManager) PostEvent(evt Event) error {
 
 func (d *CDisplayManager) pollEventWorker() {
 	for d.running {
-		d.process <- d.display.PollEvent()
+		if d.display != nil {
+			d.process <- d.display.PollEvent()
+		}
 	}
 }
 
@@ -515,15 +527,15 @@ func (d *CDisplayManager) screenRequestWorker() {
 	for d.running {
 		switch <-d.requests {
 		case DrawRequest:
-			if d.display != nil {
+			if d.display != nil && !d.waiting {
 				d.DrawScreen()
 			}
 		case ShowRequest:
-			if d.display != nil {
+			if d.display != nil && !d.waiting {
 				d.display.Show()
 			}
 		case SyncRequest:
-			if d.display != nil {
+			if d.display != nil && !d.waiting {
 				d.display.Sync()
 			}
 		case QuitRequest:
@@ -547,9 +559,12 @@ func (d *CDisplayManager) Run() error {
 			panic(p)
 		}
 	}()
-	AddTimeout(time.Millisecond*50, func() EventFlag {
-		if err := d.display.PostEvent(NewEventResize(d.display.Size())); err != nil {
-			Error(err)
+	AddTimeout(time.Millisecond*15, func() EventFlag {
+		if d.display != nil {
+			d.waiting = false
+			if err := d.display.PostEvent(NewEventResize(d.display.Size())); err != nil {
+				Error(err)
+			}
 		}
 		return EVENT_STOP
 	})
@@ -570,8 +585,12 @@ func (d *CDisplayManager) Run() error {
 				d.running = false
 				break
 			}
-			if err := d.display.PostEvent(evt); err != nil {
-				Error(err)
+			if d.display != nil {
+				if err := d.display.PostEvent(evt); err != nil {
+					Error(err)
+				}
+			} else {
+				d.LogTrace("missing display, dropping event: %v", evt)
 			}
 		case <-d.done:
 			d.running = false
