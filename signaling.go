@@ -55,13 +55,18 @@ func (o *CSignaling) Init() (already bool) {
 	o.CTypeItem.Init()
 	o.stopped = []Signal{}
 	o.passed = []Signal{}
-	o.listeners = make(map[Signal][]*CSignalListener)
+	if o.listeners == nil {
+		o.listeners = make(map[Signal][]*CSignalListener)
+	}
 	o.Emit(SignalSignalingInit)
 	return false
 }
 
 // Connect callback to signal, identified by handle
 func (o *CSignaling) Connect(signal, handle Signal, c SignalListenerFn, data ...interface{}) {
+	if o.listeners == nil {
+		o.listeners = make(map[Signal][]*CSignalListener)
+	}
 	if _, ok := o.listeners[signal]; !ok {
 		o.listeners[signal] = make([]*CSignalListener, 0)
 	}
