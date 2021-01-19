@@ -210,6 +210,9 @@ func ErrorDF(depth int, format string, argv ...interface{}) {
 func Fatal(err error)                           { FatalDF(1, err.Error()) }
 func FatalF(format string, argv ...interface{}) { FatalDF(1, format, argv...) }
 func FatalDF(depth int, format string, argv ...interface{}) {
+	if dm := GetDisplayManager(); dm != nil {
+		dm.ReleaseDisplay()
+	}
 	cdkLogger.Fatalf(utils.NLSprintf("%s	%s", getLogPrefix(depth+1), format), argv...)
 }
 
