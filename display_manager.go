@@ -559,7 +559,7 @@ func (d *CDisplayManager) Run() error {
 			panic(p)
 		}
 	}()
-	AddTimeout(time.Millisecond*15, func() EventFlag {
+	AddTimeout(time.Millisecond*51, func() EventFlag {
 		if d.display != nil {
 			d.waiting = false
 			if err := d.display.PostEvent(NewEventResize(d.display.Size())); err != nil {
