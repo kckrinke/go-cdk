@@ -1,18 +1,15 @@
 [![Made with Go](https://img.shields.io/badge/Made%20with-Go-1f425f.svg)](http://golang.org)
 [![Go version number](https://img.shields.io/github/go-mod/go-version/kckrinke/go-cdk.svg)](https://github.com/kckrinke/go-cdk)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/kckrinke/go-cdk)
 [![Go Reference](https://pkg.go.dev/badge/github.com/kckrinke/go-cdk.svg)](https://pkg.go.dev/github.com/kckrinke/go-cdk)
-
 [![GoReportCard](https://goreportcard.com/badge/github.com/kckrinke/go-cdk)](https://goreportcard.com/report/github.com/kckrinke/go-cdk)
 [![Build status](https://github.com/kckrinke/go-cdk/workflows/codecov/badge.svg)](https://github.com/kckrinke/go-cdk/actions?query=workflow%3Acodecov)
 [![codecov](https://codecov.io/gh/kckrinke/go-cdk/branch/trunk/graph/badge.svg?token=8AVBADVD1S)](https://codecov.io/gh/kckrinke/go-cdk)
-
 
 # CDK - Curses Development Kit
 
 This package provides the GDK equivalent for [CTK](https://github.com/kckrinke/go-ctk). This is not intended to be a parity of GDK in any way, rather this package simply fulfills the terminal drawing and basic event systems required by CTK.
 
-Unless you're using CTK, you should really be using [tcell](https://github.com/gdamore/tcell) instead.
+Unless you're using CTK, you should really be using [TCell](https://github.com/gdamore/tcell) instead.
 
 ### Installing
 
@@ -49,10 +46,10 @@ A formal CDK application demonstrating the typical boilerplate setup.
 CDK provides tests for color, event, runes and styles using the simulation screen. To run the tests, use the make-file for convenience:
 
 ```
-> make test
+> go test -v
 testing cdk
+  ... (per-test output, trimmed for brevity) ...
 ok      github.com/kckrinke/go-cdk  0.171s
-...
 ```
 
 ## Versioning
