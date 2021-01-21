@@ -29,11 +29,12 @@ func init() {
 type Object interface {
 	Signaling
 
+	Init() (already bool)
 	Destroy()
-
 	GetTheme() Theme
 	SetTheme(theme Theme)
-
+	GetThemeRequest() (theme Theme)
+	SetThemeRequest(theme Theme)
 	SetProperty(name string, value interface{})
 	GetProperty(name string) interface{}
 	GetPropertyAsBool(name string, def bool) bool
@@ -45,8 +46,9 @@ type Object interface {
 type CObject struct {
 	CSignaling
 
-	theme      Theme
-	properties map[string]interface{}
+	theme        Theme
+	themeRequest Theme
+	properties   map[string]interface{}
 }
 
 func (o *CObject) Init() (already bool) {
@@ -55,6 +57,7 @@ func (o *CObject) Init() (already bool) {
 	}
 	o.CSignaling.Init()
 	o.theme = DefaultColorTheme
+	o.themeRequest = DefaultColorTheme
 	o.properties = make(map[string]interface{})
 	o.Emit(SignalObjectInit, o)
 	return false
@@ -74,6 +77,15 @@ func (o *CObject) GetTheme() Theme {
 
 func (o *CObject) SetTheme(theme Theme) {
 	o.theme = theme
+	o.themeRequest = theme
+}
+
+func (o *CObject) GetThemeRequest() (theme Theme) {
+	return o.themeRequest
+}
+
+func (o *CObject) SetThemeRequest(theme Theme) {
+	o.themeRequest = theme
 }
 
 // set the value for a named property
