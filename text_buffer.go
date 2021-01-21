@@ -148,7 +148,7 @@ func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, el
 		lenLines = 1
 	}
 
-	var atCanvasLine, fromInputLine int = 0, 0
+	var atCanvasLine, fromInputLine = 0, 0
 	switch vAlign {
 	case ALIGN_BOTTOM:
 		numLines := lenLines
@@ -185,7 +185,7 @@ func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, el
 		for _, word := range lines[lid].Words() {
 			for _, c := range word.Characters() {
 				if x <= size.W {
-					canvas.SetRune(x, y, c.Value(), c.Style())
+					_ = canvas.SetRune(x, y, c.Value(), c.Style())
 					x++
 				}
 			}

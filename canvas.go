@@ -366,10 +366,10 @@ func (c *CCanvas) Box(pos Point2I, size Rectangle, border, fill, overlay bool, f
 
 func (c *CCanvas) BoxWithTheme(pos Point2I, size Rectangle, border, fill bool, theme Theme) {
 	c.Box(
-		MakePoint2I(0, 0),
-		c.size,
-		true,
-		false,
+		pos,
+		size,
+		border,
+		fill,
 		false,
 		theme.Border.FillRune,
 		theme.Border.Normal,
