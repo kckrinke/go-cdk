@@ -130,10 +130,21 @@ func (m *CTango) init() error {
 				cstyle = cstyle.Dim(true)
 			}
 		case xml.EndElement:
-			if t.Name.Local == "markup" {
-				cstyle = mstyle
-			} else {
+			switch t.Name.Local {
+			case "markup":
 				cstyle = pstyle
+			case "span":
+				cstyle = pstyle
+			case "b":
+				cstyle = cstyle.Bold(false)
+			case "i":
+				cstyle = cstyle.Italic(false)
+			case "s":
+				cstyle = cstyle.StrikeThrough(false)
+			case "u":
+				cstyle = cstyle.Underline(false)
+			case "d":
+				cstyle = cstyle.Dim(false)
 			}
 		case xml.CharData:
 			content := xml.CharData(t) // CharData []byte
