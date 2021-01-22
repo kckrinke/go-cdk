@@ -28,3 +28,15 @@ func LexicographicLess(i, j string) bool {
 
 	return i < j
 }
+
+func RotateSlice(a []interface{}, rotation int) (rotated []interface{}) {
+	if size := len(a); size > 0 {
+		var tmp []interface{}
+		for i := 0; i < rotation; i++ {
+			tmp = a[1:size]
+			tmp = append(tmp, a[0])
+			rotated = tmp
+		}
+	}
+	return
+}
