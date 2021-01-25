@@ -47,7 +47,7 @@ type CObject struct {
 	CSignaling
 
 	theme        Theme
-	themeRequest Theme
+	themeRequest *Theme
 	properties   map[string]interface{}
 }
 
@@ -57,7 +57,7 @@ func (o *CObject) Init() (already bool) {
 	}
 	o.CSignaling.Init()
 	o.theme = DefaultColorTheme
-	o.themeRequest = DefaultColorTheme
+	o.themeRequest = nil
 	o.properties = make(map[string]interface{})
 	o.Emit(SignalObjectInit, o)
 	return false
@@ -77,15 +77,18 @@ func (o *CObject) GetTheme() Theme {
 
 func (o *CObject) SetTheme(theme Theme) {
 	o.theme = theme
-	o.themeRequest = theme
 }
 
 func (o *CObject) GetThemeRequest() (theme Theme) {
-	return o.themeRequest
+	if o.themeRequest != nil {
+		return *o.themeRequest
+	}
+	theme = o.GetTheme()
+	return
 }
 
 func (o *CObject) SetThemeRequest(theme Theme) {
-	o.themeRequest = theme
+	o.themeRequest = &theme
 }
 
 // set the value for a named property
