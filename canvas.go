@@ -199,7 +199,12 @@ func (c *CCanvas) Render(display Display) error {
 		for y := 0; y < c.size.H; y++ {
 			cell := c.buffer.Cell(x, y)
 			if cell != nil {
-				display.SetContent(x, y, cell.Value(), nil, cell.Style())
+				if cell.Dirty() {
+					mc, _, style, width := display.GetContent(x, y)
+					if !cell.Equals(mc, style, width) {
+						display.SetContent(x, y, cell.Value(), nil, cell.Style())
+					}
+				}
 			} else {
 				// display.SetContent(x, y, cell.Value(), nil, cell.Style())
 				bs := c.buffer.Size()
