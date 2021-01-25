@@ -24,6 +24,7 @@ type TextCell interface {
 	Set(r rune)
 	SetByte(b []byte)
 	SetStyle(style Style)
+	Equals(mc rune, style Style, width int) bool
 	Width() int
 	Value() rune
 	String() string
@@ -50,6 +51,10 @@ func NewTextCell(char TextChar, style Style) TextCell {
 		style: style,
 		dirty: false,
 	}
+}
+
+func (t *CTextCell) Equals(mc rune, style Style, width int) bool {
+	return t.char.Value() == mc && t.style.String() == style.String() && t.char.Width() == width
 }
 
 func (t *CTextCell) Dirty() bool {
