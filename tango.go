@@ -44,7 +44,8 @@ import (
 )
 
 var (
-	TabStops = 4
+	TabSize  = 8
+	TabStops = false
 )
 
 type Tango interface {

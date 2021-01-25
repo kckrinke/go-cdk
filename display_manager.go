@@ -221,7 +221,7 @@ func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
 		if d.display, err = NewDisplay(); err != nil {
 			FatalF("error getting new display: %v", err)
 		}
-		if err = d.display.InitWithTty(ttyPath); err != nil {
+		if err = d.display.Init(); err != nil {
 			FatalF("error initializing new display: %v", err)
 		}
 	}

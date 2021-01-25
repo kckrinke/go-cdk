@@ -1,5 +1,5 @@
 // Copyright 2021 The CDK Authors
-// Copyright 2017 The TCell Authors
+// Copyright 2021 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use file except in compliance with the License.
@@ -17,6 +17,7 @@ package cdk
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -25,21 +26,20 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"golang.org/x/term"
 	"golang.org/x/text/transform"
 
-	"github.com/kckrinke/go-term"
-
-	"github.com/kckrinke/go-terminfo"
+	"github.com/gdamore/tcell/v2/terminfo"
 
 	// import the stock terminals
-	_ "github.com/kckrinke/go-terminfo/base"
+	_ "github.com/gdamore/tcell/v2/terminfo/base"
 )
 
 var (
-	EVENT_QUEUE_SIZE     = 10
-	EVENT_KEY_QUEUE_SIZE = 10
-	EVENT_KEY_TIMING     = time.Millisecond * 50
-	SIGNAL_QUEUE_SIZE    = 10
+	EventQueueSize    = 10
+	EventKeyQueueSize = 10
+	EventKeyTiming    = time.Millisecond * 50
+	SignalQueueSize   = 10
 )
 
 // NewTerminfoDisplay returns a Display that uses the stock TTY interface
@@ -61,14 +61,14 @@ func NewTerminfoDisplay() (Display, error) {
 	}
 	t := &cDisplay{ti: ti}
 
-	t.keyexist = make(map[Key]bool)
-	t.keycodes = make(map[string]*tKeyCode)
+	t.keyExist = make(map[Key]bool)
+	t.keyCodes = make(map[string]*tKeyCode)
 	if len(ti.Mouse) > 0 {
 		t.mouse = []byte(ti.Mouse)
 	}
 	t.prepareKeys()
 	t.buildAcsMap()
-	t.sigwinch = make(chan os.Signal, SIGNAL_QUEUE_SIZE)
+	t.sigwinch = make(chan os.Signal, SignalQueueSize)
 	t.fallback = make(map[rune]string)
 	for k, v := range RuneFallbacks {
 		t.fallback[k] = v
@@ -88,29 +88,30 @@ type cDisplay struct {
 	ti           *terminfo.Terminfo
 	h            int
 	w            int
-	fini         bool
+	finished     bool
 	cells        *CellBuffer
-	term         *term.Term
+	in           *os.File
+	out          *os.File
 	buffering    bool // true if we are collecting writes to buf instead of sending directly to out
 	buf          bytes.Buffer
-	curstyle     Style
+	curStyle     Style
 	style        Style
-	evch         chan Event
+	evCh         chan Event
 	sigwinch     chan os.Signal
 	quit         chan struct{}
-	indoneq      chan struct{}
-	keyexist     map[Key]bool
-	keycodes     map[string]*tKeyCode
-	keychan      chan []byte
-	keytimer     *time.Timer
-	keyexpire    time.Time
+	inDoneQ      chan struct{}
+	keyExist     map[Key]bool
+	keyCodes     map[string]*tKeyCode
+	keyChan      chan []byte
+	keyTimer     *time.Timer
+	keyExpire    time.Time
 	cx           int
 	cy           int
 	mouse        []byte
 	clear        bool
-	cursorx      int
-	cursory      int
-	wasbtn       bool
+	cursorX      int
+	cursorY      int
+	wasBtn       bool
 	acs          map[rune]string
 	charset      string
 	encoder      transform.Transformer
@@ -118,25 +119,22 @@ type cDisplay struct {
 	fallback     map[rune]string
 	colors       map[Color]Color
 	palette      []Color
-	truecolor    bool
+	trueColor    bool
 	escaped      bool
-	buttondn     bool
-	finiOnce     sync.Once
+	buttonDn     bool
+	finishOnce   sync.Once
 	enablePaste  string
 	disablePaste string
+	saved        *term.State
 
 	sync.Mutex
 }
 
 func (t *cDisplay) Init() error {
-	return t.InitWithTty("")
-}
-
-func (t *cDisplay) InitWithTty(ttyPath string) error {
-	t.evch = make(chan Event, EVENT_QUEUE_SIZE)
-	t.indoneq = make(chan struct{})
-	t.keychan = make(chan []byte, EVENT_KEY_QUEUE_SIZE)
-	t.keytimer = time.NewTimer(EVENT_KEY_TIMING)
+	t.evCh = make(chan Event, EventQueueSize)
+	t.inDoneQ = make(chan struct{})
+	t.keyChan = make(chan []byte, EventKeyQueueSize)
+	t.keyTimer = time.NewTimer(EventKeyTiming)
 	t.cells = NewCellBuffer()
 
 	t.charset = GetCharset()
@@ -157,17 +155,17 @@ func (t *cDisplay) InitWithTty(ttyPath string) error {
 	if i, _ := strconv.Atoi(os.Getenv("COLUMNS")); i != 0 {
 		w = i
 	}
-	if e := t.termioInit(ttyPath); e != nil {
+	if e := t.initialize(); e != nil {
 		return e
 	}
 
 	if t.ti.SetFgBgRGB != "" || t.ti.SetFgRGB != "" || t.ti.SetBgRGB != "" {
-		t.truecolor = true
+		t.trueColor = true
 	}
 	// A user who wants to have his themes honored can
 	// set this environment variable.
 	if os.Getenv("GO_CDK_TRUECOLOR") == "disable" {
-		t.truecolor = false
+		t.trueColor = false
 	}
 	t.colors = make(map[Color]Color)
 	t.palette = make([]Color, t.nColors())
@@ -189,8 +187,8 @@ func (t *cDisplay) InitWithTty(ttyPath string) error {
 	t.cy = -1
 	t.style = StyleDefault
 	t.cells.Resize(w, h)
-	t.cursorx = -1
-	t.cursory = -1
+	t.cursorX = -1
+	t.cursorY = -1
 	t.resize()
 	t.Unlock()
 
@@ -203,9 +201,9 @@ func (t *cDisplay) InitWithTty(ttyPath string) error {
 func (t *cDisplay) prepareKeyMod(key Key, mod ModMask, val string) {
 	if val != "" {
 		// Do not override codes that already exist
-		if _, exist := t.keycodes[val]; !exist {
-			t.keyexist[key] = true
-			t.keycodes[val] = &tKeyCode{key: key, mod: mod}
+		if _, exist := t.keyCodes[val]; !exist {
+			t.keyExist[key] = true
+			t.keyCodes[val] = &tKeyCode{key: key, mod: mod}
 		}
 	}
 }
@@ -213,9 +211,9 @@ func (t *cDisplay) prepareKeyMod(key Key, mod ModMask, val string) {
 func (t *cDisplay) prepareKeyModReplace(key Key, replace Key, mod ModMask, val string) {
 	if val != "" {
 		// Do not override codes that already exist
-		if old, exist := t.keycodes[val]; !exist || old.key == replace {
-			t.keyexist[key] = true
-			t.keycodes[val] = &tKeyCode{key: key, mod: mod}
+		if old, exist := t.keyCodes[val]; !exist || old.key == replace {
+			t.keyExist[key] = true
+			t.keyCodes[val] = &tKeyCode{key: key, mod: mod}
 		}
 	}
 }
@@ -303,7 +301,7 @@ func (t *cDisplay) prepareBracketedPaste() {
 		t.disablePaste = t.ti.DisablePaste
 		t.prepareKey(keyPasteStart, t.ti.PasteStart)
 		t.prepareKey(keyPasteEnd, t.ti.PasteEnd)
-	} else if t.ti.MouseMode != "" {
+	} else if t.ti.Mouse != "" {
 		t.enablePaste = "\x1b[?2004h"
 		t.disablePaste = "\x1b[?2004l"
 		t.prepareKey(keyPasteStart, "\x1b[200~")
@@ -459,13 +457,13 @@ outer:
 		// when parsing this we don't want to fast path handling
 		// of it, but instead wait a bit before parsing it as in
 		// isolation.
-		for esc := range t.keycodes {
+		for esc := range t.keyCodes {
 			if []byte(esc)[0] == byte(i) {
 				continue outer
 			}
 		}
 
-		t.keyexist[Key(i)] = true
+		t.keyExist[Key(i)] = true
 
 		mod := ModCtrl
 		switch Key(i) {
@@ -473,12 +471,12 @@ outer:
 			// directly type-able- no control sequence
 			mod = ModNone
 		}
-		t.keycodes[string(rune(i))] = &tKeyCode{key: Key(i), mod: mod}
+		t.keyCodes[string(rune(i))] = &tKeyCode{key: Key(i), mod: mod}
 	}
 }
 
 func (t *cDisplay) Close() {
-	t.finiOnce.Do(t.finish)
+	t.finishOnce.Do(t.finish)
 }
 
 func (t *cDisplay) finish() {
@@ -492,11 +490,11 @@ func (t *cDisplay) finish() {
 	t.TPuts(ti.Clear)
 	t.TPuts(ti.ExitCA)
 	t.TPuts(ti.ExitKeypad)
-	t.TPuts(ti.TParm(ti.MouseMode, 0))
 	t.TPuts(t.disablePaste)
-	t.curstyle = styleInvalid
+	t.DisableMouse()
+	t.curStyle = styleInvalid
 	t.clear = false
-	t.fini = true
+	t.finished = true
 
 	select {
 	case <-t.quit:
@@ -506,12 +504,12 @@ func (t *cDisplay) finish() {
 		close(t.quit)
 	}
 
-	t.termioClose()
+	t.finalize()
 }
 
 func (t *cDisplay) SetStyle(style Style) {
 	t.Lock()
-	if !t.fini {
+	if !t.finished {
 		t.style = style
 	}
 	t.Unlock()
@@ -523,25 +521,25 @@ func (t *cDisplay) Clear() {
 
 func (t *cDisplay) Fill(r rune, style Style) {
 	t.Lock()
-	if !t.fini {
+	if !t.finished {
 		t.cells.Fill(r, style)
 	}
 	t.Unlock()
 }
 
-func (t *cDisplay) SetContent(x, y int, mainc rune, combc []rune, style Style) {
+func (t *cDisplay) SetContent(x, y int, mc rune, comb []rune, style Style) {
 	t.Lock()
-	if !t.fini {
-		t.cells.SetContent(x, y, mainc, combc, style)
+	if !t.finished {
+		t.cells.SetContent(x, y, mc, comb, style)
 	}
 	t.Unlock()
 }
 
 func (t *cDisplay) GetContent(x, y int) (rune, []rune, Style, int) {
 	t.Lock()
-	mainc, combc, style, width := t.cells.GetContent(x, y)
+	mc, comb, style, width := t.cells.GetContent(x, y)
 	t.Unlock()
-	return mainc, combc, style, width
+	return mc, comb, style, width
 }
 
 func (t *cDisplay) SetCell(x, y int, style Style, ch ...rune) {
@@ -590,7 +588,7 @@ func (t *cDisplay) sendFgBg(fg Color, bg Color) {
 	if fg == ColorReset || bg == ColorReset {
 		t.TPuts(ti.ResetFgBg)
 	}
-	if t.truecolor {
+	if t.trueColor {
 		if ti.SetFgBgRGB != "" && fg.IsRGB() && bg.IsRGB() {
 			r1, g1, b1 := fg.RGB()
 			r2, g2, b2 := bg.RGB()
@@ -650,7 +648,7 @@ func (t *cDisplay) drawCell(x, y int) int {
 
 	ti := t.ti
 
-	mainc, combc, style, width := t.cells.GetContent(x, y)
+	mc, comb, style, width := t.cells.GetContent(x, y)
 	if !t.cells.Dirty(x, y) {
 		return width
 	}
@@ -664,7 +662,7 @@ func (t *cDisplay) drawCell(x, y int) int {
 	if style == StyleDefault {
 		style = t.style
 	}
-	if style != t.curstyle {
+	if style != t.curStyle {
 		fg, bg, attrs := style.Decompose()
 
 		t.TPuts(ti.AttrOff)
@@ -691,7 +689,7 @@ func (t *cDisplay) drawCell(x, y int) int {
 		if attrs&AttrStrikeThrough != 0 {
 			t.TPuts(ti.StrikeThrough)
 		}
-		t.curstyle = style
+		t.curStyle = style
 	}
 	// now emit runes - taking care to not overrun width with a
 	// wide character, and to ensure that we emit exactly one regular
@@ -705,8 +703,8 @@ func (t *cDisplay) drawCell(x, y int) int {
 
 	buf := make([]byte, 0, 6)
 
-	buf = t.encodeRune(mainc, buf)
-	for _, r := range combc {
+	buf = t.encodeRune(mc, buf)
+	for _, r := range comb {
 		buf = t.encodeRune(r, buf)
 	}
 
@@ -734,8 +732,8 @@ func (t *cDisplay) drawCell(x, y int) int {
 
 func (t *cDisplay) ShowCursor(x, y int) {
 	t.Lock()
-	t.cursorx = x
-	t.cursory = y
+	t.cursorX = x
+	t.cursorY = y
 	t.Unlock()
 }
 
@@ -745,7 +743,7 @@ func (t *cDisplay) HideCursor() {
 
 func (t *cDisplay) showCursor() {
 
-	x, y := t.cursorx, t.cursory
+	x, y := t.cursorX, t.cursorY
 	w, h := t.cells.Size()
 	if x < 0 || y < 0 || x >= w || y >= h {
 		t.hideCursor()
@@ -767,7 +765,7 @@ func (t *cDisplay) writeString(s string) {
 	if t.buffering {
 		_, _ = io.WriteString(&t.buf, s)
 	} else {
-		_, _ = t.term.Write([]byte(s))
+		_, _ = io.WriteString(t.out, s)
 	}
 }
 
@@ -775,14 +773,13 @@ func (t *cDisplay) TPuts(s string) {
 	if t.buffering {
 		t.ti.TPuts(&t.buf, s)
 	} else {
-		_, _ = t.term.Write([]byte(s))
-		// t.ti.TPuts(t.out, s)
+		t.ti.TPuts(t.out, s)
 	}
 }
 
 func (t *cDisplay) Show() {
 	t.Lock()
-	if !t.fini {
+	if !t.finished {
 		t.resize()
 		t.draw()
 	}
@@ -844,19 +841,45 @@ func (t *cDisplay) draw() {
 	// restore the cursor
 	t.showCursor()
 
-	// _, _ = t.buf.WriteTo(t.out)
-	_, _ = t.buf.WriteTo(t.term)
+	_, _ = t.buf.WriteTo(t.out)
 }
 
-func (t *cDisplay) EnableMouse() {
+func (t *cDisplay) EnableMouse(flags ...MouseFlags) {
+	var f MouseFlags
+	flagsPresent := false
+	for _, flag := range flags {
+		f |= flag
+		flagsPresent = true
+	}
+	if !flagsPresent {
+		f = MouseMotionEvents
+	}
+
+	// Rather than using terminfo to find mouse escape sequences, we rely on the fact that
+	// pretty much *every* terminal that supports mouse tracking follows the
+	// XTerm standards (the modern ones).
+
 	if len(t.mouse) != 0 {
-		t.TPuts(t.ti.TParm(t.ti.MouseMode, 1))
+		var mm int
+		if f&MouseMotionEvents != 0 {
+			mm = 1003
+		} else if f&MouseDragEvents != 0 {
+			mm = 1002
+		} else if f&MouseButtonEvents != 0 {
+			mm = 1000
+		} else {
+			// No recognized tracking enabled.
+			return
+		}
+
+		t.TPuts(fmt.Sprintf("\x1b[?%dh\x1b[?1006h", mm))
 	}
 }
 
 func (t *cDisplay) DisableMouse() {
 	if len(t.mouse) != 0 {
-		t.TPuts(t.ti.TParm(t.ti.MouseMode, 0))
+		// This turns off everything.
+		t.TPuts("\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l")
 	}
 }
 
@@ -893,7 +916,7 @@ func (t *cDisplay) resize() {
 
 func (t *cDisplay) Colors() int {
 	// this doesn't change, no need for lock
-	if t.truecolor {
+	if t.trueColor {
 		return 1 << 24
 	}
 	return t.ti.Colors
@@ -910,7 +933,7 @@ func (t *cDisplay) PollEvent() Event {
 	select {
 	case <-t.quit:
 		return nil
-	case ev := <-t.evch:
+	case ev := <-t.evCh:
 		return ev
 	}
 }
@@ -967,25 +990,25 @@ var vtACSNames = map[byte]rune{
 // maps.  This is only done if the terminal lacks support for Unicode; we
 // always prefer to emit Unicode glyphs when we are able.
 func (t *cDisplay) buildAcsMap() {
-	acsstr := t.ti.AltChars
+	aCsStr := t.ti.AltChars
 	t.acs = make(map[rune]string)
-	for len(acsstr) > 2 {
-		srcv := acsstr[0]
-		dstv := string(acsstr[1])
-		if r, ok := vtACSNames[srcv]; ok {
-			t.acs[r] = t.ti.EnterAcs + dstv + t.ti.ExitAcs
+	for len(aCsStr) > 2 {
+		vSrc := aCsStr[0]
+		vDst := string(aCsStr[1])
+		if r, ok := vtACSNames[vSrc]; ok {
+			t.acs[r] = t.ti.EnterAcs + vDst + t.ti.ExitAcs
 		}
-		acsstr = acsstr[2:]
+		aCsStr = aCsStr[2:]
 	}
 }
 
 func (t *cDisplay) PostEventWait(ev Event) {
-	t.evch <- ev
+	t.evCh <- ev
 }
 
 func (t *cDisplay) PostEvent(ev Event) error {
 	select {
-	case t.evch <- ev:
+	case t.evCh <- ev:
 		return nil
 	default:
 		return ErrEventQFull
@@ -1029,24 +1052,24 @@ func (t *cDisplay) buildMouseEvent(x, y, btn int) *EventMouse {
 	switch btn & 0x43 {
 	case 0:
 		button = Button1
-		t.wasbtn = true
+		t.wasBtn = true
 	case 1:
 		button = Button3 // Note we prefer to treat right as button 2
-		t.wasbtn = true
+		t.wasBtn = true
 	case 2:
 		button = Button2 // And the middle button as button 3
-		t.wasbtn = true
+		t.wasBtn = true
 	case 3:
 		button = ButtonNone
-		t.wasbtn = false
+		t.wasBtn = false
 	case 0x40:
-		if !t.wasbtn {
+		if !t.wasBtn {
 			button = WheelUp
 		} else {
 			button = Button1
 		}
 	case 0x41:
-		if !t.wasbtn {
+		if !t.wasBtn {
 			button = WheelDown
 		} else {
 			button = Button2
@@ -1163,7 +1186,7 @@ func (t *cDisplay) parseSgrMouse(buf *bytes.Buffer, evs *[]Event) (bool, bool) {
 				// mouse release, clear all buttons
 				btn |= 3
 				btn &^= 0x40
-				t.buttondn = false
+				t.buttonDn = false
 			} else if motion {
 				/*
 				 * Some broken terminals appear to send
@@ -1172,12 +1195,12 @@ func (t *cDisplay) parseSgrMouse(buf *bytes.Buffer, evs *[]Event) (bool, bool) {
 				 * We resolve these by looking for a non-motion
 				 * event first.
 				 */
-				if !t.buttondn {
+				if !t.buttonDn {
 					btn |= 3
 					btn &^= 0x40
 				}
 			} else {
-				t.buttondn = true
+				t.buttonDn = true
 			}
 			// consume the event bytes
 			for i >= 0 {
@@ -1247,7 +1270,7 @@ func (t *cDisplay) parseXtermMouse(buf *bytes.Buffer, evs *[]Event) (bool, bool)
 func (t *cDisplay) parseFunctionKey(buf *bytes.Buffer, evs *[]Event) (bool, bool) {
 	b := buf.Bytes()
 	partial := false
-	for e, k := range t.keycodes {
+	for e, k := range t.keyCodes {
 		esc := []byte(e)
 		if (len(esc) == 1) && (esc[0] == '\x1b') {
 			continue
@@ -1334,7 +1357,7 @@ func (t *cDisplay) scanInput(buf *bytes.Buffer, expire bool) {
 	evs := t.collectEventsFromInput(buf, expire)
 
 	for _, ev := range evs {
-		t.PostEventWait(ev)
+		_ = t.PostEvent(ev)
 	}
 }
 
@@ -1424,7 +1447,7 @@ func (t *cDisplay) mainLoop() {
 	for {
 		select {
 		case <-t.quit:
-			close(t.indoneq)
+			close(t.inDoneQ)
 			return
 		case <-t.sigwinch:
 			t.Lock()
@@ -1435,38 +1458,38 @@ func (t *cDisplay) mainLoop() {
 			t.draw()
 			t.Unlock()
 			continue
-		case <-t.keytimer.C:
+		case <-t.keyTimer.C:
 			// If the timer fired, and the current time
 			// is after the expiration of the escape sequence,
 			// then we assume the escape sequence reached it's
 			// conclusion, and process the chunk independently.
 			// This lets us detect conflicts such as a lone ESC.
 			if buf.Len() > 0 {
-				if time.Now().After(t.keyexpire) {
+				if time.Now().After(t.keyExpire) {
 					t.scanInput(buf, true)
 				}
 			}
 			if buf.Len() > 0 {
-				if !t.keytimer.Stop() {
+				if !t.keyTimer.Stop() {
 					select {
-					case <-t.keytimer.C:
+					case <-t.keyTimer.C:
 					default:
 					}
 				}
-				t.keytimer.Reset(EVENT_KEY_TIMING)
+				t.keyTimer.Reset(EventKeyTiming)
 			}
-		case chunk := <-t.keychan:
+		case chunk := <-t.keyChan:
 			buf.Write(chunk)
-			t.keyexpire = time.Now().Add(EVENT_KEY_TIMING)
+			t.keyExpire = time.Now().Add(EventKeyTiming)
 			t.scanInput(buf, false)
-			if !t.keytimer.Stop() {
+			if !t.keyTimer.Stop() {
 				select {
-				case <-t.keytimer.C:
+				case <-t.keyTimer.C:
 				default:
 				}
 			}
 			if buf.Len() > 0 {
-				t.keytimer.Reset(EVENT_KEY_TIMING)
+				t.keyTimer.Reset(EventKeyTiming)
 			}
 		}
 	}
@@ -1476,8 +1499,7 @@ func (t *cDisplay) inputLoop() {
 
 	for {
 		chunk := make([]byte, 128)
-		// n, e := t.in.Read(chunk)
-		n, e := t.term.Read(chunk)
+		n, e := t.in.Read(chunk)
 		switch e {
 		case io.EOF:
 		case nil:
@@ -1485,7 +1507,7 @@ func (t *cDisplay) inputLoop() {
 			_ = t.PostEvent(NewEventError(e))
 			return
 		}
-		t.keychan <- chunk[:n]
+		t.keyChan <- chunk[:n]
 	}
 }
 
@@ -1493,7 +1515,7 @@ func (t *cDisplay) Sync() {
 	t.Lock()
 	t.cx = -1
 	t.cy = -1
-	if !t.fini {
+	if !t.finished {
 		t.resize()
 		t.clear = true
 		t.cells.Invalidate()
@@ -1553,7 +1575,7 @@ func (t *cDisplay) HasKey(k Key) bool {
 	if k == KeyRune {
 		return true
 	}
-	return t.keyexist[k]
+	return t.keyExist[k]
 }
 
 func (t *cDisplay) Resize(int, int, int, int) {}

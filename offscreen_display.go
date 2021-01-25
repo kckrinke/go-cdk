@@ -100,294 +100,298 @@ type OffscreenCell struct {
 }
 
 type COffscreenDisplay struct {
-	physw int
-	physh int
-	fini  bool
-	style Style
-	evch  chan Event
-	quit  chan struct{}
+	physW    int
+	physH    int
+	finished bool
+	style    Style
+	evCh     chan Event
+	quit     chan struct{}
 
 	front     []OffscreenCell
 	back      *CellBuffer
 	clear     bool
-	cursorx   int
-	cursory   int
-	cursorvis bool
+	cursorX   int
+	cursorY   int
+	cursorVis bool
 	mouse     bool
 	paste     bool
 	charset   string
 	encoder   transform.Transformer
 	decoder   transform.Transformer
-	fillchar  rune
-	fillstyle Style
+	fillChar  rune
+	fillStyle Style
 	fallback  map[rune]string
 
 	sync.Mutex
 }
 
-func (s *COffscreenDisplay) Init() error {
-	return s.InitWithTty("")
-}
+func (o *COffscreenDisplay) Init() error {
+	o.evCh = make(chan Event, 10)
+	o.quit = make(chan struct{})
+	o.fillChar = 'X'
+	o.fillStyle = StyleDefault
+	o.mouse = false
+	o.physW = 80
+	o.physH = 25
+	o.cursorX = -1
+	o.cursorY = -1
+	o.style = StyleDefault
+	o.back = NewCellBuffer()
 
-func (s *COffscreenDisplay) InitWithTty(_ string) error {
-	s.evch = make(chan Event, 10)
-	s.quit = make(chan struct{})
-	s.fillchar = 'X'
-	s.fillstyle = StyleDefault
-	s.mouse = false
-	s.physw = 80
-	s.physh = 25
-	s.cursorx = -1
-	s.cursory = -1
-	s.style = StyleDefault
-	s.back = NewCellBuffer()
-
-	if enc := GetEncoding(s.charset); enc != nil {
-		s.encoder = enc.NewEncoder()
-		s.decoder = enc.NewDecoder()
+	if enc := GetEncoding(o.charset); enc != nil {
+		o.encoder = enc.NewEncoder()
+		o.decoder = enc.NewDecoder()
 	} else {
 		return ErrNoCharset
 	}
 
-	s.front = make([]OffscreenCell, s.physw*s.physh)
-	s.back.Resize(80, 25)
+	o.front = make([]OffscreenCell, o.physW*o.physH)
+	o.back.Resize(80, 25)
 
 	// default fallbacks
-	s.fallback = make(map[rune]string)
+	o.fallback = make(map[rune]string)
 	for k, v := range RuneFallbacks {
-		s.fallback[k] = v
+		o.fallback[k] = v
 	}
 	return nil
 }
 
-func (s *COffscreenDisplay) Close() {
-	s.fini = true
-	s.back.Resize(0, 0)
-	if s.quit != nil {
-		close(s.quit)
+func (o *COffscreenDisplay) Close() {
+	o.Lock()
+	defer o.Unlock()
+	o.finished = true
+	o.back.Resize(0, 0)
+	if o.quit != nil {
+		close(o.quit)
 	}
-	s.physw = 0
-	s.physh = 0
-	s.front = nil
+	o.physW = 0
+	o.physH = 0
+	o.front = nil
 }
 
-func (s *COffscreenDisplay) SetStyle(style Style) {
-	s.style = style
+func (o *COffscreenDisplay) SetStyle(style Style) {
+	o.Lock()
+	defer o.Unlock()
+	o.style = style
 }
 
-func (s *COffscreenDisplay) Clear() {
-	s.Fill(' ', s.style)
+func (o *COffscreenDisplay) Clear() {
+	o.Fill(' ', o.style)
 }
 
-func (s *COffscreenDisplay) Fill(r rune, style Style) {
-	s.back.Fill(r, style)
+func (o *COffscreenDisplay) Fill(r rune, style Style) {
+	o.Lock()
+	defer o.Unlock()
+	o.back.Fill(r, style)
 }
 
-func (s *COffscreenDisplay) SetCell(x, y int, style Style, ch ...rune) {
+func (o *COffscreenDisplay) SetCell(x, y int, style Style, ch ...rune) {
 	if len(ch) > 0 {
-		s.SetContent(x, y, ch[0], ch[1:], style)
+		o.SetContent(x, y, ch[0], ch[1:], style)
 	} else {
-		s.SetContent(x, y, ' ', nil, style)
+		o.SetContent(x, y, ' ', nil, style)
 	}
 }
 
-func (s *COffscreenDisplay) SetContent(x, y int, mainc rune, combc []rune, st Style) {
-	s.back.SetContent(x, y, mainc, combc, st)
+func (o *COffscreenDisplay) SetContent(x, y int, mc rune, comb []rune, st Style) {
+	o.Lock()
+	defer o.Unlock()
+	o.back.SetContent(x, y, mc, comb, st)
 }
 
-func (s *COffscreenDisplay) GetContent(x, y int) (rune, []rune, Style, int) {
-	var mainc rune
-	var combc []rune
-	var style Style
-	var width int
-	mainc, combc, style, width = s.back.GetContent(x, y)
-	return mainc, combc, style, width
+func (o *COffscreenDisplay) GetContent(x, y int) (mc rune, comb []rune, style Style, width int) {
+	o.Lock()
+	defer o.Unlock()
+	mc, comb, style, width = o.back.GetContent(x, y)
+	return
 }
 
-func (s *COffscreenDisplay) drawCell(x, y int) int {
-
-	mainc, combc, style, width := s.back.GetContent(x, y)
-	if !s.back.Dirty(x, y) {
+func (o *COffscreenDisplay) drawCell(x, y int) int {
+	mc, comb, style, width := o.back.GetContent(x, y)
+	if !o.back.Dirty(x, y) {
 		return width
 	}
-	if x >= s.physw || y >= s.physh || x < 0 || y < 0 {
+	if x >= o.physW || y >= o.physH || x < 0 || y < 0 {
 		return width
 	}
-	simc := &s.front[(y*s.physw)+x]
+	sc := &o.front[(y*o.physW)+x]
 
 	if style == StyleDefault {
-		style = s.style
+		style = o.style
 	}
-	simc.Style = style
-	simc.Runes = append([]rune{mainc}, combc...)
+	sc.Style = style
+	sc.Runes = append([]rune{mc}, comb...)
 
 	// now emit runes - taking care to not overrun width with a
 	// wide character, and to ensure that we emit exactly one regular
 	// character followed up by any residual combing characters
 
-	simc.Bytes = nil
+	sc.Bytes = nil
 
-	if x > s.physw-width {
-		simc.Runes = []rune{' '}
-		simc.Bytes = []byte{' '}
+	if x > o.physW-width {
+		sc.Runes = []rune{' '}
+		sc.Bytes = []byte{' '}
 		return width
 	}
 
-	lbuf := make([]byte, 12)
-	ubuf := make([]byte, 12)
-	nout := 0
+	lBuf := make([]byte, 12)
+	uBuf := make([]byte, 12)
+	nOut := 0
 
-	for _, r := range simc.Runes {
+	for _, r := range sc.Runes {
 
-		l := utf8.EncodeRune(ubuf, r)
+		l := utf8.EncodeRune(uBuf, r)
 
-		nout, _, _ = s.encoder.Transform(lbuf, ubuf[:l], true)
+		nOut, _, _ = o.encoder.Transform(lBuf, uBuf[:l], true)
 
-		if nout == 0 || lbuf[0] == '\x1a' {
+		if nOut == 0 || lBuf[0] == '\x1a' {
 
 			// skip combining
 
-			if subst, ok := s.fallback[r]; ok {
-				simc.Bytes = append(simc.Bytes,
+			if subst, ok := o.fallback[r]; ok {
+				sc.Bytes = append(sc.Bytes,
 					[]byte(subst)...)
 
 			} else if r >= ' ' && r <= '~' {
-				simc.Bytes = append(simc.Bytes, byte(r))
+				sc.Bytes = append(sc.Bytes, byte(r))
 
-			} else if simc.Bytes == nil {
-				simc.Bytes = append(simc.Bytes, '?')
+			} else if sc.Bytes == nil {
+				sc.Bytes = append(sc.Bytes, '?')
 			}
 		} else {
-			simc.Bytes = append(simc.Bytes, lbuf[:nout]...)
+			sc.Bytes = append(sc.Bytes, lBuf[:nOut]...)
 		}
 	}
-	s.back.SetDirty(x, y, false)
+	o.back.SetDirty(x, y, false)
 	return width
 }
 
-func (s *COffscreenDisplay) ShowCursor(x, y int) {
-	s.cursorx, s.cursory = x, y
-	s.showCursor()
+func (o *COffscreenDisplay) ShowCursor(x, y int) {
+	o.cursorX, o.cursorY = x, y
+	o.showCursor()
+	o.Unlock()
 }
 
-func (s *COffscreenDisplay) HideCursor() {
-	s.ShowCursor(-1, -1)
+func (o *COffscreenDisplay) HideCursor() {
+	o.ShowCursor(-1, -1)
 }
 
-func (s *COffscreenDisplay) showCursor() {
+func (o *COffscreenDisplay) showCursor() {
 
-	x, y := s.cursorx, s.cursory
-	if x < 0 || y < 0 || x >= s.physw || y >= s.physh {
-		s.cursorvis = false
+	x, y := o.cursorX, o.cursorY
+	if x < 0 || y < 0 || x >= o.physW || y >= o.physH {
+		o.cursorVis = false
 	} else {
-		s.cursorvis = true
+		o.cursorVis = true
 	}
 }
 
-func (s *COffscreenDisplay) hideCursor() {
+func (o *COffscreenDisplay) hideCursor() {
 	// does not update cursor position
-	s.cursorvis = false
+	o.cursorVis = false
 }
 
-func (s *COffscreenDisplay) Show() {
-	s.resize()
-	s.draw()
+func (o *COffscreenDisplay) Show() {
+	o.Lock()
+	defer o.Unlock()
+	o.resize()
+	o.draw()
 }
 
-func (s *COffscreenDisplay) clearScreen() {
+func (o *COffscreenDisplay) clearScreen() {
 	// We emulate a hardware clear by filling with a specific pattern
-	for i := range s.front {
-		s.front[i].Style = s.fillstyle
-		s.front[i].Runes = []rune{s.fillchar}
-		s.front[i].Bytes = []byte{byte(s.fillchar)}
+	for i := range o.front {
+		o.front[i].Style = o.fillStyle
+		o.front[i].Runes = []rune{o.fillChar}
+		o.front[i].Bytes = []byte{byte(o.fillChar)}
 	}
-	s.clear = false
+	o.clear = false
 }
 
-func (s *COffscreenDisplay) draw() {
-	s.hideCursor()
-	if s.clear {
-		s.clearScreen()
+func (o *COffscreenDisplay) draw() {
+	o.hideCursor()
+	if o.clear {
+		o.clearScreen()
 	}
 
-	w, h := s.back.Size()
+	w, h := o.back.Size()
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
-			width := s.drawCell(x, y)
+			width := o.drawCell(x, y)
 			x += width - 1
 		}
 	}
-	s.showCursor()
+	o.showCursor()
 }
 
-func (s *COffscreenDisplay) EnableMouse() {
-	s.mouse = true
+func (o *COffscreenDisplay) EnableMouse(_ ...MouseFlags) {
+	o.mouse = true
 }
 
-func (s *COffscreenDisplay) DisableMouse() {
-	s.mouse = false
+func (o *COffscreenDisplay) DisableMouse() {
+	o.mouse = false
 }
 
-func (s *COffscreenDisplay) EnablePaste() {
-	s.paste = true
+func (o *COffscreenDisplay) EnablePaste() {
+	o.paste = true
 }
 
-func (s *COffscreenDisplay) DisablePaste() {
-	s.paste = false
+func (o *COffscreenDisplay) DisablePaste() {
+	o.paste = false
 }
 
-func (s *COffscreenDisplay) Size() (w, h int) {
-	w, h = s.back.Size()
+func (o *COffscreenDisplay) Size() (w, h int) {
+	w, h = o.back.Size()
 	return
 }
 
-func (s *COffscreenDisplay) resize() {
-	w, h := s.physw, s.physh
-	ow, oh := s.back.Size()
+func (o *COffscreenDisplay) resize() {
+	w, h := o.physW, o.physH
+	ow, oh := o.back.Size()
 	if w != ow || h != oh {
-		s.back.Resize(w, h)
+		o.back.Resize(w, h)
 		ev := NewEventResize(w, h)
-		s.PostEvent(ev)
+		_ = o.PostEvent(ev)
 	}
 }
 
-func (s *COffscreenDisplay) Colors() int {
+func (o *COffscreenDisplay) Colors() int {
 	return 256
 }
 
-func (s *COffscreenDisplay) PollEvent() Event {
+func (o *COffscreenDisplay) PollEvent() Event {
 	select {
-	case <-s.quit:
+	case <-o.quit:
 		return nil
-	case ev := <-s.evch:
+	case ev := <-o.evCh:
 		return ev
 	}
 }
 
-func (s *COffscreenDisplay) PostEventWait(ev Event) {
-	s.evch <- ev
+func (o *COffscreenDisplay) PostEventWait(ev Event) {
+	o.evCh <- ev
 }
 
-func (s *COffscreenDisplay) PostEvent(ev Event) error {
+func (o *COffscreenDisplay) PostEvent(ev Event) error {
 	select {
-	case s.evch <- ev:
+	case o.evCh <- ev:
 		return nil
 	default:
 		return ErrEventQFull
 	}
 }
 
-func (s *COffscreenDisplay) InjectMouse(x, y int, buttons ButtonMask, mod ModMask) {
+func (o *COffscreenDisplay) InjectMouse(x, y int, buttons ButtonMask, mod ModMask) {
 	ev := NewEventMouse(x, y, buttons, mod)
-	s.PostEvent(ev)
+	_ = o.PostEvent(ev)
 }
 
-func (s *COffscreenDisplay) InjectKey(key Key, r rune, mod ModMask) {
+func (o *COffscreenDisplay) InjectKey(key Key, r rune, mod ModMask) {
 	ev := NewEventKey(key, r, mod)
-	s.PostEvent(ev)
+	_ = o.PostEvent(ev)
 }
 
-func (s *COffscreenDisplay) InjectKeyBytes(b []byte) bool {
+func (o *COffscreenDisplay) InjectKeyBytes(b []byte) bool {
 	failed := false
 
 outer:
@@ -395,7 +399,7 @@ outer:
 		if b[0] >= ' ' && b[0] <= 0x7F {
 			// printable ASCII easy to deal with -- no encodings
 			ev := NewEventKey(KeyRune, rune(b[0]), ModNone)
-			s.PostEvent(ev)
+			_ = o.PostEvent(ev)
 			b = b[1:]
 			continue
 		}
@@ -407,21 +411,21 @@ outer:
 				mod = ModCtrl
 			}
 			ev := NewEventKey(Key(b[0]), 0, mod)
-			s.PostEvent(ev)
+			_ = o.PostEvent(ev)
 			b = b[1:]
 			continue
 		}
 
-		utfb := make([]byte, len(b)*4) // worst case
+		utfBytes := make([]byte, len(b)*4) // worst case
 		for l := 1; l < len(b); l++ {
-			s.decoder.Reset()
-			nout, nin, _ := s.decoder.Transform(utfb, b[:l], true)
+			o.decoder.Reset()
+			nOut, nin, _ := o.decoder.Transform(utfBytes, b[:l], true)
 
-			if nout != 0 {
-				r, _ := utf8.DecodeRune(utfb[:nout])
+			if nOut != 0 {
+				r, _ := utf8.DecodeRune(utfBytes[:nOut])
 				if r != utf8.RuneError {
 					ev := NewEventKey(KeyRune, r, ModNone)
-					s.PostEvent(ev)
+					_ = o.PostEvent(ev)
 				}
 				b = b[nin:]
 				continue outer
@@ -435,50 +439,61 @@ outer:
 	return !failed
 }
 
-func (s *COffscreenDisplay) Sync() {
-	s.clear = true
-	s.resize()
-	s.back.Invalidate()
-	s.draw()
+func (o *COffscreenDisplay) Sync() {
+	o.clear = true
+	o.resize()
+	o.back.Invalidate()
+	o.draw()
+	o.Unlock()
 }
 
-func (s *COffscreenDisplay) CharacterSet() string {
-	return s.charset
+func (o *COffscreenDisplay) CharacterSet() string {
+	return o.charset
 }
 
-func (s *COffscreenDisplay) SetSize(w, h int) {
-	newc := make([]OffscreenCell, w*h)
-	for row := 0; row < h && row < s.physh; row++ {
-		for col := 0; col < w && col < s.physw; col++ {
-			newc[(row*w)+col] = s.front[(row*s.physw)+col]
+func (o *COffscreenDisplay) SetSize(w, h int) {
+	o.Lock()
+	defer o.Unlock()
+	nc := make([]OffscreenCell, w*h)
+	for row := 0; row < h && row < o.physH; row++ {
+		for col := 0; col < w && col < o.physW; col++ {
+			nc[(row*w)+col] = o.front[(row*o.physW)+col]
 		}
 	}
-	s.cursorx, s.cursory = -1, -1
-	s.physw, s.physh = w, h
-	s.front = newc
-	s.back.Resize(w, h)
+	o.cursorX, o.cursorY = -1, -1
+	o.physW, o.physH = w, h
+	o.front = nc
+	o.back.Resize(w, h)
 }
 
-func (s *COffscreenDisplay) GetContents() ([]OffscreenCell, int, int) {
-	cells, w, h := s.front, s.physw, s.physh
+func (o *COffscreenDisplay) GetContents() ([]OffscreenCell, int, int) {
+	o.Lock()
+	defer o.Unlock()
+	cells, w, h := o.front, o.physW, o.physH
 	return cells, w, h
 }
 
-func (s *COffscreenDisplay) GetCursor() (int, int, bool) {
-	x, y, vis := s.cursorx, s.cursory, s.cursorvis
+func (o *COffscreenDisplay) GetCursor() (int, int, bool) {
+	o.Lock()
+	defer o.Unlock()
+	x, y, vis := o.cursorX, o.cursorY, o.cursorVis
 	return x, y, vis
 }
 
-func (s *COffscreenDisplay) RegisterRuneFallback(r rune, subst string) {
-	s.fallback[r] = subst
+func (o *COffscreenDisplay) RegisterRuneFallback(r rune, subst string) {
+	o.Lock()
+	defer o.Unlock()
+	o.fallback[r] = subst
 }
 
-func (s *COffscreenDisplay) UnregisterRuneFallback(r rune) {
-	delete(s.fallback, r)
+func (o *COffscreenDisplay) UnregisterRuneFallback(r rune) {
+	o.Lock()
+	defer o.Unlock()
+	delete(o.fallback, r)
 }
 
-func (s *COffscreenDisplay) CanDisplay(r rune, checkFallbacks bool) bool {
-	if enc := s.encoder; enc != nil {
+func (o *COffscreenDisplay) CanDisplay(r rune, checkFallbacks bool) bool {
+	if enc := o.encoder; enc != nil {
 		nb := make([]byte, 6)
 		ob := make([]byte, 6)
 		num := utf8.EncodeRune(ob, r)
@@ -492,44 +507,44 @@ func (s *COffscreenDisplay) CanDisplay(r rune, checkFallbacks bool) bool {
 	if !checkFallbacks {
 		return false
 	}
-	if _, ok := s.fallback[r]; ok {
+	if _, ok := o.fallback[r]; ok {
 		return true
 	}
 	return false
 }
 
-func (s *COffscreenDisplay) HasMouse() bool {
+func (o *COffscreenDisplay) HasMouse() bool {
 	return false
 }
 
-func (s *COffscreenDisplay) Resize(int, int, int, int) {}
+func (o *COffscreenDisplay) Resize(int, int, int, int) {}
 
-func (s *COffscreenDisplay) HasKey(Key) bool {
+func (o *COffscreenDisplay) HasKey(Key) bool {
 	return true
 }
 
-func (s *COffscreenDisplay) Beep() error {
+func (o *COffscreenDisplay) Beep() error {
 	return nil
 }
 
-func (t *COffscreenDisplay) Export() *CellBuffer {
-	t.Lock()
-	defer t.Unlock()
+func (o *COffscreenDisplay) Export() *CellBuffer {
+	o.Lock()
+	defer o.Unlock()
 	cb := NewCellBuffer()
-	w, h := t.back.Size()
+	w, h := o.back.Size()
 	cb.Resize(w, h)
-	for idx, cell := range t.back.cells {
+	for idx, cell := range o.back.cells {
 		cb.cells[idx] = cell
 	}
 	return cb
 }
 
-func (t *COffscreenDisplay) Import(cb *CellBuffer) {
-	t.Lock()
-	defer t.Unlock()
+func (o *COffscreenDisplay) Import(cb *CellBuffer) {
+	o.Lock()
+	defer o.Unlock()
 	w, h := cb.Size()
-	t.back.Resize(w, h)
+	o.back.Resize(w, h)
 	for idx, cell := range cb.cells {
-		t.back.cells[idx] = cell
+		o.back.cells[idx] = cell
 	}
 }

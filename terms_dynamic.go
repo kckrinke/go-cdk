@@ -1,4 +1,4 @@
-// +build !tcell_minimal,!nacl,!js,!zos,!plan9,!windows,!android
+// +build !cdk_minimal,!nacl,!js,!zos,!plan9,!windows,!android
 
 // Copyright 2021 The CDK Authors
 // Copyright 2019 The TCell Authors
@@ -25,8 +25,8 @@ import (
 	// also don't support Android here, because you really don't want
 	// to run external programs there.  Generally the android terminals
 	// will be automatically included anyway.
-	"github.com/kckrinke/go-terminfo"
-	"github.com/kckrinke/go-terminfo/dynamic"
+	"github.com/gdamore/tcell/v2/terminfo"
+	"github.com/gdamore/tcell/v2/terminfo/dynamic"
 )
 
 func loadDynamicTerminfo(term string) (*terminfo.Terminfo, error) {

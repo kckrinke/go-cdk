@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"golang.org/x/sys/unix"
@@ -38,4 +39,15 @@ func MakeDir(path string, perm os.FileMode) error {
 		return fmt.Errorf("given path is a file")
 	}
 	return os.MkdirAll(path, perm)
+}
+
+func ReadFile(path string) (content string, err error) {
+	if IsFile(path) {
+		var bytes []byte
+		if bytes, err = ioutil.ReadFile(path); err == nil {
+			content = string(bytes)
+		}
+		return
+	}
+	return "", fmt.Errorf("not a file or file not found: %v", path)
 }

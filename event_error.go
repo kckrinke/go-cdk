@@ -19,7 +19,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/kckrinke/go-terminfo"
+	"github.com/gdamore/tcell/terminfo"
 )
 
 var (

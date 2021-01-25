@@ -17,13 +17,10 @@ package cdk
 
 // Display represents the physical (or emulated) display.
 // This can be a terminal window or a physical console.  Platforms implement
-// this differerently.
+// this differently.
 type Display interface {
 	// Init initializes the display for use.
 	Init() error
-
-	// Init with a non-standard tty path (default: /dev/tty)
-	InitWithTty(ttyPath string) error
 
 	// Close finalizes the display also releasing resources.
 	Close()
@@ -92,18 +89,10 @@ type Display interface {
 	// is dropped, and ErrEventQFull is returned.
 	PostEvent(ev Event) error
 
-	// PostEventWait is like PostEvent, but if the queue is full, it
-	// blocks until there is space in the queue, making delivery
-	// reliable.  However, it is VERY important that this function
-	// never be called from within whatever event loop is polling
-	// with PollEvent(), otherwise a deadlock may arise.
-	//
-	// For this reason, when using this function, the use of a
-	// Goroutine is recommended to ensure no deadlock can occur.
-	PostEventWait(ev Event)
-
 	// EnableMouse enables the mouse.  (If your terminal supports it.)
-	EnableMouse()
+	// If no flags are specified, then all events are reported, if the
+	// terminal supports them.
+	EnableMouse(...MouseFlags)
 
 	// DisableMouse disables the mouse.
 	DisableMouse()
@@ -224,3 +213,13 @@ func NewDisplay() (Display, error) {
 		return nil, e
 	}
 }
+
+// MouseFlags are options to modify the handling of mouse events.
+// Actual events can be or'd together.
+type MouseFlags int
+
+const (
+	MouseButtonEvents = MouseFlags(1) // Click events only
+	MouseDragEvents   = MouseFlags(2) // Click-drag events (includes button events)
+	MouseMotionEvents = MouseFlags(4) // All mouse events (includes click and drag events)
+)

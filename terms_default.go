@@ -1,4 +1,4 @@
-// +build !tcell_minimal
+// +build !cdk_minimal
 
 // Copyright 2021 The CDK Authors
 // Copyright 2019 The TCell Authors
@@ -19,6 +19,6 @@ package cdk
 
 import (
 	// This imports the default terminal entries.  To disable, use the
-	// tcell_minimal build tag.
-	_ "github.com/kckrinke/go-terminfo/extended"
+	// cdk_minimal build tag.
+	_ "github.com/gdamore/tcell/v2/terminfo/extended"
 )

@@ -1,4 +1,4 @@
-// +build tcell_minimal nacl js zos plan9 windows android
+// +build cdk_minimal nacl js zos plan9 windows android
 
 // Copyright 2021 The CDK Authors
 // Copyright 2019 The TCell Authors
@@ -20,7 +20,7 @@ package cdk
 import (
 	"errors"
 
-	"github.com/kckrinke/go-terminfo"
+	"github.com/gdamore/tcell/v2/terminfo"
 )
 
 func loadDynamicTerminfo(_ string) (*terminfo.Terminfo, error) {
