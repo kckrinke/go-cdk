@@ -164,6 +164,9 @@ func (c *CCanvas) Equals(onlyDirty bool, v Canvas) bool {
 // an error if the underlying buffer write failed or if the given canvas is
 // beyond the bounds of this canvas
 func (c *CCanvas) Composite(v Canvas) error {
+	if c == nil || c.buffer == nil {
+		return fmt.Errorf("canvas is nil")
+	}
 	vOrigin := v.GetOrigin()
 	bSize := c.buffer.Size()
 	for y := 0; y < v.Height(); y++ {
