@@ -14,6 +14,10 @@
 
 package cdk
 
+import (
+	"fmt"
+)
+
 const (
 	TypeObject        CTypeTag = "cdk-object"
 	SignalDestroy     Signal   = "destroy"
@@ -35,7 +39,8 @@ type Object interface {
 	SetTheme(theme Theme)
 	GetThemeRequest() (theme Theme)
 	SetThemeRequest(theme Theme)
-	SetProperty(name string, value interface{})
+	RegisterProperty(name string, write bool, def interface{}) error
+	SetProperty(name string, value interface{}) error
 	GetProperty(name string) interface{}
 	GetPropertyAsBool(name string, def bool) bool
 	GetPropertyAsString(name string, def string) string
@@ -48,7 +53,7 @@ type CObject struct {
 
 	theme        Theme
 	themeRequest *Theme
-	properties   map[string]interface{}
+	properties   []*cObjectProperty
 }
 
 func (o *CObject) Init() (already bool) {
@@ -58,8 +63,8 @@ func (o *CObject) Init() (already bool) {
 	o.CSignaling.Init()
 	o.theme = DefaultColorTheme
 	o.themeRequest = nil
-	o.properties = make(map[string]interface{})
-	o.Emit(SignalObjectInit, o)
+	o.properties = make([]*cObjectProperty, 0)
+	o.RegisterProperty("debug", true, false)
 	return false
 }
 
@@ -91,17 +96,46 @@ func (o *CObject) SetThemeRequest(theme Theme) {
 	o.themeRequest = &theme
 }
 
-// set the value for a named property
-func (o *CObject) SetProperty(name string, value interface{}) {
-	if f := o.Emit(SignalSetProperty, o, name, value); f == EVENT_PASS {
-		o.properties[name] = value
+func (o *CObject) RegisterProperty(name string, write bool, def interface{}) error {
+	existing := o.getProperty(name)
+	if existing != nil {
+		return fmt.Errorf("property exists: %v", name)
 	}
+	o.properties = append(
+		o.properties,
+		newProperty(name, write, def),
+	)
+	return nil
+}
+
+func (o *CObject) getProperty(name string) *cObjectProperty {
+	for _, prop := range o.properties {
+		if prop.Name() == name {
+			return prop
+		}
+	}
+	return nil
+}
+
+// set the value for a named property
+func (o *CObject) SetProperty(name string, value interface{}) error {
+	if prop := o.getProperty(name); prop != nil {
+		if prop.ReadOnly() {
+			return fmt.Errorf("cannot set read-only property: %v", name)
+		}
+		if f := o.Emit(SignalSetProperty, o, name, value); f == EVENT_PASS {
+			if err := prop.Set(value); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // return the named property value
 func (o *CObject) GetProperty(name string) interface{} {
-	if v, ok := o.properties[name]; ok {
-		return v
+	if prop := o.getProperty(name); prop != nil {
+		return prop.Value()
 	}
 	return nil
 }
