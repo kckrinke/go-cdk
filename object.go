@@ -23,6 +23,7 @@ const (
 	SignalDestroy     Signal   = "destroy"
 	SignalSetProperty Signal   = "set-property"
 	SignalObjectInit  Signal   = "object-init"
+	PropertyDebug     Property = "debug"
 )
 
 func init() {
@@ -39,13 +40,13 @@ type Object interface {
 	SetTheme(theme Theme)
 	GetThemeRequest() (theme Theme)
 	SetThemeRequest(theme Theme)
-	RegisterProperty(name string, write bool, def interface{}) error
-	SetProperty(name string, value interface{}) error
-	GetProperty(name string) interface{}
-	GetPropertyAsBool(name string, def bool) bool
-	GetPropertyAsString(name string, def string) string
-	GetPropertyAsInt(name string, def int) int
-	GetPropertyAsFloat(name string, def float64) float64
+	RegisterProperty(name Property, write bool, def interface{}) error
+	SetProperty(name Property, value interface{}) error
+	GetProperty(name Property) interface{}
+	GetPropertyAsBool(name Property, def bool) bool
+	GetPropertyAsString(name Property, def string) string
+	GetPropertyAsInt(name Property, def int) int
+	GetPropertyAsFloat(name Property, def float64) float64
 }
 
 type CObject struct {
@@ -64,7 +65,7 @@ func (o *CObject) Init() (already bool) {
 	o.theme = DefaultColorTheme
 	o.themeRequest = nil
 	o.properties = make([]*cObjectProperty, 0)
-	o.RegisterProperty("debug", true, false)
+	o.RegisterProperty(PropertyDebug, true, false)
 	return false
 }
 
@@ -96,7 +97,7 @@ func (o *CObject) SetThemeRequest(theme Theme) {
 	o.themeRequest = &theme
 }
 
-func (o *CObject) RegisterProperty(name string, write bool, def interface{}) error {
+func (o *CObject) RegisterProperty(name Property, write bool, def interface{}) error {
 	existing := o.getProperty(name)
 	if existing != nil {
 		return fmt.Errorf("property exists: %v", name)
@@ -108,7 +109,7 @@ func (o *CObject) RegisterProperty(name string, write bool, def interface{}) err
 	return nil
 }
 
-func (o *CObject) getProperty(name string) *cObjectProperty {
+func (o *CObject) getProperty(name Property) *cObjectProperty {
 	for _, prop := range o.properties {
 		if prop.Name() == name {
 			return prop
@@ -118,7 +119,7 @@ func (o *CObject) getProperty(name string) *cObjectProperty {
 }
 
 // set the value for a named property
-func (o *CObject) SetProperty(name string, value interface{}) error {
+func (o *CObject) SetProperty(name Property, value interface{}) error {
 	if prop := o.getProperty(name); prop != nil {
 		if prop.ReadOnly() {
 			return fmt.Errorf("cannot set read-only property: %v", name)
@@ -133,7 +134,7 @@ func (o *CObject) SetProperty(name string, value interface{}) error {
 }
 
 // return the named property value
-func (o *CObject) GetProperty(name string) interface{} {
+func (o *CObject) GetProperty(name Property) interface{} {
 	if prop := o.getProperty(name); prop != nil {
 		return prop.Value()
 	}
@@ -141,7 +142,7 @@ func (o *CObject) GetProperty(name string) interface{} {
 }
 
 // return the named property value as a string
-func (o *CObject) GetPropertyAsBool(name string, def bool) bool {
+func (o *CObject) GetPropertyAsBool(name Property, def bool) bool {
 	v := o.GetProperty(name)
 	if v, ok := v.(bool); ok {
 		return v
@@ -150,7 +151,7 @@ func (o *CObject) GetPropertyAsBool(name string, def bool) bool {
 }
 
 // return the named property value as a string
-func (o *CObject) GetPropertyAsString(name string, def string) string {
+func (o *CObject) GetPropertyAsString(name Property, def string) string {
 	v := o.GetProperty(name)
 	if v, ok := v.(string); ok {
 		return v
@@ -159,7 +160,7 @@ func (o *CObject) GetPropertyAsString(name string, def string) string {
 }
 
 // return the named property value as an integer
-func (o *CObject) GetPropertyAsInt(name string, def int) int {
+func (o *CObject) GetPropertyAsInt(name Property, def int) int {
 	v := o.GetProperty(name)
 	if v, ok := v.(int); ok {
 		return v
@@ -168,7 +169,7 @@ func (o *CObject) GetPropertyAsInt(name string, def int) int {
 }
 
 // return the named property value as a float
-func (o *CObject) GetPropertyAsFloat(name string, def float64) float64 {
+func (o *CObject) GetPropertyAsFloat(name Property, def float64) float64 {
 	v := o.GetProperty(name)
 	if v, ok := v.(float64); ok {
 		return v

@@ -4,14 +4,20 @@ import (
 	"fmt"
 )
 
+type Property string
+
+func (p Property) String() string {
+	return string(p)
+}
+
 type cObjectProperty struct {
-	name  string
+	name  Property
 	write bool
 	def   interface{}
 	value interface{}
 }
 
-func newProperty(name string, write bool, def interface{}) (property *cObjectProperty) {
+func newProperty(name Property, write bool, def interface{}) (property *cObjectProperty) {
 	property = new(cObjectProperty)
 	property.name = name
 	property.write = write
@@ -20,7 +26,7 @@ func newProperty(name string, write bool, def interface{}) (property *cObjectPro
 	return
 }
 
-func (p *cObjectProperty) Name() string {
+func (p *cObjectProperty) Name() Property {
 	return p.name
 }
 
