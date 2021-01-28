@@ -68,6 +68,7 @@ const (
 )
 
 func ReloadLogging() error {
+	envy.Reload()
 	disableTimestamp := true
 	if v := envy.Get("GO_CDK_LOG_TIMESTAMPS", "false"); v == "true" {
 		disableTimestamp = false
