@@ -48,6 +48,10 @@ func (p *cObjectProperty) Default() (def interface{}) {
 }
 
 func (p *cObjectProperty) Value() (value interface{}) {
-	value = p.value
+	if p.value == nil {
+		value = p.def
+	} else {
+		value = p.value
+	}
 	return
 }
