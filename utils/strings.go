@@ -7,6 +7,28 @@ import (
 	"unicode"
 )
 
+// basic word wrapping utility method
+func BasicWordWrap(input string, maxChars int) (output string) {
+	var words []string
+	single := strings.Replace(input, "\n", " ", -1)
+	if words = strings.Fields(single); len(words) == 0 {
+		return input
+	}
+	output = ""
+	count := 0
+	for idx, word := range words {
+		if count + 1 + len(word) >= maxChars {
+			output += "\n"
+			count = 0
+		} else if idx > 0 {
+			output += " "
+		}
+		output += word
+		count += 1 + len(word)
+	}
+	return
+}
+
 func PadLeft(src, pad string, length int) string {
 	for {
 		if len(src) > length {
