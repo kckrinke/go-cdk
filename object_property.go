@@ -12,14 +12,16 @@ func (p Property) String() string {
 
 type cObjectProperty struct {
 	name  Property
+	kind  PropertyType
 	write bool
 	def   interface{}
 	value interface{}
 }
 
-func newProperty(name Property, write bool, def interface{}) (property *cObjectProperty) {
+func newProperty(name Property, kind PropertyType, write bool, def interface{}) (property *cObjectProperty) {
 	property = new(cObjectProperty)
 	property.name = name
+	property.kind = kind
 	property.write = write
 	property.def = def
 	property.value = def
@@ -28,6 +30,10 @@ func newProperty(name Property, write bool, def interface{}) (property *cObjectP
 
 func (p *cObjectProperty) Name() Property {
 	return p.name
+}
+
+func (p *cObjectProperty) Type() PropertyType {
+	return p.kind
 }
 
 func (p *cObjectProperty) ReadOnly() bool {
