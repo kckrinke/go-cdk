@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gobuffalo/envy"
 	log "github.com/sirupsen/logrus"
 	. "github.com/smartystreets/goconvey/convey"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -32,7 +31,7 @@ func TestLoggingInit(t *testing.T) {
 		// check for system event
 		// test output methods: stdout, stderr, file, filepath, /dev/null
 		logged, _, err := DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
 			ReloadLogging()
 			ErrorF("testing")
 			return nil
@@ -42,7 +41,7 @@ func TestLoggingInit(t *testing.T) {
 		So(logged, ShouldStartWith, "ERROR")
 		So(logged, ShouldEndWith, "testing\n")
 		logged, _, err = DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stderr")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stderr")
 			ReloadLogging()
 			ErrorF("testing")
 			return nil
@@ -57,9 +56,9 @@ func TestLoggingInit(t *testing.T) {
 func TestLoggingTimestamps(t *testing.T) {
 	Convey("Logging timestamp checks", t, func() {
 		logged, _, err := DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
-			envy.Set("GO_CDK_LOG_TIMESTAMPS", "true")
-			envy.Set("GO_CDK_LOG_TIMESTAMP_FORMAT", "2006-01-02")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_TIMESTAMPS", "true")
+			os.Setenv("GO_CDK_LOG_TIMESTAMP_FORMAT", "2006-01-02")
 			ReloadLogging()
 			ErrorF("testing")
 			return nil
@@ -68,8 +67,8 @@ func TestLoggingTimestamps(t *testing.T) {
 		datestamp := time.Now().Format("2006-01-02")
 		So(logged, ShouldStartWith, "["+datestamp+"]")
 		So(logged, ShouldEndWith, "testing\n")
-		envy.Set("GO_CDK_LOG_TIMESTAMPS", "")
-		envy.Set("GO_CDK_LOG_TIMESTAMP_FORMAT", "")
+		os.Setenv("GO_CDK_LOG_TIMESTAMPS", "")
+		os.Setenv("GO_CDK_LOG_TIMESTAMP_FORMAT", "")
 	})
 }
 
@@ -77,8 +76,8 @@ func TestLoggingFormatter(t *testing.T) {
 	Convey("Logging json formatter checks", t, func() {
 		// test formatter settings
 		logged, _, err := DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
-			envy.Set("GO_CDK_LOG_FORMAT", "json")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_FORMAT", "json")
 			ReloadLogging()
 			ErrorF("testing")
 			return nil
@@ -96,8 +95,8 @@ func TestLoggingFormatter(t *testing.T) {
 	})
 	Convey("Logging text formatter checks", t, func() {
 		logged, _, err := DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
-			envy.Set("GO_CDK_LOG_FORMAT", "text")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_FORMAT", "text")
 			ReloadLogging()
 			ErrorF("testing")
 			return nil
@@ -112,9 +111,9 @@ func TestLoggingFormatter(t *testing.T) {
 func TestLoggingLevel(t *testing.T) {
 	Convey("Logging level checks", t, func() {
 		logged, _, err := DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
-			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
-			envy.Set("GO_CDK_LOG_LEVEL", "trace")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
+			os.Setenv("GO_CDK_LOG_LEVEL", "trace")
 			ReloadLogging()
 			TraceF("testing")
 			return nil
@@ -123,9 +122,9 @@ func TestLoggingLevel(t *testing.T) {
 		So(logged, ShouldStartWith, "TRACE")
 		So(logged, ShouldEndWith, "testing\n")
 		logged, _, err = DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
-			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
-			envy.Set("GO_CDK_LOG_LEVEL", "debug")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
+			os.Setenv("GO_CDK_LOG_LEVEL", "debug")
 			ReloadLogging()
 			TraceF("testing")
 			DebugF("testing")
@@ -135,9 +134,9 @@ func TestLoggingLevel(t *testing.T) {
 		So(logged, ShouldStartWith, "DEBUG")
 		So(logged, ShouldEndWith, "testing\n")
 		logged, _, err = DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
-			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
-			envy.Set("GO_CDK_LOG_LEVEL", "info")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
+			os.Setenv("GO_CDK_LOG_LEVEL", "info")
 			ReloadLogging()
 			TraceF("testing")
 			DebugF("testing")
@@ -148,9 +147,9 @@ func TestLoggingLevel(t *testing.T) {
 		So(logged, ShouldStartWith, " INFO")
 		So(logged, ShouldEndWith, "testing\n")
 		logged, _, err = DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
-			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
-			envy.Set("GO_CDK_LOG_LEVEL", "warn")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
+			os.Setenv("GO_CDK_LOG_LEVEL", "warn")
 			ReloadLogging()
 			TraceF("testing")
 			DebugF("testing")
@@ -162,9 +161,9 @@ func TestLoggingLevel(t *testing.T) {
 		So(logged, ShouldStartWith, " WARN")
 		So(logged, ShouldEndWith, "testing\n")
 		logged, _, err = DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
-			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
-			envy.Set("GO_CDK_LOG_LEVEL", "error")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
+			os.Setenv("GO_CDK_LOG_LEVEL", "error")
 			ReloadLogging()
 			TraceF("testing")
 			DebugF("testing")
@@ -179,9 +178,9 @@ func TestLoggingLevel(t *testing.T) {
 		// fatal
 		var fatal bool = false
 		logged, _, err = DoWithFakeIO(func() error {
-			envy.Set("GO_CDK_LOG_OUTPUT", "stdout")
-			envy.Set("GO_CDK_LOG_FORMAT", "pretty")
-			envy.Set("GO_CDK_LOG_LEVEL", "error")
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
+			os.Setenv("GO_CDK_LOG_LEVEL", "error")
 			ReloadLogging()
 			cdkLogger.ExitFunc = func(int) { fatal = true }
 			FatalF("testing")
@@ -203,10 +202,10 @@ func TestLoggingToFiles(t *testing.T) {
 		if _, err := os.Stat(DefaultLogPath); err == nil {
 			os.Remove(DefaultLogPath)
 		}
-		envy.Set("GO_CDK_LOG_OUTPUT", "file")
-		envy.Set("GO_CDK_LOG_FORMAT", "pretty")
-		envy.Set("GO_CDK_LOG_LEVEL", "error")
-		envy.Set("GO_CDK_LOG_FILE", DefaultLogPath)
+		os.Setenv("GO_CDK_LOG_OUTPUT", "file")
+		os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
+		os.Setenv("GO_CDK_LOG_LEVEL", "error")
+		os.Setenv("GO_CDK_LOG_FILE", DefaultLogPath)
 		ReloadLogging()
 		So(cdkLogFH, ShouldNotBeNil)
 		ErrorF("testing")
@@ -220,7 +219,7 @@ func TestLoggingToFiles(t *testing.T) {
 		So(string(logged), ShouldEndWith, "testing\n")
 		cdkLogFH.Close()
 		os.Remove(DefaultLogPath)
-		envy.Set("GO_CDK_LOG_FILE", "/dev/null")
+		os.Setenv("GO_CDK_LOG_FILE", "/dev/null")
 		err = ReloadLogging()
 		So(err, ShouldBeNil)
 		ErrorF("testing")
@@ -231,7 +230,7 @@ func TestLoggingToFiles(t *testing.T) {
 		So(found_file, ShouldEqual, false)
 		tmp_log := os.TempDir() + string(os.PathSeparator) + "cdk.not.log"
 		os.Remove(tmp_log)
-		envy.Set("GO_CDK_LOG_FILE", tmp_log)
+		os.Setenv("GO_CDK_LOG_FILE", tmp_log)
 		ReloadLogging()
 		ErrorF("testing")
 		found_file = false
