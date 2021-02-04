@@ -7,6 +7,7 @@ require (
 	github.com/gdamore/encoding v1.0.0
 	github.com/gdamore/tcell/v2 v2.1.0
 	github.com/gobuffalo/envy v1.9.0
+	github.com/jackdoe/go-gpmctl v0.0.0-20200317085308-34b4a75160c2
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.10

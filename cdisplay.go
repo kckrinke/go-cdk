@@ -29,6 +29,7 @@ import (
 	"golang.org/x/term"
 	"golang.org/x/text/transform"
 
+	"github.com/jackdoe/go-gpmctl"
 	"github.com/gdamore/tcell/v2/terminfo"
 
 	// import the stock terminals
@@ -126,6 +127,7 @@ type cDisplay struct {
 	enablePaste  string
 	disablePaste string
 	saved        *term.State
+	gpmRunning   bool
 
 	sync.Mutex
 }
@@ -844,6 +846,12 @@ func (t *cDisplay) draw() {
 	_, _ = t.buf.WriteTo(t.out)
 }
 
+func (t *cDisplay) EnableGPM() {
+	if !t.gpmRunning {
+		go t.gpmLoop()
+	}
+}
+
 func (t *cDisplay) EnableMouse(flags ...MouseFlags) {
 	var f MouseFlags
 	flagsPresent := false
@@ -1440,6 +1448,40 @@ func (t *cDisplay) collectEventsFromInput(buf *bytes.Buffer, expire bool) []Even
 	}
 
 	return res
+}
+
+func (t *cDisplay) gpmLoop() {
+	if t.gpmRunning {
+		return
+	}
+	t.gpmRunning = true
+	if gpm, err := gpmctl.NewGPM(gpmctl.DefaultConf); err != nil {
+		panic(err)
+	} else {
+		for {
+			event, err := gpm.Read()
+			if err != nil {
+				panic(err)
+			}
+			btn := ButtonMask(0)
+			if event.Type == gpmctl.DOWN || event.Type == gpmctl.UP || event.Type == gpmctl.DRAG {
+				if event.Buttons & gpmctl.B_LEFT != 0 {
+					btn = btn.Set(Button1)
+				} else if event.Buttons&gpmctl.B_RIGHT != 0 {
+					btn = btn.Set(Button2)
+				} else if event.Buttons&gpmctl.B_MIDDLE != 0 {
+					btn = btn.Set(Button3)
+				} else if event.Buttons&gpmctl.B_FOURTH != 0 {
+					btn = btn.Set(Button4)
+				}
+			}
+			evt := NewEventMouse(int(event.X), int(event.Y), btn, ModNone)
+			t.PostEvent(evt)
+			if !t.gpmRunning {
+				return
+			}
+		}
+	}
 }
 
 func (t *cDisplay) mainLoop() {
