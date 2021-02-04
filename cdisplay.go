@@ -68,7 +68,7 @@ func NewTerminfoDisplay() (Display, error) {
 	}
 	t.prepareKeys()
 	t.buildAcsMap()
-	t.sigwinch = make(chan os.Signal, SignalQueueSize)
+	t.sigWinch = make(chan os.Signal, SignalQueueSize)
 	t.fallback = make(map[rune]string)
 	for k, v := range RuneFallbacks {
 		t.fallback[k] = v
@@ -97,7 +97,7 @@ type cDisplay struct {
 	curStyle     Style
 	style        Style
 	evCh         chan Event
-	sigwinch     chan os.Signal
+	sigWinch     chan os.Signal
 	quit         chan struct{}
 	inDoneQ      chan struct{}
 	keyExist     map[Key]bool
@@ -1449,7 +1449,7 @@ func (t *cDisplay) mainLoop() {
 		case <-t.quit:
 			close(t.inDoneQ)
 			return
-		case <-t.sigwinch:
+		case <-t.sigWinch:
 			t.Lock()
 			t.cx = -1
 			t.cy = -1

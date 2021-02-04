@@ -61,7 +61,7 @@ func (t *cDisplay) initialize() error {
 	if err != nil {
 		return err
 	}
-	signal.Notify(t.sigwinch, syscall.SIGWINCH)
+	signal.Notify(t.sigWinch, syscall.SIGWINCH)
 
 	if err := t.engage(); err != nil {
 		return err
@@ -73,7 +73,7 @@ func (t *cDisplay) initialize() error {
 // to it's initial state.  It should not be called more than once.
 func (t *cDisplay) finalize() {
 
-	signal.Stop(t.sigwinch)
+	signal.Stop(t.sigWinch)
 
 	<-t.inDoneQ
 
