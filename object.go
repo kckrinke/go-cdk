@@ -67,7 +67,7 @@ func (o *CObject) Init() (already bool) {
 	o.theme = DefaultColorTheme
 	o.themeRequest = nil
 	o.properties = make([]*cObjectProperty, 0)
-	o.RegisterProperty(PropertyDebug, BoolProperty, true, false)
+	_ = o.RegisterProperty(PropertyDebug, BoolProperty, true, false)
 	return false
 }
 
@@ -128,9 +128,9 @@ func (o *CObject) GetBoolProperty(name Property) (value bool, err error) {
 				return v, nil
 			}
 		}
-		return false, fmt.Errorf("not a bool object property: %v", name)
+		return false, fmt.Errorf("%v.(%v) property is not a bool", name, prop.Type())
 	}
-	return false, fmt.Errorf("invalid object property: %v", name)
+	return false, fmt.Errorf("property not found: %v", name)
 }
 
 func (o *CObject) SetBoolProperty(name Property, value bool) error {
@@ -140,7 +140,7 @@ func (o *CObject) SetBoolProperty(name Property, value bool) error {
 		}
 		return fmt.Errorf("%v.(%v) property is not a bool", name, prop.Type())
 	}
-	return nil
+	return fmt.Errorf("property not found: %v", name)
 }
 
 func (o *CObject) GetStringProperty(name Property) (value string, err error) {
@@ -153,9 +153,9 @@ func (o *CObject) GetStringProperty(name Property) (value string, err error) {
 				return v, nil
 			}
 		}
-		return "", fmt.Errorf("not a string object property: %v", name)
+		return "", fmt.Errorf("%v.(%v) property is not a string", name, prop.Type())
 	}
-	return "", fmt.Errorf("invalid object property: %v", name)
+	return "", fmt.Errorf("property not found: %v", name)
 }
 
 func (o *CObject) SetStringProperty(name Property, value string) error {
@@ -165,7 +165,7 @@ func (o *CObject) SetStringProperty(name Property, value string) error {
 		}
 		return fmt.Errorf("%v.(%v) property is not a string", name, prop.Type())
 	}
-	return fmt.Errorf("invalid object property: %v", name)
+	return fmt.Errorf("property not found: %v", name)
 }
 
 func (o *CObject) GetIntProperty(name Property) (value int, err error) {
@@ -178,9 +178,9 @@ func (o *CObject) GetIntProperty(name Property) (value int, err error) {
 				return v, nil
 			}
 		}
-		return 0, fmt.Errorf("not an int object property: %v", name)
+		return 0, fmt.Errorf("%v.(%v) property is not an int", name, prop.Type())
 	}
-	return 0, fmt.Errorf("invalid object property: %v", name)
+	return 0, fmt.Errorf("property not found: %v", name)
 }
 
 func (o *CObject) SetIntProperty(name Property, value int) error {
@@ -190,7 +190,7 @@ func (o *CObject) SetIntProperty(name Property, value int) error {
 		}
 		return fmt.Errorf("%v.(%v) property is not an int", name, prop.Type())
 	}
-	return fmt.Errorf("invalid object property: %v", name)
+	return fmt.Errorf("property not found: %v", name)
 }
 
 func (o *CObject) GetFloatProperty(name Property) (value float64, err error) {
@@ -203,9 +203,9 @@ func (o *CObject) GetFloatProperty(name Property) (value float64, err error) {
 				return v, nil
 			}
 		}
-		return 0, fmt.Errorf("not a float64 object property: %v", name)
+		return 0.0, fmt.Errorf("%v.(%v) property is not a float", name, prop.Type())
 	}
-	return 0, fmt.Errorf("invalid object property: %v", name)
+	return 0.0, fmt.Errorf("property not found: %v", name)
 }
 
 func (o *CObject) SetFloatProperty(name Property, value float64) error {
@@ -215,7 +215,7 @@ func (o *CObject) SetFloatProperty(name Property, value float64) error {
 		}
 		return fmt.Errorf("%v.(%v) property is not a float64", name, prop.Type())
 	}
-	return fmt.Errorf("invalid object property: %v", name)
+	return fmt.Errorf("property not found: %v", name)
 }
 
 
