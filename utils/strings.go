@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"unicode"
@@ -103,4 +104,11 @@ func IsFalse(text string) bool {
 		return true
 	}
 	return false
+}
+
+func IsUrl(str string) (isUrl bool) {
+	if u, err := url.Parse(str); err == nil && u.Scheme != "" {
+		return true
+	}
+	return
 }
