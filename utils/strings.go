@@ -112,3 +112,12 @@ func IsUrl(str string) (isUrl bool) {
 	}
 	return
 }
+
+func StringSliceHasValue(slice []string, value string) (has bool) {
+	for _, str := range slice {
+		if str == value {
+			return true
+		}
+	}
+	return
+}
