@@ -218,7 +218,28 @@ func (o *CObject) SetFloatProperty(name Property, value float64) error {
 	return fmt.Errorf("property not found: %v", name)
 }
 
+func (o *CObject) GetStructProperty(name Property) (value interface{}, err error) {
+	if prop := o.getProperty(name); prop != nil {
+		if prop.Type() == StructProperty {
+			if v := prop.Value(); v != nil {
+				return v, nil
+			}
+			return prop.Default(), nil
+		}
+		return 0, fmt.Errorf("%v.(%v) property is not a struct", name, prop.Type())
+	}
+	return 0, fmt.Errorf("property not found: %v", name)
+}
 
+func (o *CObject) SetStructProperty(name Property, value interface{}) error {
+	if prop := o.getProperty(name); prop != nil {
+		if prop.Type() == StructProperty {
+			return o.setProperty(name, value)
+		}
+		return fmt.Errorf("%v.(%v) property is not a struct", name, prop.Type())
+	}
+	return fmt.Errorf("property not found: %v", name)
+}
 
 func (o *CObject) getProperty(name Property) *cObjectProperty {
 	for _, prop := range o.properties {

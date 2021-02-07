@@ -5,6 +5,7 @@ const (
 	StringProperty PropertyType = "string"
 	IntProperty    PropertyType = "int"
 	FloatProperty  PropertyType = "float"
+	StructProperty PropertyType = "struct"
 )
 
 type PropertyType string
