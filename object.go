@@ -22,7 +22,6 @@ const (
 	TypeObject        CTypeTag = "cdk-object"
 	SignalDestroy     Signal   = "destroy"
 	SignalSetProperty Signal   = "set-property"
-	SignalObjectInit  Signal   = "object-init"
 	PropertyDebug     Property = "debug"
 )
 
