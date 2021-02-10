@@ -38,11 +38,15 @@ type Signaling interface {
 	PassSignal(signal Signal)
 	IsSignalPassed(signal Signal) bool
 	ResumeSignal(signal Signal)
+	Freeze()
+	Thaw()
+	IsFrozen() bool
 }
 
 type CSignaling struct {
 	CTypeItem
 
+	frozen    bool
 	stopped   []Signal
 	passed    []Signal
 	listeners map[Signal][]*CSignalListener
@@ -53,6 +57,7 @@ func (o *CSignaling) Init() (already bool) {
 		return true
 	}
 	o.CTypeItem.Init()
+	o.frozen = false
 	o.stopped = []Signal{}
 	o.passed = []Signal{}
 	if o.listeners == nil {
@@ -116,6 +121,9 @@ func (o *CSignaling) Disconnect(signal, handle Signal) error {
 
 // Emit a signal event to all connected listener callbacks
 func (o *CSignaling) Emit(signal Signal, argv ...interface{}) EventFlag {
+	if o.frozen {
+		return EVENT_PASS
+	}
 	if o.IsSignalStopped(signal) {
 		return EVENT_STOP
 	}
@@ -208,4 +216,16 @@ func (o *CSignaling) ResumeSignal(signal Signal) {
 	} else {
 		o.LogError("failed to resume unknown signal: %v", signal)
 	}
+}
+
+func (o *CSignaling) Freeze() {
+	o.frozen = true
+}
+
+func (o *CSignaling) Thaw() {
+	o.frozen = false
+}
+
+func (o *CSignaling) IsFrozen() bool {
+	return o.frozen
 }
