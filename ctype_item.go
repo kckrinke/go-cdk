@@ -81,10 +81,19 @@ func (o *CTypeItem) Init() (already bool) {
 	if o.typeTag == TypeNil {
 		FatalDF(1, "invalid object type: nil")
 	}
-	var err error
-	o.id, err = TypesManager.AddTypeItem(o.typeTag, o)
-	if err != nil {
-		FatalDF(1, "failed to add self to \"%v\" type: %v", o.typeTag, err)
+	found := false
+	if TypesManager.HasType(o.typeTag) {
+		for _, i := range TypesManager.GetTypeItems(o.typeTag) {
+			if c, ok := i.(TypeItem); ok {
+				if c.ObjectID() == o.ObjectID() {
+					found = true
+					break
+				}
+			}
+		}
+	}
+	if !found {
+		FatalDF(1, "type or instance not found: %v (%v)", o.ObjectName(), o.typeTag)
 	}
 	o.valid = true
 	return false
