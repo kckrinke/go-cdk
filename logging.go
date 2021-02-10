@@ -131,9 +131,7 @@ func ReloadLogging() error {
 	case OutputFile:
 		fallthrough
 	default:
-		if err := StopLogging(); err != nil {
-			Error(err)
-		}
+		_ = StopLogging()
 		if logfile := envy.Get("GO_CDK_LOG_FILE", DefaultLogPath); !utils.IsEmpty(logfile) && logfile != "/dev/null" {
 			logFH, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 			if err != nil {
@@ -211,6 +209,16 @@ func ErrorDF(depth int, format string, argv ...interface{}) {
 func Fatal(err error)                           { FatalDF(1, err.Error()) }
 func FatalF(format string, argv ...interface{}) { FatalDF(1, format, argv...) }
 func FatalDF(depth int, format string, argv ...interface{}) {
+	if dm := GetDisplayManager(); dm != nil {
+		dm.ReleaseDisplay()
+	}
+	message := fmt.Sprintf(utils.NLSprintf("%s\t%s", getLogPrefix(depth+1), format), argv...)
+	cdkLogger.Fatalf(message)
+}
+
+func Panic(err error)                           { PanicDF(1, err.Error()) }
+func PanicF(format string, argv ...interface{}) { PanicDF(1, format, argv...) }
+func PanicDF(depth int, format string, argv ...interface{}) {
 	if dm := GetDisplayManager(); dm != nil {
 		dm.ReleaseDisplay()
 	}
