@@ -36,7 +36,6 @@ package cdk
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io"
 	"strings"
 	"unicode"
@@ -94,9 +93,9 @@ func (m *CTango) init() error {
 
 	wid := 0
 
-	mstyle := m.style
-	cstyle := m.style
-	pstyle := m.style
+	mStyle := m.style // main style
+	cStyle := m.style // current style
+	pStyle := m.style // previous style
 
 	isWord := false
 	var err error
@@ -111,47 +110,46 @@ func (m *CTango) init() error {
 		}
 		switch t := token.(type) {
 		case xml.StartElement:
-			pstyle = cstyle
+			pStyle = cStyle
 			switch t.Name.Local {
 			case "markup":
-				pstyle = mstyle
-				mstyle = m.parseStyleAttrs(t.Attr)
+				pStyle = mStyle
+				mStyle = m.parseStyleAttrs(t.Attr)
 			case "span":
-				pstyle = cstyle
-				cstyle = m.parseStyleAttrs(t.Attr)
+				pStyle = cStyle
+				cStyle = m.parseStyleAttrs(t.Attr)
 			case "b":
-				cstyle = cstyle.Bold(true)
+				cStyle = cStyle.Bold(true)
 			case "i":
-				cstyle = cstyle.Italic(true)
+				cStyle = cStyle.Italic(true)
 			case "s":
-				cstyle = cstyle.StrikeThrough(true)
+				cStyle = cStyle.StrikeThrough(true)
 			case "u":
-				cstyle = cstyle.Underline(true)
+				cStyle = cStyle.Underline(true)
 			case "d":
-				cstyle = cstyle.Dim(true)
+				cStyle = cStyle.Dim(true)
 			}
 		case xml.EndElement:
 			switch t.Name.Local {
 			case "markup":
-				cstyle = pstyle
+				cStyle = pStyle
 			case "span":
-				cstyle = pstyle
+				cStyle = pStyle
 			case "b":
-				cstyle = cstyle.Bold(false)
+				cStyle = cStyle.Bold(false)
 			case "i":
-				cstyle = cstyle.Italic(false)
+				cStyle = cStyle.Italic(false)
 			case "s":
-				cstyle = cstyle.StrikeThrough(false)
+				cStyle = cStyle.StrikeThrough(false)
 			case "u":
-				cstyle = cstyle.Underline(false)
+				cStyle = cStyle.Underline(false)
 			case "d":
-				cstyle = cstyle.Dim(false)
+				cStyle = cStyle.Dim(false)
 			}
 		case xml.CharData:
-			content := xml.CharData(t) // CharData []byte
-			for idx := 0; idx < len(content); idx++ {
-				v, _ := utf8.DecodeRune(content[idx:])
-				m.marked = append(m.marked, NewRuneCell(v, cstyle))
+			for idx := 0; idx < len(t); idx++ {
+				v, _ := utf8.DecodeRune(t[idx:])
+				m.marked = append(m.marked, NewRuneCell(v, cStyle))
 				if unicode.IsSpace(v) {
 					if isWord {
 						isWord = false
@@ -168,13 +166,14 @@ func (m *CTango) init() error {
 				if wid >= m.input.Len() {
 					m.input.AppendWordCell(NewEmptyWordCell())
 				}
-				m.input.AppendWordRune(wid, v, cstyle)
+				if err := m.input.AppendWordRune(wid, v, cStyle); err != nil {
+					ErrorDF(1, "error appending word rune: %v", err)
+				}
 			} // for idx len(content)
 		case xml.Comment:
 		case xml.ProcInst:
 		case xml.Directive:
 		default:
-			fmt.Println("Unknown")
 		}
 	}
 	return nil
