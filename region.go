@@ -18,6 +18,8 @@ package cdk
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 )
 
 type Region struct {
@@ -37,8 +39,24 @@ func MakeRegion(x, y, w, h int) Region {
 	}
 }
 
+var rxParseRegion = regexp.MustCompile(`(?:i)^{??(?:x:)??(\d+),(?:y:)??(\d+),(?:w:)??(\d+),(?:h:)??(\d+)}??$`)
+
+func ParseRegion(value string) (point Region, ok bool) {
+	if rxParseRegion.MatchString(value) {
+		m := rxParseRegion.FindStringSubmatch(value)
+		if len(m) == 5 {
+			x, _ := strconv.Atoi(m[1])
+			y, _ := strconv.Atoi(m[2])
+			w, _ := strconv.Atoi(m[3])
+			h, _ := strconv.Atoi(m[4])
+			return MakeRegion(x, y, w, h), true
+		}
+	}
+	return Region{}, false
+}
+
 func (r Region) String() string {
-	return fmt.Sprintf("%v,%v", r.Point2I.String(), r.Rectangle.String())
+	return fmt.Sprintf("{%v,%v}", r.Point2I.String(), r.Rectangle.String())
 }
 
 func (r *Region) SetRegion(x, y, w, h int) {

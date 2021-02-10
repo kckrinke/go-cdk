@@ -16,6 +16,8 @@ package cdk
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 )
 
 // Point2I
@@ -37,8 +39,22 @@ func MakePoint2I(x, y int) Point2I {
 	return Point2I{X: x, Y: y}
 }
 
+var rxParsePoint2I = regexp.MustCompile(`(?:i)^{??(?:x:)??(\d+),(?:y:)??(\d+)}??$`)
+
+func ParsePoint2I(value string) (point Point2I, ok bool) {
+	if rxParsePoint2I.MatchString(value) {
+		m := rxParsePoint2I.FindStringSubmatch(value)
+		if len(m) == 3 {
+			x, _ := strconv.Atoi(m[1])
+			y, _ := strconv.Atoi(m[2])
+			return MakePoint2I(x, y), true
+		}
+	}
+	return Point2I{}, false
+}
+
 func (p Point2I) String() string {
-	return fmt.Sprintf("x:%v,y:%v", p.X, p.Y)
+	return fmt.Sprintf("{x:%v,y:%v}", p.X, p.Y)
 }
 
 func (p Point2I) Equals(x, y int) bool {

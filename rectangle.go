@@ -18,6 +18,8 @@ package cdk
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 )
 
 type Rectangle struct {
@@ -33,8 +35,22 @@ func MakeRectangle(w, h int) Rectangle {
 	return Rectangle{W: w, H: h}
 }
 
+var rxParseRectangle = regexp.MustCompile(`(?:i)^{??(?:w:)??(\d+),(?:h:)??(\d+)}??$`)
+
+func ParseRectangle(value string) (point Rectangle, ok bool) {
+	if rxParseRectangle.MatchString(value) {
+		m := rxParseRectangle.FindStringSubmatch(value)
+		if len(m) == 3 {
+			w, _ := strconv.Atoi(m[1])
+			h, _ := strconv.Atoi(m[2])
+			return MakeRectangle(w, h), true
+		}
+	}
+	return Rectangle{}, false
+}
+
 func (r Rectangle) String() string {
-	return fmt.Sprintf("w:%v,h:%v", r.W, r.H)
+	return fmt.Sprintf("{w:%v,h:%v}", r.W, r.H)
 }
 
 func (r Rectangle) Equals(w, h int) bool {

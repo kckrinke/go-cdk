@@ -16,6 +16,8 @@ package cdk
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 )
 
 // Style represents a complete text style, including both foreground color,
@@ -34,11 +36,43 @@ type Style struct {
 
 func (s Style) String() string {
 	return fmt.Sprintf(
-		"{fg=%v,bg=%v,attrs=%v}",
+		"{%v,%v,%v}",
 		s.fg.String(),
 		s.bg.String(),
 		s.attrs,
 	)
+}
+
+var rxParseStyle = regexp.MustCompile(`(?i)^{??(#[a-f0-9]{6}|[a-z]+),(#[a-f0-9]{6}|[a-z]+),(\d+)}??$`)
+
+func ParseStyle(value string) (style Style, err error) {
+	if rxParseStyle.MatchString(value) {
+		m := rxParseStyle.FindStringSubmatch(value)
+		if len(m) == 4 {
+			var ok bool
+			var fg, bg Color
+			var attrs AttrMask
+			if fg, ok = ParseColor(m[1]); !ok {
+				return StyleDefault, fmt.Errorf("invalid style fg value: %v", m[1])
+			}
+			if bg, ok = ParseColor(m[2]); !ok {
+				return StyleDefault, fmt.Errorf("invalid style bg value: %v", m[2])
+			}
+			if i, err := strconv.Atoi(m[3]); err != nil {
+				return StyleDefault, fmt.Errorf("invalid style attr value: %v", m[3])
+			} else {
+				attrs = AttrMask(i)
+			}
+			style = Style{
+				fg:    fg,
+				bg:    bg,
+				attrs: attrs,
+			}
+			return
+		}
+		return StyleDefault, fmt.Errorf("invalid style match: %v", m)
+	}
+	return StyleDefault, fmt.Errorf("invalid style value: %v", value)
 }
 
 // StyleDefault represents a default style, based upon the context.
