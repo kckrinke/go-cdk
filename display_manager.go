@@ -236,13 +236,15 @@ func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
 }
 
 func (d *CDisplayManager) ReleaseDisplay() {
-	d.Lock()
-	defer d.Unlock()
-	if d.display != nil {
-		d.display.Close()
-		d.display = nil
+	if d.captured {
+		// d.Lock()
+		// defer d.Unlock()
+		if d.display != nil {
+			d.display.Close()
+			d.display = nil
+		}
+		d.captured = false
 	}
-	d.captured = false
 }
 
 func (d *CDisplayManager) IsMonochrome() bool {
