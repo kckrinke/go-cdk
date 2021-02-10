@@ -35,6 +35,7 @@ func (t *cDisplay) engage() error {
 	}
 	if w, h, err := term.GetSize(stdin); err == nil && w != 0 && h != 0 {
 		t.cells.Resize(w, h)
+		t.PostEvent(NewEventResize(w, h))
 	}
 	return nil
 }
