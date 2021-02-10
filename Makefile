@@ -26,7 +26,11 @@ cover:
 	@echo "test coverage ..."
 	@go tool cover -html=coverage.out
 
-clean:
+clean-logs:
+	@echo "cleaning *.log files"
+	@rm -fv *.log || true
+
+clean: clean-logs
 	@echo "cleaning"
 	@go clean ./...      || true
 	@rm -fv beep         || true
