@@ -56,7 +56,12 @@ func (cb *CellBuffer) SetContent(x int, y int, mainc rune, combc []rune, style S
 	cb.Lock()
 	defer cb.Unlock()
 	if x >= 0 && y >= 0 && x < cb.w && y < cb.h {
-		c := cb.cells[(y*cb.w)+x]
+		idx := (y * cb.w) + x
+		if len(cb.cells) <= idx {
+			ErrorF("set content index out of range: x=%v,y=%v w=%v,h=%v", x, y, cb.w, cb.h)
+			return
+		}
+		c := cb.cells[idx]
 		c.Lock()
 		if combc == nil {
 			c.currComb = []rune{}
@@ -78,7 +83,12 @@ func (cb *CellBuffer) SetContent(x int, y int, mainc rune, combc []rune, style S
 // either 1, normally, or 2 for East Asian full-width characters.)
 func (cb *CellBuffer) GetContent(x, y int) (mainc rune, combc []rune, style Style, width int) {
 	if x >= 0 && y >= 0 && x < cb.w && y < cb.h {
-		c := cb.cells[(y*cb.w)+x]
+		idx := (y * cb.w) + x
+		if len(cb.cells) <= idx {
+			ErrorF("get content index out of range: x=%v,y=%v w=%v,h=%v", x, y, cb.w, cb.h)
+			return 0, []rune{}, Style{}, -1
+		}
+		c := cb.cells[idx]
 		c.Lock()
 		mainc, combc, style = c.currMain, c.currComb, c.currStyle
 		if width = c.width; width == 0 || mainc < ' ' {
