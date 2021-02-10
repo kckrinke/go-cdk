@@ -29,8 +29,8 @@ import (
 	"golang.org/x/term"
 	"golang.org/x/text/transform"
 
-	"github.com/jackdoe/go-gpmctl"
 	"github.com/gdamore/tcell/v2/terminfo"
+	"github.com/jackdoe/go-gpmctl"
 
 	// import the stock terminals
 	_ "github.com/gdamore/tcell/v2/terminfo/base"
@@ -500,8 +500,6 @@ func (t *cDisplay) finish() {
 
 	select {
 	case <-t.quit:
-		// do nothing, already closed
-
 	default:
 		close(t.quit)
 	}
@@ -1465,7 +1463,7 @@ func (t *cDisplay) gpmLoop() {
 			}
 			btn := ButtonMask(0)
 			if event.Type == gpmctl.DOWN || event.Type == gpmctl.UP || event.Type == gpmctl.DRAG {
-				if event.Buttons & gpmctl.B_LEFT != 0 {
+				if event.Buttons&gpmctl.B_LEFT != 0 {
 					btn = btn.Set(Button1)
 				} else if event.Buttons&gpmctl.B_RIGHT != 0 {
 					btn = btn.Set(Button2)

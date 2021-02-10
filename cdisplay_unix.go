@@ -17,6 +17,7 @@
 package cdk
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,7 +29,6 @@ import (
 // Thing of this is as CDK "engaging" the clutch, as it's going to be driving the
 // terminal interface.
 func (t *cDisplay) engage() error {
-
 	stdin := int(t.in.Fd())
 	if _, err := term.MakeRaw(stdin); err != nil {
 		return err
@@ -40,7 +40,7 @@ func (t *cDisplay) engage() error {
 }
 
 // disengage is used to release the terminal back to support from the caller.
-// Think of this as tcell disengaging the clutch, so that another application
+// Think of this as CDK disengaging the clutch, so that another application
 // can take over the terminal interface.  This restores the TTY mode that was
 // present when the application was first started.
 func (t *cDisplay) disengage() {
