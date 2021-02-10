@@ -52,7 +52,7 @@ type CTypeItem struct {
 
 func NewTypeItem(tag CTypeTag, name string) TypeItem {
 	return &CTypeItem{
-		id:      -1,
+		id:      0,
 		typeTag: tag,
 		name:    name,
 		valid:   false,
@@ -63,13 +63,16 @@ func (o *CTypeItem) InitTypeItem(tag TypeTag, thing interface{}) (already bool) 
 	o.Lock()
 	defer o.Unlock()
 	already = o.valid
-	if !already && o.typeTag == TypeNil {
-		o.typeTag = tag.Tag()
-	}
-	var err error
-	o.id, err = TypesManager.AddTypeItem(o.typeTag, thing)
-	if err != nil {
-		FatalDF(1, "failed to add self to \"%v\" type: %v", o.typeTag, err)
+	if !already {
+		if o.typeTag == TypeNil {
+			o.typeTag = tag.Tag()
+		}
+		if o.id < 1 {
+			var err error
+			if o.id, err = TypesManager.AddTypeItem(o.typeTag, thing); err != nil {
+				FatalDF(1, "failed to add self to \"%v\" type: %v", o.typeTag, err)
+			}
+		}
 	}
 	return
 }
@@ -132,11 +135,13 @@ func (o *CTypeItem) ObjectName() string {
 	return fmt.Sprintf("%v-%v", o.typeTag, o.ObjectID())
 }
 
-func (o *CTypeItem) DestroyObject() error {
-	err := TypesManager.RemoveTypeItem(o.typeTag, o)
+func (o *CTypeItem) DestroyObject() (err error) {
+	if err = TypesManager.RemoveTypeItem(o.typeTag, o); err != nil {
+		o.LogErr(err)
+	}
 	o.valid = false
 	o.id = -1
-	return err
+	return nil
 }
 
 func (o *CTypeItem) LogTag() string {

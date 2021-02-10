@@ -32,6 +32,7 @@ type TypeRegistry interface {
 	GetType(tag TypeTag) (t Type, found bool)
 	AddTypeItem(tag TypeTag, item interface{}) (id int, err error)
 	GetTypeItems(tag TypeTag) []interface{}
+	GetTypeItemByID(id int) interface{}
 	GetTypeItemByName(name string) interface{}
 	RemoveTypeItem(tag TypeTag, item TypeItem) error
 }
@@ -104,7 +105,22 @@ func (r *CTypeRegistry) AddTypeItem(tag TypeTag, item interface{}) (id int, err 
 		id, err = -1, fmt.Errorf("unknown type: %v", tag)
 		return
 	}
-	id = r.register[tag].Add(item)
+	r.register[tag].Add(item)
+	id = r.GetNextID()
+	return
+}
+
+func (r *CTypeRegistry) GetNextID() (id int) {
+	id = 1 // first valid ID is 1
+	for _, t := range r.register {
+		for _, ti := range t.Items() {
+			if tc, ok := ti.(TypeItem); ok {
+				if id == tc.ObjectID() {
+					id += 1
+				}
+			}
+		}
+	}
 	return
 }
 
@@ -113,6 +129,21 @@ func (r *CTypeRegistry) GetTypeItems(tag TypeTag) []interface{} {
 	defer r.Unlock()
 	if t, ok := r.register[tag]; ok {
 		return t.Items()
+	}
+	return nil
+}
+
+func (r *CTypeRegistry) GetTypeItemByID(id int) interface{} {
+	r.Lock()
+	defer r.Unlock()
+	for _, t := range r.register {
+		for _, i := range t.Items() {
+			if c, ok := i.(TypeItem); ok {
+				if c.ObjectID() == id {
+					return i
+				}
+			}
+		}
 	}
 	return nil
 }

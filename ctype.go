@@ -26,7 +26,7 @@ const (
 type Type interface {
 	New() interface{}
 	Items() []interface{}
-	Add(item interface{}) (id int)
+	Add(item interface{})
 	Remove(item TypeItem) error
 }
 
@@ -59,11 +59,10 @@ func (t *CType) Items() []interface{} {
 	return t.items
 }
 
-func (t *CType) Add(item interface{}) (id int) {
+func (t *CType) Add(item interface{}) {
 	t.Lock()
 	defer t.Unlock()
 	t.items = append(t.items, item)
-	id = len(t.items) - 1
 	return
 }
 
