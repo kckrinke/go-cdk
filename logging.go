@@ -214,7 +214,10 @@ func FatalDF(depth int, format string, argv ...interface{}) {
 	if dm := GetDisplayManager(); dm != nil {
 		dm.ReleaseDisplay()
 	}
-	cdkLogger.Fatalf(utils.NLSprintf("%s	%s", getLogPrefix(depth+1), format), argv...)
+	message := fmt.Sprintf(utils.NLSprintf("%s\t%s", getLogPrefix(depth+1), format), argv...)
+	cdkLogger.Errorf(message)
+	_ = StopLogging()
+	panic(message)
 }
 
 func Exit(code int) {
