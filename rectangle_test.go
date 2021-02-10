@@ -25,7 +25,7 @@ func TestRectangle(t *testing.T) {
 		r := NewRectangle(2, 2)
 		So(r, ShouldNotBeNil)
 		So(r, ShouldHaveSameTypeAs, &Rectangle{})
-		So(r.String(), ShouldEqual, "w:2,h:2")
+		So(r.String(), ShouldEqual, "{w:2,h:2}")
 		r.SetArea(1, 1)
 		So(r.W, ShouldEqual, 1)
 		So(r.H, ShouldEqual, 1)

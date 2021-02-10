@@ -110,6 +110,7 @@ func TestLoggingFormatter(t *testing.T) {
 
 func TestLoggingLevel(t *testing.T) {
 	Convey("Logging level checks", t, func() {
+		// trace
 		logged, _, err := DoWithFakeIO(func() error {
 			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
 			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
@@ -121,6 +122,7 @@ func TestLoggingLevel(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(logged, ShouldStartWith, "TRACE")
 		So(logged, ShouldEndWith, "testing\n")
+		// debug
 		logged, _, err = DoWithFakeIO(func() error {
 			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
 			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
@@ -133,6 +135,7 @@ func TestLoggingLevel(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(logged, ShouldStartWith, "DEBUG")
 		So(logged, ShouldEndWith, "testing\n")
+		// trace, debug, info
 		logged, _, err = DoWithFakeIO(func() error {
 			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
 			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
@@ -146,6 +149,7 @@ func TestLoggingLevel(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(logged, ShouldStartWith, " INFO")
 		So(logged, ShouldEndWith, "testing\n")
+		// trace, debug, info, warn
 		logged, _, err = DoWithFakeIO(func() error {
 			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
 			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
@@ -160,6 +164,7 @@ func TestLoggingLevel(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(logged, ShouldStartWith, " WARN")
 		So(logged, ShouldEndWith, "testing\n")
+		// trace, debug, info, warn, error
 		logged, _, err = DoWithFakeIO(func() error {
 			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
 			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
@@ -191,6 +196,25 @@ func TestLoggingLevel(t *testing.T) {
 		So(logged, ShouldStartWith, "FATAL")
 		So(logged, ShouldEndWith, "testing\n")
 		cdkLogger.ExitFunc = nil
+		// panic
+		var panicking bool = false
+		logged, _, err = DoWithFakeIO(func() error {
+			os.Setenv("GO_CDK_LOG_OUTPUT", "stdout")
+			os.Setenv("GO_CDK_LOG_FORMAT", "pretty")
+			os.Setenv("GO_CDK_LOG_LEVEL", "error")
+			_ = ReloadLogging()
+			defer func() {
+				recover()
+				panicking = true
+			}()
+			PanicF("testing")
+			return nil
+		})
+		So(err, ShouldBeNil)
+		So(panicking, ShouldEqual, true)
+		So(logged, ShouldStartWith, "ERROR")
+		So(logged, ShouldEndWith, "testing\n")
+		// log prefix testing
 		prefix := getLogPrefix(99)
 		So(prefix, ShouldEqual, "(missing caller metadata)")
 	})
@@ -228,26 +252,29 @@ func TestLoggingToFiles(t *testing.T) {
 			found_file = true
 		}
 		So(found_file, ShouldEqual, false)
-		tmp_log := os.TempDir() + string(os.PathSeparator) + "cdk.not.log"
-		os.Remove(tmp_log)
-		os.Setenv("GO_CDK_LOG_FILE", tmp_log)
+		tmpLog := os.TempDir() + string(os.PathSeparator) + "cdk.not.log"
+		os.Remove(tmpLog)
+		os.Setenv("GO_CDK_LOG_FILE", tmpLog)
 		ReloadLogging()
 		ErrorF("testing")
 		found_file = false
-		if _, err := os.Stat(tmp_log); err == nil {
+		if _, err := os.Stat(tmpLog); err == nil {
 			found_file = true
 		}
 		So(found_file, ShouldEqual, true)
-		logged, err = ioutil.ReadFile(tmp_log)
+		logged, err = ioutil.ReadFile(tmpLog)
 		So(err, ShouldBeNil)
 		So(string(logged), ShouldEndWith, "testing\n")
 		So(cdkLogFH, ShouldNotBeNil)
 		StopLogging()
 		So(cdkLogFH, ShouldBeNil)
-		os.Chmod(tmp_log, 0000)
+		os.Chmod(tmpLog, 0000)
 		err = ReloadLogging()
 		So(err, ShouldNotBeNil)
-		os.Chmod(tmp_log, 0660)
-		os.Remove(tmp_log)
+		os.Chmod(tmpLog, 0660)
+		os.Remove(tmpLog)
+		// restore default logging
+		os.Setenv("GO_CDK_LOG_FILE", DefaultLogPath)
+		ReloadLogging()
 	})
 }

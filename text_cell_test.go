@@ -29,7 +29,7 @@ func TestTextCell(t *testing.T) {
 		So(tc.Style().String(), ShouldEqual, DefaultMonoStyle.String())
 		So(tc.Dirty(), ShouldEqual, false)
 		So(tc.Value(), ShouldEqual, '*')
-		So(tc.String(), ShouldEqual, "{Char=*,Style={fg=unnamed[-1],bg=unnamed[-1],attrs=16}}")
+		So(tc.String(), ShouldEqual, "{Char=*,Style={unnamed[-1],unnamed[-1],16}}")
 		tc.Set(' ')
 		So(tc.IsSpace(), ShouldEqual, true)
 		So(tc.Width(), ShouldEqual, 1)
