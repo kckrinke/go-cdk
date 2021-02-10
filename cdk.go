@@ -208,8 +208,8 @@ func (app *CApp) MainActionFn(c *cli.Context) error {
 			profilePath = v
 		}
 	}
-	ReloadLogging()
-	defer StopLogging()
+	_ = ReloadLogging()
+	defer func() { _ = StopLogging() }()
 	if Build.Profiling {
 		if v := c.String("cdk-profile"); !utils.IsEmpty(v) {
 			v = strings.ToLower(v)
