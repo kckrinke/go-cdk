@@ -56,7 +56,7 @@ func ParseRegion(value string) (point Region, ok bool) {
 }
 
 func (r Region) String() string {
-	return fmt.Sprintf("{%v,%v}", r.Point2I.String(), r.Rectangle.String())
+	return fmt.Sprintf("{x:%v,y:%v,w:%v,h:%v}", r.X, r.Y, r.H, r.W)
 }
 
 func (r *Region) SetRegion(x, y, w, h int) {
