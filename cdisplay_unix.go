@@ -56,6 +56,9 @@ func (t *cDisplay) disengage() {
 func (t *cDisplay) initialize() error {
 	var err error
 	fd := int(os.Stdin.Fd())
+	if !term.IsTerminal(fd) {
+		return fmt.Errorf("display is not a terminal")
+	}
 	t.in = os.Stdin
 	t.out = os.Stdout
 	t.saved, err = term.GetState(fd)
