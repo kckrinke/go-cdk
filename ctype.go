@@ -14,49 +14,52 @@
 
 package cdk
 
-// ITYPE - Imaginary Type System
-//
-// This is a simple system for tracking and maintaining arbitrary classes of
-// `interface{}` based objects.
-
 import (
 	"fmt"
 	"sync"
 )
 
-// Base ITYPE tags
 const (
-	InvalidITypeID int      = -1
-	TypeNil        CTypeTag = ""
+	TypeNil CTypeTag = ""
 )
 
 type Type interface {
-	Items() []TypeItem
-	Add(item TypeItem) (id int)
+	New() interface{}
+	Items() []interface{}
+	Add(item interface{}) (id int)
 	Remove(item TypeItem) error
 }
 
 type CType struct {
 	tag   TypeTag
-	items []TypeItem
+	items []interface{}
+	new   func() interface{}
 
 	sync.Mutex
 }
 
-func NewType(tag TypeTag) Type {
+func NewType(tag TypeTag, constructor func() interface{}) Type {
 	return &CType{
 		tag:   tag,
-		items: make([]TypeItem, 0),
+		items: make([]interface{}, 0),
+		new:   constructor,
 	}
 }
 
-func (t *CType) Items() []TypeItem {
+func (t *CType) New() interface{} {
+	if t.new != nil {
+		return t.new()
+	}
+	return nil
+}
+
+func (t *CType) Items() []interface{} {
 	t.Lock()
 	defer t.Unlock()
 	return t.items
 }
 
-func (t *CType) Add(item TypeItem) (id int) {
+func (t *CType) Add(item interface{}) (id int) {
 	t.Lock()
 	defer t.Unlock()
 	t.items = append(t.items, item)
@@ -65,11 +68,15 @@ func (t *CType) Add(item TypeItem) (id int) {
 }
 
 func (t *CType) Remove(item TypeItem) error {
+	t.Lock()
+	defer t.Unlock()
 	var idx int
-	var itm TypeItem
+	var itm interface{}
 	for idx, itm = range t.items {
-		if itm.ObjectID() == item.ObjectID() {
-			break
+		if tt, ok := itm.(TypeItem); ok {
+			if tt.ObjectID() == item.ObjectID() {
+				break
+			}
 		}
 	}
 	count := len(t.items)
@@ -81,7 +88,7 @@ func (t *CType) Remove(item TypeItem) error {
 			t.items[idx+1:]...,
 		)
 	} else {
-		t.items = []TypeItem{}
+		t.items = []interface{}{}
 	}
 	return nil
 }

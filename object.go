@@ -19,56 +19,73 @@ import (
 )
 
 const (
-	TypeObject        CTypeTag = "cdk-object"
-	SignalDestroy     Signal   = "destroy"
-	SignalSetProperty Signal   = "set-property"
-	PropertyDebug     Property = "debug"
+	TypeObject           CTypeTag = "cdk-object"
+	SignalDestroy        Signal   = "destroy"
+	PropertyDebug        Property = "debug"
+	PropertyName         Property = "name"
+	PropertyTheme        Property = "theme"
+	PropertyThemeRequest Property = "theme-request"
 )
 
 func init() {
-	_ = TypesManager.AddType(TypeObject)
+	_ = TypesManager.AddType(TypeObject, func() interface{} { return nil })
 }
 
-// Basic object type
+// This is the base type for all complex CDK object types. The Object type
+// provides a means of installing properties, getting and setting property
+// values
 type Object interface {
-	Signaling
+	MetaData
 
 	Init() (already bool)
+	InitWithProperties(properties map[Property]string) (already bool, err error)
 	Destroy()
-	GetTheme() Theme
+	GetName() (name string)
+	SetName(name string)
+	GetTheme() (theme Theme)
 	SetTheme(theme Theme)
 	GetThemeRequest() (theme Theme)
 	SetThemeRequest(theme Theme)
-	IsProperty(name Property) bool
-	RegisterProperty(name Property, kind PropertyType, write bool, def interface{}) error
-	GetBoolProperty(name Property) (value bool, err error)
-	SetBoolProperty(name Property, value bool) error
-	GetStringProperty(name Property) (value string, err error)
-	SetStringProperty(name Property, value string) error
-	GetIntProperty(name Property) (value int, err error)
-	SetIntProperty(name Property, value int) error
-	GetFloatProperty(name Property) (value float64, err error)
-	SetFloatProperty(name Property, value float64) error
 }
 
 type CObject struct {
-	CSignaling
-
-	theme        Theme
-	themeRequest *Theme
-	properties   []*cObjectProperty
+	CMetaData
 }
 
 func (o *CObject) Init() (already bool) {
-	if o.InitTypeItem(TypeObject) {
+	if o.InitTypeItem(TypeObject, o) {
 		return true
 	}
 	o.CSignaling.Init()
-	o.theme = DefaultColorTheme
-	o.themeRequest = nil
-	o.properties = make([]*cObjectProperty, 0)
-	_ = o.RegisterProperty(PropertyDebug, BoolProperty, true, false)
+	o.properties = make([]*cProperty, 0)
+	_ = o.InstallProperty(PropertyDebug, BoolProperty, true, false)
+	_ = o.InstallProperty(PropertyName, StringProperty, true, nil)
+	_ = o.InstallProperty(PropertyTheme, ThemeProperty, true, DefaultColorTheme)
+	_ = o.InstallProperty(PropertyThemeRequest, ThemeProperty, true, DefaultColorTheme)
+	o.Connect(
+		SignalSetProperty,
+		Signal(fmt.Sprintf("%v.set-property--name", o.ObjectName())),
+		func(data []interface{}, argv ...interface{}) EventFlag {
+			if len(argv) == 3 {
+				if key, ok := argv[1].(Property); ok && key == PropertyName {
+					if name, ok := argv[2].(string); ok {
+						o.CTypeItem.SetName(name)
+					}
+				}
+			}
+			return EVENT_PASS
+		})
 	return false
+}
+
+func (o *CObject) InitWithProperties(properties map[Property]string) (already bool, err error) {
+	if o.Init() {
+		return true, nil
+	}
+	if err = o.SetProperties(properties); err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
 func (o *CObject) Destroy() {
@@ -79,188 +96,45 @@ func (o *CObject) Destroy() {
 	}
 }
 
-func (o *CObject) GetTheme() Theme {
-	return o.theme
+func (o *CObject) GetName() (name string) {
+	var err error
+	if name, err = o.GetStringProperty(PropertyName); err != nil {
+		return ""
+	}
+	return
+}
+
+func (o *CObject) SetName(name string) {
+	if err := o.SetStringProperty(PropertyName, name); err != nil {
+		o.LogErr(err)
+	}
+}
+
+func (o *CObject) GetTheme() (theme Theme) {
+	var err error
+	if theme, err = o.GetThemeProperty(PropertyTheme); err != nil {
+		o.LogErr(err)
+	}
+	return
 }
 
 func (o *CObject) SetTheme(theme Theme) {
-	o.theme = theme
+	if err := o.SetThemeProperty(PropertyTheme, theme); err != nil {
+		o.LogErr(err)
+	}
 }
 
 func (o *CObject) GetThemeRequest() (theme Theme) {
-	if o.themeRequest != nil {
-		return *o.themeRequest
+	var err error
+	if theme, err = o.GetThemeProperty(PropertyThemeRequest); err != nil {
+		o.LogErr(err)
+		theme = o.GetTheme()
 	}
-	theme = o.GetTheme()
 	return
 }
 
 func (o *CObject) SetThemeRequest(theme Theme) {
-	o.themeRequest = &theme
-}
-
-func (o *CObject) IsProperty(name Property) bool {
-	if prop := o.getProperty(name); prop != nil {
-		return true
+	if err := o.SetThemeProperty(PropertyThemeRequest, theme); err != nil {
+		o.LogErr(err)
 	}
-	return false
-}
-
-func (o *CObject) RegisterProperty(name Property, kind PropertyType, write bool, def interface{}) error {
-	existing := o.getProperty(name)
-	if existing != nil {
-		return fmt.Errorf("property exists: %v", name)
-	}
-	o.properties = append(
-		o.properties,
-		newProperty(name, kind, write, def),
-	)
-	return nil
-}
-
-func (o *CObject) GetBoolProperty(name Property) (value bool, err error) {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == BoolProperty {
-			if v, ok := prop.Value().(bool); ok {
-				return v, nil
-			}
-			if v, ok := prop.Default().(bool); ok {
-				return v, nil
-			}
-		}
-		return false, fmt.Errorf("%v.(%v) property is not a bool", name, prop.Type())
-	}
-	return false, fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) SetBoolProperty(name Property, value bool) error {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == BoolProperty {
-			return o.setProperty(name, value)
-		}
-		return fmt.Errorf("%v.(%v) property is not a bool", name, prop.Type())
-	}
-	return fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) GetStringProperty(name Property) (value string, err error) {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == StringProperty {
-			if v, ok := prop.Value().(string); ok {
-				return v, nil
-			}
-			if v, ok := prop.Default().(string); ok {
-				return v, nil
-			}
-		}
-		return "", fmt.Errorf("%v.(%v) property is not a string", name, prop.Type())
-	}
-	return "", fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) SetStringProperty(name Property, value string) error {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == StringProperty {
-			return o.setProperty(name, value)
-		}
-		return fmt.Errorf("%v.(%v) property is not a string", name, prop.Type())
-	}
-	return fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) GetIntProperty(name Property) (value int, err error) {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == IntProperty {
-			if v, ok := prop.Value().(int); ok {
-				return v, nil
-			}
-			if v, ok := prop.Default().(int); ok {
-				return v, nil
-			}
-		}
-		return 0, fmt.Errorf("%v.(%v) property is not an int", name, prop.Type())
-	}
-	return 0, fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) SetIntProperty(name Property, value int) error {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == IntProperty {
-			return o.setProperty(name, value)
-		}
-		return fmt.Errorf("%v.(%v) property is not an int", name, prop.Type())
-	}
-	return fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) GetFloatProperty(name Property) (value float64, err error) {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == FloatProperty {
-			if v, ok := prop.Value().(float64); ok {
-				return v, nil
-			}
-			if v, ok := prop.Default().(float64); ok {
-				return v, nil
-			}
-		}
-		return 0.0, fmt.Errorf("%v.(%v) property is not a float", name, prop.Type())
-	}
-	return 0.0, fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) SetFloatProperty(name Property, value float64) error {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == FloatProperty {
-			return o.setProperty(name, value)
-		}
-		return fmt.Errorf("%v.(%v) property is not a float64", name, prop.Type())
-	}
-	return fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) GetStructProperty(name Property) (value interface{}, err error) {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == StructProperty {
-			if v := prop.Value(); v != nil {
-				return v, nil
-			}
-			return prop.Default(), nil
-		}
-		return 0, fmt.Errorf("%v.(%v) property is not a struct", name, prop.Type())
-	}
-	return 0, fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) SetStructProperty(name Property, value interface{}) error {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.Type() == StructProperty {
-			return o.setProperty(name, value)
-		}
-		return fmt.Errorf("%v.(%v) property is not a struct", name, prop.Type())
-	}
-	return fmt.Errorf("property not found: %v", name)
-}
-
-func (o *CObject) getProperty(name Property) *cObjectProperty {
-	for _, prop := range o.properties {
-		if prop.Name() == name {
-			return prop
-		}
-	}
-	return nil
-}
-
-// set the value for a named property
-func (o *CObject) setProperty(name Property, value interface{}) error {
-	if prop := o.getProperty(name); prop != nil {
-		if prop.ReadOnly() {
-			return fmt.Errorf("cannot set read-only property: %v", name)
-		}
-		if f := o.Emit(SignalSetProperty, o, name, value); f == EVENT_PASS {
-			if err := prop.Set(value); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

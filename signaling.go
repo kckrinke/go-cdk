@@ -24,7 +24,7 @@ const (
 )
 
 func init() {
-	_ = TypesManager.AddType(TypeSignaling)
+	_ = TypesManager.AddType(TypeSignaling, func() interface{} { return nil })
 }
 
 type Signaling interface {
@@ -49,7 +49,7 @@ type CSignaling struct {
 }
 
 func (o *CSignaling) Init() (already bool) {
-	if o.InitTypeItem(TypeSignaling) {
+	if o.InitTypeItem(TypeSignaling, o) {
 		return true
 	}
 	o.CTypeItem.Init()

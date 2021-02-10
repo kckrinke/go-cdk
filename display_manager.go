@@ -45,7 +45,7 @@ const (
 )
 
 func init() {
-	_ = TypesManager.AddType(TypeDisplayManager)
+	_ = TypesManager.AddType(TypeDisplayManager, func() interface{} { return &CDisplayManager{} })
 }
 
 type DisplayCallbackFn = func(d DisplayManager) error
@@ -126,32 +126,12 @@ func NewDisplayManager(title string, ttyPath string) *CDisplayManager {
 	return d
 }
 
-func GetDisplayManager() (dm DisplayManager) {
-	dm = cdkDisplayManager
-	return
-}
-
-func GetCurrentTheme() (theme Theme) {
-	theme = DefaultColorTheme
-	if cdkDisplayManager != nil {
-		theme = cdkDisplayManager.GetTheme()
-	}
-	return
-}
-
-func SetCurrentTheme(theme Theme) {
-	if cdkDisplayManager != nil {
-		cdkDisplayManager.SetTheme(theme)
-	}
-}
-
-// Initialization
 func (d *CDisplayManager) Init() (already bool) {
 	check := TypesManager.GetTypeItems(TypeDisplayManager)
 	if len(check) > 0 {
 		FatalF("only one display permitted at a time")
 	}
-	if d.InitTypeItem(TypeDisplayManager) {
+	if d.InitTypeItem(TypeDisplayManager, d) {
 		return true
 	}
 	d.CObject.Init()
@@ -172,6 +152,25 @@ func (d *CDisplayManager) Init() (already bool) {
 	cdkDisplayManager = d
 	d.Emit(SignalDisplayInit, d)
 	return false
+}
+
+func GetDisplayManager() (dm DisplayManager) {
+	dm = cdkDisplayManager
+	return
+}
+
+func GetCurrentTheme() (theme Theme) {
+	theme = DefaultColorTheme
+	if cdkDisplayManager != nil {
+		theme = cdkDisplayManager.GetTheme()
+	}
+	return
+}
+
+func SetCurrentTheme(theme Theme) {
+	if cdkDisplayManager != nil {
+		cdkDisplayManager.SetTheme(theme)
+	}
 }
 
 func (d *CDisplayManager) Destroy() {
@@ -522,7 +521,6 @@ func (d *CDisplayManager) screenRequestWorker() {
 		if err := d.app.InitUI(); err != nil {
 			FatalDF(1, "%v", err)
 		}
-
 	}
 	for d.running {
 		switch <-d.requests {

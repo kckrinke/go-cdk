@@ -19,7 +19,7 @@ const (
 )
 
 func init() {
-	_ = TypesManager.AddType(TypeOffscreenWindow)
+	_ = TypesManager.AddType(TypeOffscreenWindow, func() interface{} { return &COffscreenWindow{} })
 }
 
 // Basic window interface
@@ -58,7 +58,7 @@ func NewOffscreenWindow(title string) Window {
 }
 
 func (w *COffscreenWindow) Init() bool {
-	if w.InitTypeItem(TypeWindow) {
+	if w.InitTypeItem(TypeWindow, w) {
 		return true
 	}
 	w.CObject.Init()

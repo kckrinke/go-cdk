@@ -22,7 +22,7 @@ const (
 )
 
 func init() {
-	_ = TypesManager.AddType(TypeWindow)
+	_ = TypesManager.AddType(TypeWindow, func() interface{} { return &CWindow{} })
 }
 
 // Basic window interface
@@ -57,7 +57,7 @@ func NewWindow(title string, d DisplayManager) Window {
 }
 
 func (w *CWindow) Init() bool {
-	if w.InitTypeItem(TypeWindow) {
+	if w.InitTypeItem(TypeWindow, w) {
 		return true
 	}
 	w.CObject.Init()

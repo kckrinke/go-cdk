@@ -21,7 +21,7 @@ import (
 
 type TypeItem interface {
 	Init() (already bool)
-	InitTypeItem(tag TypeTag) (already bool)
+	InitTypeItem(tag TypeTag, thing interface{}) (already bool)
 	IsValid() bool
 	String() string
 	GetTypeTag() TypeTag
@@ -59,12 +59,17 @@ func NewTypeItem(tag CTypeTag, name string) TypeItem {
 	}
 }
 
-func (o *CTypeItem) InitTypeItem(tag TypeTag) (already bool) {
+func (o *CTypeItem) InitTypeItem(tag TypeTag, thing interface{}) (already bool) {
 	o.Lock()
 	defer o.Unlock()
 	already = o.valid
 	if !already && o.typeTag == TypeNil {
 		o.typeTag = tag.Tag()
+	}
+	var err error
+	o.id, err = TypesManager.AddTypeItem(o.typeTag, thing)
+	if err != nil {
+		FatalDF(1, "failed to add self to \"%v\" type: %v", o.typeTag, err)
 	}
 	return
 }
