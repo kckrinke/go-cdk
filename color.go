@@ -1082,6 +1082,20 @@ func GetColor(name string) Color {
 	return ColorDefault
 }
 
+// GetColor creates a Color from a color name (W3C name). A hex value may
+// be supplied as a string in the format "#ffffff".
+func ParseColor(name string) (c Color, ok bool) {
+	if c, ok := ColorNames[name]; ok {
+		return c, true
+	}
+	if len(name) == 7 && name[0] == '#' {
+		if v, e := strconv.ParseInt(name[1:], 16, 32); e == nil {
+			return NewHexColor(int32(v)), true
+		}
+	}
+	return ColorDefault, false
+}
+
 // PaletteColor creates a color based on the palette index.
 func PaletteColor(index int) Color {
 	return Color(index) | ColorValid
