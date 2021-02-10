@@ -129,7 +129,7 @@ func NewDisplayManager(title string, ttyPath string) *CDisplayManager {
 func (d *CDisplayManager) Init() (already bool) {
 	check := TypesManager.GetTypeItems(TypeDisplayManager)
 	if len(check) > 0 {
-		FatalF("only one display permitted at a time")
+		FatalDF(1, "only one display manager permitted at a time")
 	}
 	if d.InitTypeItem(TypeDisplayManager, d) {
 		return true
