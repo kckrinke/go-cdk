@@ -110,17 +110,26 @@ func (r *CTypeRegistry) AddTypeItem(tag TypeTag, item interface{}) (id int, err 
 	return
 }
 
+var nextID = 1
+
 func (r *CTypeRegistry) GetNextID() (id int) {
-	id = 1 // first valid ID is 1
-	for _, t := range r.register {
-		for _, ti := range t.Items() {
-			if tc, ok := ti.(TypeItem); ok {
-				if id == tc.ObjectID() {
-					id += 1
+	id = nextID
+	checker := func(index int) bool {
+		for _, t := range r.register {
+			for _, item := range t.Items() {
+				if ci, ok := item.(TypeItem); ok {
+					if index == ci.ObjectID() {
+						return true
+					}
 				}
 			}
 		}
+		return false
 	}
+	for checker(id) {
+		id += 1
+	}
+	nextID = id
 	return
 }
 
