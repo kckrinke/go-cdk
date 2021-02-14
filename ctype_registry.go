@@ -31,6 +31,8 @@ type TypeRegistry interface {
 	HasType(tag TypeTag) (exists bool)
 	GetType(tag TypeTag) (t Type, found bool)
 	AddTypeItem(tag TypeTag, item interface{}) (id int, err error)
+	HasID(index int) bool
+	GetNextID() (id int)
 	GetTypeItems(tag TypeTag) []interface{}
 	GetTypeItemByID(id int) interface{}
 	GetTypeItemByName(name string) interface{}
@@ -110,23 +112,24 @@ func (r *CTypeRegistry) AddTypeItem(tag TypeTag, item interface{}) (id int, err 
 	return
 }
 
+func (r *CTypeRegistry) HasID(index int) bool {
+	for _, t := range r.register {
+		for _, item := range t.Items() {
+			if ci, ok := item.(TypeItem); ok {
+				if index == ci.ObjectID() {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 var nextID = 1
 
 func (r *CTypeRegistry) GetNextID() (id int) {
 	id = nextID
-	checker := func(index int) bool {
-		for _, t := range r.register {
-			for _, item := range t.Items() {
-				if ci, ok := item.(TypeItem); ok {
-					if index == ci.ObjectID() {
-						return true
-					}
-				}
-			}
-		}
-		return false
-	}
-	for checker(id) {
+	for r.HasID(id) {
 		id += 1
 	}
 	nextID = id
