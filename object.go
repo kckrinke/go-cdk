@@ -18,14 +18,7 @@ import (
 	"fmt"
 )
 
-const (
-	TypeObject           CTypeTag = "cdk-object"
-	SignalDestroy        Signal   = "destroy"
-	PropertyDebug        Property = "debug"
-	PropertyName         Property = "name"
-	PropertyTheme        Property = "theme"
-	PropertyThemeRequest Property = "theme-request"
-)
+const TypeObject CTypeTag = "cdk-object"
 
 func init() {
 	_ = TypesManager.AddType(TypeObject, func() interface{} { return nil })
@@ -57,7 +50,7 @@ func (o *CObject) Init() (already bool) {
 		return true
 	}
 	o.CSignaling.Init()
-	o.properties = make([]*cProperty, 0)
+	o.properties = make([]*CProperty, 0)
 	_ = o.InstallProperty(PropertyDebug, BoolProperty, true, false)
 	_ = o.InstallProperty(PropertyName, StringProperty, true, nil)
 	_ = o.InstallProperty(PropertyTheme, ThemeProperty, true, DefaultColorTheme)
@@ -138,3 +131,17 @@ func (o *CObject) SetThemeRequest(theme Theme) {
 		o.LogErr(err)
 	}
 }
+
+// emitted when the object instance is destroyed
+const SignalDestroy Signal = "destroy"
+
+// request that the object be rendered with additional features useful to
+// debugging custom Widget development
+const PropertyDebug Property = "debug"
+
+// property wrapper around the CTypeItem name field
+const PropertyName Property = "name"
+
+const PropertyTheme        Property = "theme"
+
+const PropertyThemeRequest Property = "theme-request"

@@ -32,11 +32,14 @@ type MetaData interface {
 
 	Init() (already bool)
 	InstallProperty(name Property, kind PropertyType, write bool, def interface{}) error
-	OverloadProperty(name Property, kind PropertyType, write bool, def interface{}) error
+	InstallBuildableProperty(name Property, kind PropertyType, write bool, def interface{}) error
+	OverloadProperty(name Property, kind PropertyType, write bool, buildable bool, def interface{}) error
 	ListProperties() (properties []Property)
+	ListBuildableProperties() (properties []Property)
 	SetProperties(properties map[Property]string) (err error)
 	IsProperty(name Property) bool
-	GetProperty(name Property) *cProperty
+	IsBuildableProperty(name Property) bool
+	GetProperty(name Property) *CProperty
 	SetPropertyFromString(name Property, value string) error
 	SetProperty(name Property, value interface{}) error
 	GetBoolProperty(name Property) (value bool, err error)
@@ -66,7 +69,7 @@ type MetaData interface {
 type CMetaData struct {
 	CSignaling
 
-	properties []*cProperty
+	properties []*CProperty
 }
 
 func (o *CMetaData) Init() (already bool) {
@@ -74,7 +77,7 @@ func (o *CMetaData) Init() (already bool) {
 		return true
 	}
 	o.CSignaling.Init()
-	o.properties = make([]*cProperty, 0)
+	o.properties = make([]*CProperty, 0)
 	return false
 }
 
@@ -85,12 +88,24 @@ func (o *CMetaData) InstallProperty(name Property, kind PropertyType, write bool
 	}
 	o.properties = append(
 		o.properties,
-		newProperty(name, kind, write, def),
+		NewProperty(name, kind, write, false, def),
 	)
 	return nil
 }
 
-func (o *CMetaData) OverloadProperty(name Property, kind PropertyType, write bool, def interface{}) error {
+func (o *CMetaData) InstallBuildableProperty(name Property, kind PropertyType, write bool, def interface{}) error {
+	existing := o.GetProperty(name)
+	if existing != nil {
+		return fmt.Errorf("property exists: %v", name)
+	}
+	o.properties = append(
+		o.properties,
+		NewProperty(name, kind, write, true, def),
+	)
+	return nil
+}
+
+func (o *CMetaData) OverloadProperty(name Property, kind PropertyType, write bool, buildable bool, def interface{}) error {
 	existing := o.GetProperty(name)
 	if existing == nil {
 		return fmt.Errorf("property not found: %v", name)
@@ -106,7 +121,7 @@ func (o *CMetaData) OverloadProperty(name Property, kind PropertyType, write boo
 	if index == -1 {
 		o.properties = append(
 			o.properties,
-			newProperty(overload, kind, write, def),
+			NewProperty(overload, kind, write, buildable, def),
 		)
 	} else {
 		o.properties[index].kind = kind
@@ -123,12 +138,27 @@ func (o *CMetaData) ListProperties() (properties []Property) {
 	return
 }
 
+func (o *CMetaData) ListBuildableProperties() (properties []Property) {
+	for _, prop := range o.properties {
+		if prop.Buildable() {
+			properties = append(properties, prop.Name())
+		}
+	}
+	return
+}
+
 func (o *CMetaData) SetProperties(properties map[Property]string) (err error) {
 	for name, value := range properties {
 		if prop := o.GetProperty(name); prop != nil {
-			if err = prop.SetFromString(value); err != nil {
-				break
+			if prop.Buildable() {
+				if err = prop.SetFromString(value); err != nil {
+					o.LogError("error setting \"%v\" property from string: \"%v\" - %v", name, value, err)
+				}
+			} else {
+				o.LogTrace("property not buildable: %v", name)
 			}
+		} else {
+			o.LogTrace("property not found: %v", name)
 		}
 	}
 	return
@@ -141,7 +171,14 @@ func (o *CMetaData) IsProperty(name Property) bool {
 	return false
 }
 
-func (o *CMetaData) GetProperty(name Property) *cProperty {
+func (o *CMetaData) IsBuildableProperty(name Property) bool {
+	if prop := o.GetProperty(name); prop != nil && prop.Buildable() {
+		return true
+	}
+	return false
+}
+
+func (o *CMetaData) GetProperty(name Property) *CProperty {
 	// check for overloaded properties first
 	overload := Property(fmt.Sprintf("%v.overload", name))
 	for _, prop := range o.properties {

@@ -26,37 +26,43 @@ func (p Property) String() string {
 	return string(p)
 }
 
-type cProperty struct {
-	name  Property
-	kind  PropertyType
-	write bool
-	def   interface{}
-	value interface{}
+type CProperty struct {
+	name      Property
+	kind      PropertyType
+	write     bool
+	buildable bool
+	def       interface{}
+	value     interface{}
 }
 
-func newProperty(name Property, kind PropertyType, write bool, def interface{}) (property *cProperty) {
-	property = new(cProperty)
+func NewProperty(name Property, kind PropertyType, write bool, buildable bool, def interface{}) (property *CProperty) {
+	property = new(CProperty)
 	property.name = name
 	property.kind = kind
 	property.write = write
+	property.buildable = buildable
 	property.def = def
 	property.value = def
 	return
 }
 
-func (p *cProperty) Name() Property {
+func (p *CProperty) Name() Property {
 	return p.name
 }
 
-func (p *cProperty) Type() PropertyType {
+func (p *CProperty) Type() PropertyType {
 	return p.kind
 }
 
-func (p *cProperty) ReadOnly() bool {
+func (p *CProperty) ReadOnly() bool {
 	return !p.write
 }
 
-func (p *cProperty) Set(value interface{}) error {
+func (p *CProperty) Buildable() bool {
+	return p.buildable
+}
+
+func (p *CProperty) Set(value interface{}) error {
 	if p.write {
 		p.value = value
 		return nil
@@ -64,7 +70,7 @@ func (p *cProperty) Set(value interface{}) error {
 	return fmt.Errorf("error setting read-only property: %v", p.name)
 }
 
-func (p *cProperty) SetFromString(value string) error {
+func (p *CProperty) SetFromString(value string) error {
 	switch p.Type() {
 	case BoolProperty:
 		switch strings.ToLower(value) {
@@ -75,6 +81,12 @@ func (p *cProperty) SetFromString(value string) error {
 	case StringProperty:
 		return p.Set(value)
 	case IntProperty:
+		if strings.HasSuffix(value, "px") {
+			value = strings.Replace(value, "px", "", -1)
+		}
+		if strings.HasSuffix(value, "%") {
+			value = strings.Replace(value, "%", "", -1)
+		}
 		if v, err := strconv.Atoi(value); err != nil {
 			return err
 		} else {
@@ -124,12 +136,12 @@ func (p *cProperty) SetFromString(value string) error {
 	return fmt.Errorf("error")
 }
 
-func (p *cProperty) Default() (def interface{}) {
+func (p *CProperty) Default() (def interface{}) {
 	def = p.def
 	return
 }
 
-func (p *cProperty) Value() (value interface{}) {
+func (p *CProperty) Value() (value interface{}) {
 	if p.value == nil {
 		value = p.def
 	} else {
