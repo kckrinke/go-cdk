@@ -49,7 +49,7 @@ func (o *CObject) Init() (already bool) {
 	if o.InitTypeItem(TypeObject, o) {
 		return true
 	}
-	o.CSignaling.Init()
+	o.CMetaData.Init()
 	o.properties = make([]*CProperty, 0)
 	_ = o.InstallProperty(PropertyDebug, BoolProperty, true, false)
 	_ = o.InstallProperty(PropertyName, StringProperty, true, nil)
