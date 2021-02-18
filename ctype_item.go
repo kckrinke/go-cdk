@@ -42,20 +42,22 @@ type TypeItem interface {
 }
 
 type CTypeItem struct {
-	id      int
-	typeTag CTypeTag
-	name    string
-	valid   bool
+	id       int
+	typeTag  CTypeTag
+	name     string
+	ancestry []TypeTag
+	valid    bool
 
 	sync.Mutex
 }
 
 func NewTypeItem(tag CTypeTag, name string) TypeItem {
 	return &CTypeItem{
-		id:      0,
-		typeTag: tag,
-		name:    name,
-		valid:   false,
+		id:       0,
+		typeTag:  tag,
+		name:     name,
+		ancestry: make([]TypeTag, 0),
+		valid:    false,
 	}
 }
 
@@ -72,6 +74,8 @@ func (o *CTypeItem) InitTypeItem(tag TypeTag, thing interface{}) (already bool) 
 			if o.id, err = TypesManager.AddTypeItem(o.typeTag, thing); err != nil {
 				FatalDF(1, "failed to add self to \"%v\" type: %v", o.typeTag, err)
 			}
+		} else {
+			o.ancestry = append(o.ancestry, tag)
 		}
 	}
 	return
