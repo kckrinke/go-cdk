@@ -17,25 +17,25 @@
 package cdk
 
 import (
-	"fmt"
+	// "fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
-	"golang.org/x/term"
+	"github.com/kckrinke/go-term"
 )
 
 // engage is used to place the terminal in raw mode and establish screen size, etc.
 // Thing of this is as CDK "engaging" the clutch, as it's going to be driving the
 // terminal interface.
 func (t *cDisplay) engage() error {
-	stdin := int(t.in.Fd())
-	if _, err := term.MakeRaw(stdin); err != nil {
+	if err := term.RawMode(t.term); err != nil {
 		return err
 	}
-	if w, h, err := term.GetSize(stdin); err == nil && w != 0 && h != 0 {
+	if w, h, err := t.term.Winsz(); err == nil && w > 0 && h > 0 {
 		t.cells.Resize(w, h)
-		t.PostEvent(NewEventResize(w, h))
+		_ = t.PostEvent(NewEventResize(w, h))
 	}
 	return nil
 }
@@ -45,8 +45,8 @@ func (t *cDisplay) engage() error {
 // can take over the terminal interface.  This restores the TTY mode that was
 // present when the application was first started.
 func (t *cDisplay) disengage() {
-	if t.in != nil {
-		term.Restore(int(t.in.Fd()), t.saved)
+	if err := t.term.Restore(); err != nil {
+		ErrorF("error restoring terminal: %v", err)
 	}
 }
 
@@ -55,20 +55,16 @@ func (t *cDisplay) disengage() {
 // so that it can be restored when the application terminates.
 func (t *cDisplay) initialize() error {
 	var err error
-	fd := int(os.Stdin.Fd())
-	if !term.IsTerminal(fd) {
-		return fmt.Errorf("display is not a terminal")
+	if t.term, err = term.Open("/dev/tty"); err != nil {
+		return err
 	}
-	t.in = os.Stdin
-	t.out = os.Stdout
-	t.saved, err = term.GetState(fd)
-	if err != nil {
+	if err = term.RawMode(t.term); err != nil {
 		return err
 	}
 	signal.Notify(t.sigWinch, syscall.SIGWINCH)
-
-	if err := t.engage(); err != nil {
-		return err
+	if w, h, e := t.getWinSize(); e == nil && w != 0 && h != 0 {
+		t.cells.Resize(w, h)
+		_ = t.PostEvent(NewEventResize(w, h))
 	}
 	return nil
 }
@@ -76,17 +72,51 @@ func (t *cDisplay) initialize() error {
 // finalize is used to at application shutdown, and restores the terminal
 // to it's initial state.  It should not be called more than once.
 func (t *cDisplay) finalize() {
-
 	signal.Stop(t.sigWinch)
-
 	<-t.inDoneQ
-
-	t.disengage()
+	if t.term != nil {
+		if err := term.CBreakMode(t.term); err != nil {
+			ErrorF("error setting CBreakMode: %v", err)
+		}
+		if err := t.term.Restore(); err != nil {
+			ErrorF("error restoring terminal: %v", err)
+		}
+		if err := t.term.Close(); err != nil {
+			ErrorF("error closing terminal: %v", err)
+		}
+	}
 }
 
 // getWinSize is called to obtain the terminal dimensions.
-func (t *cDisplay) getWinSize() (int, int, error) {
-	return term.GetSize(int(t.in.Fd()))
+func (t *cDisplay) getWinSize() (w, h int, err error) {
+	w, h, err = t.term.Winsz()
+	if err != nil {
+		w, h = -1, -1
+		return
+	}
+	if w == 0 {
+		colsEnv := os.Getenv("COLUMNS")
+		if colsEnv != "" {
+			if w, err = strconv.Atoi(colsEnv); err != nil {
+				w, h = -1, -1
+				return
+			}
+		} else {
+			w = t.ti.Columns
+		}
+	}
+	if h == 0 {
+		rowsEnv := os.Getenv("LINES")
+		if rowsEnv != "" {
+			if h, err = strconv.Atoi(rowsEnv); err != nil {
+				w, h = -1, -1
+				return
+			}
+		} else {
+			h = t.ti.Lines
+		}
+	}
+	return
 }
 
 // Beep emits a beep to the terminal.

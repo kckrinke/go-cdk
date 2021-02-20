@@ -20,7 +20,7 @@ package cdk
 import (
 	"errors"
 
-	"github.com/gdamore/tcell/v2/terminfo"
+	"github.com/kckrinke/go-terminfo"
 )
 
 func loadDynamicTerminfo(_ string) (*terminfo.Terminfo, error) {

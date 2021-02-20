@@ -26,14 +26,14 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"golang.org/x/term"
 	"golang.org/x/text/transform"
 
-	"github.com/gdamore/tcell/v2/terminfo"
 	"github.com/jackdoe/go-gpmctl"
+	"github.com/kckrinke/go-term"
+	"github.com/kckrinke/go-terminfo"
 
 	// import the stock terminals
-	_ "github.com/gdamore/tcell/v2/terminfo/base"
+	_ "github.com/kckrinke/go-terminfo/base"
 )
 
 var (
@@ -91,8 +91,7 @@ type cDisplay struct {
 	w            int
 	finished     bool
 	cells        *CellBuffer
-	in           *os.File
-	out          *os.File
+	term         *term.Term
 	buffering    bool // true if we are collecting writes to buf instead of sending directly to out
 	buf          bytes.Buffer
 	curStyle     Style
@@ -126,7 +125,6 @@ type cDisplay struct {
 	finishOnce   sync.Once
 	enablePaste  string
 	disablePaste string
-	saved        *term.State
 	gpmRunning   bool
 
 	sync.Mutex
@@ -765,7 +763,7 @@ func (t *cDisplay) writeString(s string) {
 	if t.buffering {
 		_, _ = io.WriteString(&t.buf, s)
 	} else {
-		_, _ = io.WriteString(t.out, s)
+		_, _ = t.term.Write([]byte(s))
 	}
 }
 
@@ -773,7 +771,7 @@ func (t *cDisplay) TPuts(s string) {
 	if t.buffering {
 		t.ti.TPuts(&t.buf, s)
 	} else {
-		t.ti.TPuts(t.out, s)
+		t.term.Write([]byte(s))
 	}
 }
 
@@ -841,7 +839,7 @@ func (t *cDisplay) draw() {
 	// restore the cursor
 	t.showCursor()
 
-	_, _ = t.buf.WriteTo(t.out)
+	_, _ = t.buf.WriteTo(t.term)
 }
 
 func (t *cDisplay) EnableGPM() {
@@ -1539,7 +1537,7 @@ func (t *cDisplay) inputLoop() {
 
 	for {
 		chunk := make([]byte, 128)
-		n, e := t.in.Read(chunk)
+		n, e := t.term.Read(chunk)
 		switch e {
 		case io.EOF:
 		case nil:
