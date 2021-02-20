@@ -101,21 +101,18 @@ func (o *CSignaling) Connect(signal, handle Signal, c SignalListenerFn, data ...
 
 // Disconnect callback from signal identified by handle
 func (o *CSignaling) Disconnect(signal, handle Signal) error {
-	id := -1
-	for i, s := range o.listeners[signal] {
-		if s.n == handle {
-			id = i
-			break
+	if _, ok := o.listeners[signal]; !ok {
+		return fmt.Errorf("signal not found: %v", signal)
+	}
+	var listeners []*CSignalListener
+	for _, s := range o.listeners[signal] {
+		if s.n != handle {
+			listeners = append(listeners, s)
+		} else {
+			o.LogTrace("disconnected %v listener: %v", signal, handle)
 		}
 	}
-	if id == -1 {
-		return fmt.Errorf("unknown signal handle: %v", handle)
-	}
-	o.LogTrace("disconnected %v listener: %v", signal, handle)
-	o.listeners[signal] = append(
-		o.listeners[signal][:id],
-		o.listeners[signal][id+1:]...,
-	)
+	o.listeners[signal] = listeners
 	return nil
 }
 
