@@ -224,10 +224,10 @@ func (d *CDisplayManager) CaptureDisplay(ttyPath string) {
 			FatalF("error initializing new display: %v", err)
 		}
 	}
-	defStyle := StyleDefault.
-		Background(ColorReset).
-		Foreground(ColorReset)
-	d.display.SetStyle(defStyle)
+	// defStyle := DefaultColorStyle.
+	// 	Background(ColorReset).
+	// 	Foreground(ColorReset)
+	d.display.SetStyle(DefaultColorStyle)
 	d.display.EnableMouse()
 	d.display.EnablePaste()
 	d.display.Clear()
