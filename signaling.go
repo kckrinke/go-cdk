@@ -67,6 +67,17 @@ func (o *CSignaling) Init() (already bool) {
 	return false
 }
 
+func (o *CSignaling) Handled(signal, handle Signal) (found bool) {
+	if listeners, ok := o.listeners[signal]; ok {
+		for _, listener := range listeners {
+			if listener.n == handle {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Connect callback to signal, identified by handle
 func (o *CSignaling) Connect(signal, handle Signal, c SignalListenerFn, data ...interface{}) {
 	if o.listeners == nil {

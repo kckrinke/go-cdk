@@ -72,8 +72,9 @@ type DisplayManager interface {
 	DefaultTheme() Theme
 
 	ActiveWindow() Window
+	ActiveCanvas() Canvas
 	SetActiveWindow(w Window)
-	AddWindow(w Window) int
+	AddWindow(w Window)
 	GetWindows() []Window
 
 	App() *CApp
@@ -101,8 +102,7 @@ type CDisplayManager struct {
 	captureCtrlC bool
 
 	active  int
-	windows []Window
-	wCanvas []Canvas
+	windows map[int]*cWindowCanvas
 
 	app      *CApp
 	ttyPath  string
@@ -116,6 +116,11 @@ type CDisplayManager struct {
 	events   chan Event
 	process  chan Event
 	requests chan ScreenStateReq
+}
+
+type cWindowCanvas struct {
+	window Window
+	canvas Canvas
 }
 
 func NewDisplayManager(title string, ttyPath string) *CDisplayManager {
@@ -145,7 +150,7 @@ func (d *CDisplayManager) Init() (already bool) {
 	d.process = make(chan Event, DisplayCallQueueCapacity)
 	d.requests = make(chan ScreenStateReq, DisplayCallQueueCapacity)
 
-	d.windows = []Window{}
+	d.windows = make(map[int]*cWindowCanvas)
 	d.active = -1
 	d.SetTheme(DefaultColorTheme)
 
@@ -281,71 +286,55 @@ func (d *CDisplayManager) DefaultTheme() Theme {
 }
 
 func (d *CDisplayManager) ActiveWindow() Window {
-	if len(d.windows) > d.active && d.active >= 0 {
-		return d.windows[d.active]
+	if wc, ok := d.windows[d.active]; ok {
+		return wc.window
 	}
-	if len(d.windows) == 0 {
-		return nil
-	}
-	d.active = 0
-	return d.windows[0]
+	d.LogWarn("active window not found: %v", d.active)
+	return nil
 }
 
-func (d *CDisplayManager) windowIndex(w Window) (index int) {
-	var cw Window
-	for index, cw = range d.windows {
-		if w.ObjectID() == cw.ObjectID() {
-			return
-		}
+func (d *CDisplayManager) ActiveCanvas() Canvas {
+	if wc, ok := d.windows[d.active]; ok {
+		return wc.canvas
 	}
-	index = -1
-	return
+	d.LogWarn("active canvas not found: %v", d.active)
+	return nil
 }
 
 func (d *CDisplayManager) SetActiveWindow(w Window) {
-	d.Lock()
-	id := -1
-	var window Window
-	for id, window = range d.windows {
-		if window == w {
-			break
-		}
+	// d.Lock()
+	if _, ok := d.windows[w.ObjectID()]; !ok {
+		// d.Unlock()
+		d.AddWindow(w)
+		// d.Lock()
 	}
-	if id > -1 {
-		d.active = id
-		d.Unlock()
-		return
-	}
-	d.Unlock()
-	d.active = d.AddWindow(w)
+	d.active = w.ObjectID()
+	// d.Unlock()
 }
 
-func (d *CDisplayManager) AddWindow(w Window) int {
-	d.Lock()
-	defer d.Unlock()
-	id := -1
-	var window Window
-	for id, window = range d.windows {
-		if window == w {
-			break
-		}
+func (d *CDisplayManager) AddWindow(w Window) {
+	// d.Lock()
+	// defer d.Unlock()
+	if _, ok := d.windows[w.ObjectID()]; ok {
+		d.LogWarn("window already added to display: %v", w.ObjectName())
+		return
 	}
-	if id > -1 {
-		d.LogError("display has window already: %v", w)
-		return id
-	}
+	w.SetDisplayManager(d)
 	size := MakeRectangle(0, 0)
 	if d.display != nil {
 		size = MakeRectangle(d.display.Size())
 	}
-	d.wCanvas = append(d.wCanvas, NewCanvas(Point2I{}, size, d.GetTheme().Content.Normal))
-	w.SetDisplayManager(d)
-	d.windows = append(d.windows, w)
-	return len(d.windows) - 1
+	wc := new(cWindowCanvas)
+	wc.canvas = NewCanvas(Point2I{}, size, d.GetTheme().Content.Normal)
+	wc.window = w
+	d.windows[w.ObjectID()] = wc
 }
 
-func (d *CDisplayManager) GetWindows() []Window {
-	return d.windows
+func (d *CDisplayManager) GetWindows() (windows []Window) {
+	for _, wc := range d.windows {
+		windows = append(windows, wc.window)
+	}
+	return
 }
 
 func (d *CDisplayManager) App() *CApp {
@@ -388,16 +377,12 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 		return d.Emit(SignalEventMouse, d, e)
 	case *EventResize:
 		if aw := d.ActiveWindow(); aw != nil {
-			wid := d.windowIndex(aw)
-			w, h := d.display.Size()
-			alloc := MakeRectangle(w, h)
-			if d.wCanvas[wid] != nil {
-				d.wCanvas[wid].Resize(alloc, d.GetTheme().Content.Normal)
+			if ac := d.ActiveCanvas(); ac != nil {
+				alloc := MakeRectangle(d.display.Size())
+				ac.Resize(alloc, d.GetTheme().Content.Normal)
 				if f := aw.ProcessEvent(evt); f == EVENT_STOP {
 					return EVENT_STOP
 				}
-			} else {
-				d.LogError("missing canvas for wid: %v", wid)
 			}
 		}
 		return d.Emit(SignalEventResize, d, e)
@@ -422,16 +407,19 @@ func (d *CDisplayManager) DrawScreen() EventFlag {
 		d.LogDebug("cannot draw the display, display missing a window")
 		return EVENT_PASS
 	}
-	wid := d.windowIndex(window)
-	if len(d.wCanvas) < wid {
-		d.LogError("missing canvas for window: %v", window.ObjectName())
-		return EVENT_PASS
-	}
-	if f := window.Draw(d.wCanvas[wid]); f == EVENT_STOP {
-		if err := d.wCanvas[wid].Render(d.display); err != nil {
-			d.LogErr(err)
+	if aw := d.ActiveWindow(); aw != nil {
+		if ac := d.ActiveCanvas(); ac != nil {
+			if f := window.Draw(ac); f == EVENT_STOP {
+				if err := ac.Render(d.display); err != nil {
+					d.LogErr(err)
+				}
+				return EVENT_STOP
+			}
+		} else {
+			d.LogError("missing canvas for active window: %v", aw.ObjectID())
 		}
-		return EVENT_STOP
+	} else {
+		d.LogError("active window not found")
 	}
 	return EVENT_PASS
 }
