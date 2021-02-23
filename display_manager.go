@@ -75,6 +75,9 @@ type DisplayManager interface {
 	ActiveCanvas() Canvas
 	SetActiveWindow(w Window)
 	AddWindow(w Window)
+	RemoveWindow(wid int)
+	AddWindowOverlay(pid int, overlay Window, region Region)
+	RemoveWindowOverlay(pid int, oid int)
 	GetWindows() []Window
 
 	App() *CApp
@@ -103,6 +106,7 @@ type CDisplayManager struct {
 
 	active  int
 	windows map[int]*cWindowCanvas
+	overlay map[int][]*cWindowCanvas
 
 	app      *CApp
 	ttyPath  string
@@ -121,6 +125,13 @@ type CDisplayManager struct {
 type cWindowCanvas struct {
 	window Window
 	canvas Canvas
+}
+
+func newWindowCanvas(w Window, origin Point2I, size Rectangle, style Style) *cWindowCanvas {
+	wc := new(cWindowCanvas)
+	wc.canvas = NewCanvas(origin, size, style)
+	wc.window = w
+	return wc
 }
 
 func NewDisplayManager(title string, ttyPath string) *CDisplayManager {
@@ -151,6 +162,7 @@ func (d *CDisplayManager) Init() (already bool) {
 	d.requests = make(chan ScreenStateReq, DisplayCallQueueCapacity)
 
 	d.windows = make(map[int]*cWindowCanvas)
+	d.overlay = make(map[int][]*cWindowCanvas)
 	d.active = -1
 	d.SetTheme(DefaultColorTheme)
 
@@ -324,10 +336,35 @@ func (d *CDisplayManager) AddWindow(w Window) {
 	if d.display != nil {
 		size = MakeRectangle(d.display.Size())
 	}
-	wc := new(cWindowCanvas)
-	wc.canvas = NewCanvas(Point2I{}, size, d.GetTheme().Content.Normal)
-	wc.window = w
-	d.windows[w.ObjectID()] = wc
+	d.windows[w.ObjectID()] = newWindowCanvas(w, Point2I{}, size, d.GetTheme().Content.Normal)
+	d.overlay[w.ObjectID()] = make([]*cWindowCanvas, 0)
+}
+
+func (d *CDisplayManager) RemoveWindow(wid int) {
+	if _, ok := d.windows[wid]; ok {
+		delete(d.windows, wid)
+	}
+	if _, ok := d.overlay[wid]; ok {
+		delete(d.overlay, wid)
+	}
+}
+
+func (d *CDisplayManager) AddWindowOverlay(pid int, overlay Window, region Region) {
+	if wc, ok := d.overlay[pid]; ok {
+		d.overlay[pid] = append(wc, newWindowCanvas(overlay, region.Origin(), region.Size(), d.GetTheme().Content.Normal))
+	}
+}
+
+func (d *CDisplayManager) RemoveWindowOverlay(pid int, oid int) {
+	if wc, ok := d.overlay[pid]; ok {
+		var revised []*cWindowCanvas
+		for _, oc := range wc {
+			if oc.window.ObjectID() != oid {
+				revised = append(revised, oc)
+			}
+		}
+		d.overlay[pid] = revised
+	}
 }
 
 func (d *CDisplayManager) GetWindows() (windows []Window) {
@@ -342,6 +379,13 @@ func (d *CDisplayManager) App() *CApp {
 }
 
 func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
+	if w := d.ActiveWindow(); w != nil {
+		if overlays, ok := d.overlay[w.ObjectID()]; ok {
+			if last := len(overlays) - 1; last > -1 {
+				return overlays[last].window.ProcessEvent(evt)
+			}
+		}
+	}
 	switch e := evt.(type) {
 	case *EventError:
 		d.LogErr(e)
@@ -410,6 +454,15 @@ func (d *CDisplayManager) DrawScreen() EventFlag {
 	if aw := d.ActiveWindow(); aw != nil {
 		if ac := d.ActiveCanvas(); ac != nil {
 			if f := window.Draw(ac); f == EVENT_STOP {
+				if overlays, ok := d.overlay[aw.ObjectID()]; ok {
+					for _, overlay := range overlays {
+						if of := overlay.window.Draw(overlay.canvas); of == EVENT_STOP {
+							if err := ac.Composite(overlay.canvas); err != nil {
+								d.LogErr(err)
+							}
+						}
+					}
+				}
 				if err := ac.Render(d.display); err != nil {
 					d.LogErr(err)
 				}
