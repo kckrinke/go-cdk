@@ -16,6 +16,7 @@ package cdk
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -83,6 +84,7 @@ type DisplayManager interface {
 	App() *CApp
 	SetEventFocus(widget interface{}) error
 	GetEventFocus() (widget interface{})
+	GetPriorEvent() (event Event)
 	ProcessEvent(evt Event) EventFlag
 	DrawScreen() EventFlag
 	RequestDraw()
@@ -113,6 +115,7 @@ type CDisplayManager struct {
 	display    Display
 	captured   bool
 	eventFocus interface{}
+	priorEvent Event
 
 	running  bool
 	waiting  bool
@@ -121,6 +124,9 @@ type CDisplayManager struct {
 	events   chan Event
 	process  chan Event
 	requests chan ScreenStateReq
+
+	eventMutex *sync.Mutex
+	drawMutex  *sync.Mutex
 }
 
 type cWindowCanvas struct {
@@ -165,11 +171,15 @@ func (d *CDisplayManager) Init() (already bool) {
 	d.process = make(chan Event, DisplayCallQueueCapacity)
 	d.requests = make(chan ScreenStateReq, DisplayCallQueueCapacity)
 
+	d.priorEvent = nil
 	d.eventFocus = nil
 	d.windows = make(map[int]*cWindowCanvas)
 	d.overlay = make(map[int][]*cWindowCanvas)
 	d.active = -1
 	d.SetTheme(DefaultColorTheme)
+
+	d.eventMutex = &sync.Mutex{}
+	d.drawMutex = &sync.Mutex{}
 
 	cdkDisplayManager = d
 	d.Emit(SignalDisplayInit, d)
@@ -452,7 +462,12 @@ func (d *CDisplayManager) GetEventFocus() (widget interface{}) {
 	return
 }
 
+func (d *CDisplayManager) GetPriorEvent() (event Event) {
+	return d.priorEvent
+}
+
 func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
+	d.eventMutex.Lock()
 	var overlayWindow Window
 	if w := d.ActiveWindow(); w != nil {
 		if overlay := d.getOverlay(w.ObjectID()); overlay != nil {
@@ -463,18 +478,22 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 				x -= origin.X
 				y -= origin.Y
 				evt = &EventMouse{
-					t: e.t,
+					t:   e.t,
 					btn: e.btn,
 					mod: e.mod,
-					x: x,
-					y: y,
-					s: e.s,
-					b: e.b,
+					x:   x,
+					y:   y,
+					s:   e.s,
+					b:   e.b,
 				}
 			}
 			overlayWindow = overlay.window
 		}
 	}
+	defer func() {
+		d.priorEvent = evt
+		d.eventMutex.Unlock()
+	}()
 	if d.eventFocus != nil {
 		if sensitive, ok := d.eventFocus.(Sensitive); ok {
 			return sensitive.ProcessEvent(evt)
@@ -538,8 +557,8 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 }
 
 func (d *CDisplayManager) DrawScreen() EventFlag {
-	d.Lock()
-	defer d.Unlock()
+	d.drawMutex.Lock()
+	defer d.drawMutex.Unlock()
 	if !d.captured || d.display == nil {
 		d.LogError("display not captured or otherwise missing")
 		return EVENT_PASS
