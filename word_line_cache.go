@@ -32,13 +32,14 @@ func (c *CWordLineCache) Clear() {
 }
 
 func (c *CWordLineCache) Hit(tag string, fn WordLineCacheFn) (lines []WordLine) {
-	if v, ok := c.cache[tag]; ok {
-		// TraceF("WordLineCache.Hit(): returning cached value for \"%v\"", tag)
-		return v
-	}
-	TraceF("WordLineCache.Hit(): caching new value for \"%v\"", tag)
-	c.cache[tag] = fn()
-	return c.cache[tag]
+	// if v, ok := c.cache[tag]; ok {
+	// 	// TraceF("WordLineCache.Hit(): returning cached value for \"%v\"", tag)
+	// 	return v
+	// }
+	// TraceF("WordLineCache.Hit(): caching new value for \"%v\"", tag)
+	// c.cache[tag] = fn()
+	// return c.cache[tag]
+	return fn()
 }
 
 func MakeTag(argv ...interface{}) (tag string) {
