@@ -462,7 +462,15 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 				origin := overlay.canvas.GetOrigin()
 				x -= origin.X
 				y -= origin.Y
-				evt = NewEventMouse(x, y, e.btn, e.mod)
+				evt = &EventMouse{
+					t: e.t,
+					btn: e.btn,
+					mod: e.mod,
+					x: x,
+					y: y,
+					s: e.s,
+					b: e.b,
+				}
 			}
 			overlayWindow = overlay.window
 		}
