@@ -29,7 +29,7 @@ import (
 
 var (
 	DisplayCallQueueCapacity = 16
-	cdkDisplayManager        DisplayManager
+	cdkDisplayManager        *CDisplayManager
 )
 
 const (
@@ -42,10 +42,11 @@ const (
 	SignalEventKey        Signal   = "event-key"
 	SignalEventMouse      Signal   = "event-mouse"
 	SignalEventResize     Signal   = "event-resize"
+	SignalSetEventFocus   Signal   = "set-event-focus"
 )
 
 func init() {
-	_ = TypesManager.AddType(TypeDisplayManager, func() interface{} { return &CDisplayManager{} })
+	_ = TypesManager.AddType(TypeDisplayManager, func() interface{} { return nil })
 }
 
 type DisplayCallbackFn = func(d DisplayManager) error
@@ -107,10 +108,11 @@ type CDisplayManager struct {
 	windows map[int]*cWindowCanvas
 	overlay map[int][]*cWindowCanvas
 
-	app      *CApp
-	ttyPath  string
-	display  Display
-	captured bool
+	app        *CApp
+	ttyPath    string
+	display    Display
+	captured   bool
+	eventFocus interface{}
 
 	running  bool
 	waiting  bool
@@ -163,6 +165,7 @@ func (d *CDisplayManager) Init() (already bool) {
 	d.process = make(chan Event, DisplayCallQueueCapacity)
 	d.requests = make(chan ScreenStateReq, DisplayCallQueueCapacity)
 
+	d.eventFocus = nil
 	d.windows = make(map[int]*cWindowCanvas)
 	d.overlay = make(map[int][]*cWindowCanvas)
 	d.active = -1
@@ -352,9 +355,10 @@ func (d *CDisplayManager) RemoveWindow(wid int) {
 }
 
 func (d *CDisplayManager) AddWindowOverlay(pid int, overlay Window, region Region) {
-	if wc, ok := d.overlay[pid]; ok {
-		d.overlay[pid] = append(wc, newWindowCanvas(overlay, region.Origin(), region.Size(), d.GetTheme().Content.Normal))
+	if _, ok := d.overlay[pid]; !ok {
+		d.overlay[pid] = make([]*cWindowCanvas, 0)
 	}
+	d.overlay[pid] = append(d.overlay[pid], newWindowCanvas(overlay, region.Origin(), region.Size(), d.GetTheme().Content.Normal))
 }
 
 func (d *CDisplayManager) RemoveWindowOverlay(pid int, oid int) {
@@ -376,17 +380,101 @@ func (d *CDisplayManager) GetWindows() (windows []Window) {
 	return
 }
 
+// func (d *CDisplayManager) GetOverlays() (windows []Window) {
+// 	for _, overlays := range d.overlay {
+// 		for _, overlay := range overlays {
+// 			windows = append(windows, overlay.window)
+// 		}
+// 	}
+// 	return
+// }
+
+func (d *CDisplayManager) GetOverlayWindow(windowId int) (window Window) {
+	if overlays, ok := d.overlay[windowId]; ok {
+		if last := len(overlays) - 1; last > -1 {
+			window = overlays[last].window
+		}
+	}
+	return
+}
+
+func (d *CDisplayManager) GetOverlayRegion(windowId int) (region Region) {
+	if overlays, ok := d.overlay[windowId]; ok {
+		if last := len(overlays) - 1; last > -1 {
+			origin := overlays[last].canvas.GetOrigin()
+			size := overlays[last].canvas.GetSize()
+			region = MakeRegion(origin.X, origin.Y, size.W, size.H)
+		}
+	} else {
+		d.LogError("window not found: %v", windowId)
+	}
+	return
+}
+
+func (d *CDisplayManager) SetOverlayRegion(windowId int, region Region) {
+	if overlays, ok := d.overlay[windowId]; ok {
+		if last := len(overlays) - 1; last > -1 {
+			overlays[last].canvas.SetOrigin(region.Origin())
+			overlays[last].canvas.Resize(region.Size(), d.GetTheme().Content.Normal)
+		}
+	} else {
+		d.LogError("window not found: %v", windowId)
+	}
+}
+
+func (d *CDisplayManager) getOverlay(windowId int) (overlay *cWindowCanvas) {
+	if overlays, ok := d.overlay[windowId]; ok {
+		if last := len(overlays) - 1; last > -1 {
+			overlay = overlays[last]
+		}
+	}
+	return
+}
+
 func (d *CDisplayManager) App() *CApp {
 	return d.app
 }
 
-func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
-	if w := d.ActiveWindow(); w != nil {
-		if overlays, ok := d.overlay[w.ObjectID()]; ok {
-			if last := len(overlays) - 1; last > -1 {
-				return overlays[last].window.ProcessEvent(evt)
-			}
+func (d *CDisplayManager) SetEventFocus(widget interface{}) error {
+	if widget != nil {
+		if _, ok := widget.(Sensitive); !ok {
+			return fmt.Errorf("widget does not implement Sensitive: %v (%T)", widget, widget)
 		}
+	}
+	if f := d.Emit(SignalSetEventFocus); f == EVENT_PASS {
+		d.eventFocus = widget
+	}
+	return nil
+}
+
+func (d *CDisplayManager) GetEventFocus() (widget interface{}) {
+	widget = d.eventFocus
+	return
+}
+
+func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
+	var overlayWindow Window
+	if w := d.ActiveWindow(); w != nil {
+		if overlay := d.getOverlay(w.ObjectID()); overlay != nil {
+			switch e := evt.(type) {
+			case *EventMouse:
+				x, y := e.Position()
+				origin := overlay.canvas.GetOrigin()
+				x -= origin.X
+				y -= origin.Y
+				evt = NewEventMouse(x, y, e.btn, e.mod)
+			}
+			overlayWindow = overlay.window
+		}
+	}
+	if d.eventFocus != nil {
+		if sensitive, ok := d.eventFocus.(Sensitive); ok {
+			return sensitive.ProcessEvent(evt)
+		}
+		d.LogError("event focus does not implement Sensitive: %v (%T)", d.eventFocus, d.eventFocus)
+		return EVENT_PASS
+	} else if overlayWindow != nil {
+		return overlayWindow.ProcessEvent(evt)
 	}
 	switch e := evt.(type) {
 	case *EventError:
