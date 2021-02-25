@@ -771,7 +771,7 @@ func (t *cDisplay) TPuts(s string) {
 	if t.buffering {
 		t.ti.TPuts(&t.buf, s)
 	} else {
-		t.term.Write([]byte(s))
+		_, _ = t.term.Write([]byte(s))
 	}
 }
 

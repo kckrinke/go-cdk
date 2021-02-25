@@ -53,24 +53,21 @@ type DisplayCallbackFn = func(d DisplayManager) error
 type DisplayManager interface {
 	Object
 
+	Init() (already bool)
+	Destroy()
 	GetTitle() string
 	SetTitle(title string)
-
 	GetTtyPath() string
 	SetTtyPath(ttyPath string)
-
 	Display() Display
 	DisplayCaptured() bool
 	CaptureDisplay(ttyPath string)
 	ReleaseDisplay()
 	IsMonochrome() bool
 	Colors() (numberOfColors int)
-
 	CaptureCtrlC()
 	ReleaseCtrlC()
-
 	DefaultTheme() Theme
-
 	ActiveWindow() Window
 	ActiveCanvas() Canvas
 	SetActiveWindow(w Window)
@@ -78,22 +75,24 @@ type DisplayManager interface {
 	RemoveWindow(wid int)
 	AddWindowOverlay(pid int, overlay Window, region Region)
 	RemoveWindowOverlay(pid int, oid int)
-	GetWindows() []Window
-
+	GetWindows() (windows []Window)
+	GetOverlayWindow(windowId int) (window Window)
+	GetOverlayRegion(windowId int) (region Region)
+	SetOverlayRegion(windowId int, region Region)
 	App() *CApp
+	SetEventFocus(widget interface{}) error
+	GetEventFocus() (widget interface{})
 	ProcessEvent(evt Event) EventFlag
 	DrawScreen() EventFlag
-
 	RequestDraw()
 	RequestShow()
 	RequestSync()
 	RequestQuit()
-	PostEvent(evt Event) error
 	AsyncCall(fn DisplayCallbackFn) error
 	AwaitCall(fn DisplayCallbackFn) error
-
-	IsRunning() bool
+	PostEvent(evt Event) error
 	Run() error
+	IsRunning() bool
 }
 
 // Basic display type
@@ -135,6 +134,9 @@ func newWindowCanvas(w Window, origin Point2I, size Rectangle, style Style) *cWi
 }
 
 func NewDisplayManager(title string, ttyPath string) *CDisplayManager {
+	if cdkDisplayManager != nil {
+		return cdkDisplayManager
+	}
 	d := new(CDisplayManager)
 	d.title = title
 	d.ttyPath = ttyPath

@@ -154,7 +154,7 @@ func (ev *EventMouse) WheelImpulse() ButtonMask {
 	b := ButtonNone
 	for i := uint(8); i < 12; i++ {
 		if int(ev.btn)&(1<<i) != 0 {
-			b |= (1 << i)
+			b |= 1 << i
 			break
 		}
 	}
@@ -165,7 +165,7 @@ func (ev *EventMouse) ButtonPressed() ButtonMask {
 	b := ButtonNone
 	for i := uint(0); i < 8; i++ {
 		if int(ev.btn)&(1<<i) != 0 {
-			b |= (1 << i)
+			b |= 1 << i
 		}
 	}
 	return b
