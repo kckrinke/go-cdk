@@ -68,6 +68,14 @@ func (ev *EventError) Error() string {
 	return ev.err.Error()
 }
 
+func (ev *EventError) Err() error {
+	return ev.err
+}
+
+func (ev *EventError) Clone() *EventError {
+	return &EventError{t: ev.t, err: ev.err}
+}
+
 // NewEventError creates an ErrorEvent with the given error payload.
 func NewEventError(err error) *EventError {
 	return &EventError{t: time.Now(), err: err}

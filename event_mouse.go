@@ -84,6 +84,30 @@ func NewEventMouse(x, y int, btn ButtonMask, mod ModMask) *EventMouse {
 	return em
 }
 
+func (ev *EventMouse) Clone() Event {
+	return &EventMouse{
+		t:   ev.t,
+		x:   ev.x,
+		y:   ev.y,
+		btn: ev.btn,
+		mod: ev.mod,
+		s:   ev.s,
+		b:   ev.b,
+	}
+}
+
+func (ev *EventMouse) CloneForPosition(x, y int) Event {
+	return &EventMouse{
+		t:   ev.t,
+		x:   x,
+		y:   y,
+		btn: ev.btn,
+		mod: ev.mod,
+		s:   ev.s,
+		b:   ev.b,
+	}
+}
+
 // When returns the time when this EventMouse was created.
 func (ev *EventMouse) When() time.Time {
 	return ev.t
