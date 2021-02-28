@@ -71,7 +71,6 @@ type DisplayManager interface {
 	ReleaseCtrlC()
 	DefaultTheme() Theme
 	ActiveWindow() Window
-	ActiveCanvas() Canvas
 	SetActiveWindow(w Window)
 	AddWindow(w Window)
 	RemoveWindow(wid int)
@@ -320,7 +319,7 @@ func (d *CDisplayManager) ActiveWindow() Window {
 	return nil
 }
 
-func (d *CDisplayManager) ActiveCanvas() Canvas {
+func (d *CDisplayManager) activeCanvas() Canvas {
 	if wc, ok := d.windows[d.active]; ok {
 		return wc.canvas
 	}
@@ -477,15 +476,7 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 				origin := overlay.canvas.GetOrigin()
 				x -= origin.X
 				y -= origin.Y
-				evt = &EventMouse{
-					t:   e.t,
-					btn: e.btn,
-					mod: e.mod,
-					x:   x,
-					y:   y,
-					s:   e.s,
-					b:   e.b,
-				}
+				evt = e.CloneForPosition(x, y)
 			}
 			overlayWindow = overlay.window
 		}
@@ -501,6 +492,19 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 		d.LogError("event focus does not implement Sensitive: %v (%T)", d.eventFocus, d.eventFocus)
 		return EVENT_PASS
 	} else if overlayWindow != nil {
+		switch e := evt.(type) {
+		case *EventResize:
+			if w := d.ActiveWindow(); w != nil {
+				if ac := d.activeCanvas(); ac != nil {
+					alloc := MakeRectangle(d.display.Size())
+					ac.Resize(alloc, d.GetTheme().Content.Normal)
+					if f := w.ProcessEvent(e); f == EVENT_STOP {
+						d.RequestDraw()
+						d.RequestShow()
+					}
+				}
+			}
+		}
 		return overlayWindow.ProcessEvent(evt)
 	}
 	switch e := evt.(type) {
@@ -538,7 +542,7 @@ func (d *CDisplayManager) ProcessEvent(evt Event) EventFlag {
 		return d.Emit(SignalEventMouse, d, e)
 	case *EventResize:
 		if aw := d.ActiveWindow(); aw != nil {
-			if ac := d.ActiveCanvas(); ac != nil {
+			if ac := d.activeCanvas(); ac != nil {
 				alloc := MakeRectangle(d.display.Size())
 				ac.Resize(alloc, d.GetTheme().Content.Normal)
 				if f := aw.ProcessEvent(evt); f == EVENT_STOP {
@@ -563,14 +567,9 @@ func (d *CDisplayManager) DrawScreen() EventFlag {
 		d.LogError("display not captured or otherwise missing")
 		return EVENT_PASS
 	}
-	var window Window
-	if window = d.ActiveWindow(); window == nil {
-		d.LogDebug("cannot draw the display, display missing a window")
-		return EVENT_PASS
-	}
 	if aw := d.ActiveWindow(); aw != nil {
-		if ac := d.ActiveCanvas(); ac != nil {
-			if f := window.Draw(ac); f == EVENT_STOP {
+		if ac := d.activeCanvas(); ac != nil {
+			if f := aw.Draw(ac); f == EVENT_STOP {
 				if overlays, ok := d.overlay[aw.ObjectID()]; ok {
 					for _, overlay := range overlays {
 						if of := overlay.window.Draw(overlay.canvas); of == EVENT_STOP {
