@@ -161,12 +161,24 @@ func (app *CApp) InitUI() error {
 	return app.initFn(app.DisplayManager())
 }
 
-func (app *CApp) AddFlag(f cli.Flag) {
-	app.cli.Flags = append(app.cli.Flags, f)
+func (app *CApp) AddFlag(flag cli.Flag) {
+	app.cli.Flags = append(app.cli.Flags, flag)
 }
 
-func (app *CApp) AddCommand(c *cli.Command) {
-	app.cli.Commands = append(app.cli.Commands, c)
+func (app *CApp) AddFlags(flags []cli.Flag) {
+	for _, f := range flags {
+		app.AddFlag(f)
+	}
+}
+
+func (app *CApp) AddCommand(command *cli.Command) {
+	app.cli.Commands = append(app.cli.Commands, command)
+}
+
+func (app *CApp) AddCommands(commands []*cli.Command) {
+	for _, c := range commands {
+		app.AddCommand(c)
+	}
 }
 
 func (app *CApp) Run(args []string) error {

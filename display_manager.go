@@ -94,6 +94,8 @@ type DisplayManager interface {
 	AsyncCall(fn DisplayCallbackFn) error
 	AwaitCall(fn DisplayCallbackFn) error
 	PostEvent(evt Event) error
+	AddQuitHandler(tag string, fn func())
+	RemoveQuitHandler(tag string)
 	Run() error
 	IsRunning() bool
 }
@@ -116,6 +118,7 @@ type CDisplayManager struct {
 	captured   bool
 	eventFocus interface{}
 	priorEvent Event
+	quitters   map[string]func()
 
 	running  bool
 	waiting  bool
@@ -173,6 +176,7 @@ func (d *CDisplayManager) Init() (already bool) {
 
 	d.priorEvent = nil
 	d.eventFocus = nil
+	d.quitters = make(map[string]func())
 	d.windows = make(map[int]*cWindowCanvas)
 	d.overlay = make(map[int][]*cWindowCanvas)
 	d.active = -1
@@ -682,6 +686,7 @@ func (d *CDisplayManager) processEventWorker() {
 		}
 	}
 }
+
 func (d *CDisplayManager) screenRequestWorker() {
 	if d.running {
 		if err := d.app.InitUI(); err != nil {
@@ -708,6 +713,19 @@ func (d *CDisplayManager) screenRequestWorker() {
 	}
 }
 
+func (d *CDisplayManager) AddQuitHandler(tag string, fn func()) {
+	if _, ok := d.quitters[tag]; ok {
+		d.LogWarn("replacing quit handler: %v", tag)
+	}
+	d.quitters[tag] = fn
+}
+
+func (d *CDisplayManager) RemoveQuitHandler(tag string) {
+	if _, ok := d.quitters[tag]; ok {
+		delete(d.quitters, tag)
+	}
+}
+
 func (d *CDisplayManager) Run() error {
 	d.CaptureDisplay(d.ttyPath)
 	d.running = true
@@ -721,6 +739,9 @@ func (d *CDisplayManager) Run() error {
 		close(d.queue)
 		if p := recover(); p != nil {
 			panic(p)
+		}
+		for _, quitter := range d.quitters {
+			quitter()
 		}
 	}()
 	AddTimeout(time.Millisecond*51, func() EventFlag {
