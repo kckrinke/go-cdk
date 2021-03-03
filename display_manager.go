@@ -77,9 +77,10 @@ type DisplayManager interface {
 	AddWindowOverlay(pid int, overlay Window, region Region)
 	RemoveWindowOverlay(pid int, oid int)
 	GetWindows() (windows []Window)
-	GetOverlayWindow(windowId int) (window Window)
-	GetOverlayRegion(windowId int) (region Region)
-	SetOverlayRegion(windowId int, region Region)
+	GetWindowOverlays(windowId int) (windows []Window)
+	GetWindowTopOverlay(windowId int) (window Window)
+	GetWindowOverlayRegion(windowId, overlayId int) (region Region)
+	SetWindowOverlayRegion(windowId, overlayId int, region Region)
 	App() *CApp
 	SetEventFocus(widget interface{}) error
 	GetEventFocus() (widget interface{})
@@ -389,16 +390,16 @@ func (d *CDisplayManager) GetWindows() (windows []Window) {
 	return
 }
 
-// func (d *CDisplayManager) GetOverlays() (windows []Window) {
-// 	for _, overlays := range d.overlay {
-// 		for _, overlay := range overlays {
-// 			windows = append(windows, overlay.window)
-// 		}
-// 	}
-// 	return
-// }
+func (d *CDisplayManager) GetWindowOverlays(windowId int) (windows []Window) {
+	if overlays, ok := d.overlay[windowId]; ok {
+		for _, overlay := range overlays {
+			windows = append(windows, overlay.window)
+		}
+	}
+	return
+}
 
-func (d *CDisplayManager) GetOverlayWindow(windowId int) (window Window) {
+func (d *CDisplayManager) GetWindowTopOverlay(windowId int) (window Window) {
 	if overlays, ok := d.overlay[windowId]; ok {
 		if last := len(overlays) - 1; last > -1 {
 			window = overlays[last].window
@@ -407,12 +408,15 @@ func (d *CDisplayManager) GetOverlayWindow(windowId int) (window Window) {
 	return
 }
 
-func (d *CDisplayManager) GetOverlayRegion(windowId int) (region Region) {
+func (d *CDisplayManager) GetWindowOverlayRegion(windowId, overlayId int) (region Region) {
 	if overlays, ok := d.overlay[windowId]; ok {
-		if last := len(overlays) - 1; last > -1 {
-			origin := overlays[last].canvas.GetOrigin()
-			size := overlays[last].canvas.GetSize()
-			region = MakeRegion(origin.X, origin.Y, size.W, size.H)
+		for _, overlay := range overlays {
+			if overlay.window.ObjectID() == overlayId {
+				origin := overlay.canvas.GetOrigin()
+				size := overlay.canvas.GetSize()
+				region = MakeRegion(origin.X, origin.Y, size.W, size.H)
+				break
+			}
 		}
 	} else {
 		d.LogError("window not found: %v", windowId)
@@ -420,11 +424,14 @@ func (d *CDisplayManager) GetOverlayRegion(windowId int) (region Region) {
 	return
 }
 
-func (d *CDisplayManager) SetOverlayRegion(windowId int, region Region) {
+func (d *CDisplayManager) SetWindowOverlayRegion(windowId, overlayId int, region Region) {
 	if overlays, ok := d.overlay[windowId]; ok {
-		if last := len(overlays) - 1; last > -1 {
-			overlays[last].canvas.SetOrigin(region.Origin())
-			overlays[last].canvas.Resize(region.Size(), d.GetTheme().Content.Normal)
+		for _, overlay := range overlays {
+			if overlay.window.ObjectID() == overlayId {
+				overlay.canvas.SetOrigin(region.Origin())
+				overlay.canvas.Resize(region.Size(), d.GetTheme().Content.Normal)
+				break
+			}
 		}
 	} else {
 		d.LogError("window not found: %v", windowId)
