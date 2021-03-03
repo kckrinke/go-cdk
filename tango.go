@@ -42,14 +42,9 @@ import (
 	"unicode/utf8"
 )
 
-var (
-	TabSize  = 8
-	TabStops = false
-)
-
 type Tango interface {
 	Raw() string
-	TextBuffer() TextBuffer
+	TextBuffer(mnemonic bool) TextBuffer
 }
 
 type CTango struct {
@@ -79,8 +74,8 @@ func (m *CTango) Raw() string {
 	return m.raw
 }
 
-func (m *CTango) TextBuffer() TextBuffer {
-	tb := NewEmptyTextBuffer(m.style)
+func (m *CTango) TextBuffer(mnemonic bool) TextBuffer {
+	tb := NewEmptyTextBuffer(m.style, mnemonic)
 	tb.SetInput(m.input)
 	return tb
 }

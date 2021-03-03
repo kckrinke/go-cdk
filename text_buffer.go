@@ -26,33 +26,40 @@ var (
 
 type TextBuffer interface {
 	Set(input string, style Style)
+	Input() (raw string)
 	SetInput(input WordLine)
 	Style() Style
 	SetStyle(style Style)
+	Mnemonic() (enabled bool)
+	SetMnemonic(enabled bool)
 	CharacterCount() (cellCount int)
 	WordCount() (wordCount int)
+	ClearText(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (plain string)
 	PlainText(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (plain string)
 	PlainTextInfo(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (longestLine, lineCount int)
 	Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, ellipsize bool, justify Justification, vAlign VerticalAlignment) EventFlag
 }
 
 type CTextBuffer struct {
-	raw   string
-	input WordLine
-	style Style
+	raw       string
+	input     WordLine
+	style     Style
+	mnemonics bool
 
 	sync.Mutex
 }
 
-func NewEmptyTextBuffer(style Style) TextBuffer {
+func NewEmptyTextBuffer(style Style, mnemonic bool) TextBuffer {
 	return &CTextBuffer{
-		style: style,
+		style:     style,
+		mnemonics: mnemonic,
 	}
 }
 
-func NewTextBuffer(input string, style Style) TextBuffer {
+func NewTextBuffer(input string, style Style, mnemonic bool) TextBuffer {
 	tb := &CTextBuffer{
-		style: style,
+		style:     style,
+		mnemonics: mnemonic,
 	}
 	tb.Set(input, style)
 	return tb
@@ -61,6 +68,10 @@ func NewTextBuffer(input string, style Style) TextBuffer {
 func (b *CTextBuffer) Set(input string, style Style) {
 	b.raw = input
 	b.input = NewWordLine(input, style)
+}
+
+func (b *CTextBuffer) Input() (raw string) {
+	return b.raw
 }
 
 func (b *CTextBuffer) SetInput(input WordLine) {
@@ -81,6 +92,14 @@ func (b *CTextBuffer) SetStyle(style Style) {
 	}
 }
 
+func (b *CTextBuffer) Mnemonic() (enabled bool) {
+	return b.mnemonics
+}
+
+func (b *CTextBuffer) SetMnemonic(enabled bool) {
+	b.mnemonics = enabled
+}
+
 func (b *CTextBuffer) CharacterCount() (cellCount int) {
 	if b.input != nil {
 		cellCount = b.input.CharacterCount()
@@ -95,8 +114,22 @@ func (b *CTextBuffer) WordCount() (wordCount int) {
 	return
 }
 
+func (b *CTextBuffer) ClearText(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (plain string) {
+	lines := b.input.Make(false, wordWrap, ellipsize, justify, maxChars, b.style)
+	for _, line := range lines {
+		if len(plain) > 0 {
+			plain += "\n"
+		}
+		for _, word := range line.Words() {
+			for _, char := range word.Characters() {
+				plain += string(char.Value())
+			}
+		}
+	}
+	return
+}
 func (b *CTextBuffer) PlainText(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (plain string) {
-	lines := b.input.Make(wordWrap, ellipsize, justify, maxChars, b.style)
+	lines := b.input.Make(b.mnemonics, wordWrap, ellipsize, justify, maxChars, b.style)
 	for _, line := range lines {
 		if len(plain) > 0 {
 			plain += "\n"
@@ -111,7 +144,7 @@ func (b *CTextBuffer) PlainText(wordWrap WrapMode, ellipsize bool, justify Justi
 }
 
 func (b *CTextBuffer) PlainTextInfo(wordWrap WrapMode, ellipsize bool, justify Justification, maxChars int) (longestLine, lineCount int) {
-	lines := b.input.Make(wordWrap, ellipsize, justify, maxChars, b.style)
+	lines := b.input.Make(b.mnemonics, wordWrap, ellipsize, justify, maxChars, b.style)
 	lineCount = len(lines)
 	for _, line := range lines {
 		lcc := line.CharacterCount()
@@ -135,7 +168,7 @@ func (b *CTextBuffer) Draw(canvas Canvas, singleLine bool, wordWrap WrapMode, el
 	}
 
 	maxChars := canvas.Width()
-	lines := b.input.Make(wordWrap, ellipsize, justify, maxChars, b.style)
+	lines := b.input.Make(b.mnemonics, wordWrap, ellipsize, justify, maxChars, b.style)
 	size := canvas.GetSize()
 	if size.W <= 0 || size.H <= 0 {
 		return EVENT_PASS

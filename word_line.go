@@ -35,7 +35,7 @@ type WordLine interface {
 	HasSpace() bool
 	Value() (s string)
 	String() (s string)
-	Make(wrap WrapMode, ellipsize bool, justify Justification, maxChars int, fillerStyle Style) (formatted []WordLine)
+	Make(mnemonic bool, wrap WrapMode, ellipsize bool, justify Justification, maxChars int, fillerStyle Style) (formatted []WordLine)
 }
 
 type CWordLine struct {
@@ -83,7 +83,6 @@ func (w *CWordLine) SetLine(line string, style Style) {
 				w.words = append(w.words, NewEmptyWordCell())
 				wid = len(w.words) - 1
 			}
-			// appending to the "real" word
 			w.words[wid].AppendRune(c, style)
 		}
 	}
@@ -212,23 +211,43 @@ func (w *CWordLine) String() (s string) {
 }
 
 // wrap, justify and align the set input, with filler style
-func (w *CWordLine) Make(wrap WrapMode, ellipsize bool, justify Justification, maxChars int, fillerStyle Style) (formatted []WordLine) {
-	return w.cache.Hit(MakeTag(wrap, justify, maxChars, fillerStyle), func() []WordLine {
+func (w *CWordLine) Make(mnemonic bool, wrap WrapMode, ellipsize bool, justify Justification, maxChars int, fillerStyle Style) (formatted []WordLine) {
+	return w.cache.Hit(MakeTag(mnemonic, wrap, justify, maxChars, fillerStyle), func() []WordLine {
 		var lines []WordLine
 		lines = append(lines, NewEmptyWordLine())
 		cid, wid, lid := 0, 0, 0
+		mnemonicFound := false
 		for _, word := range w.words {
-			for _, c := range word.Characters() {
+			for wcId, c := range word.Characters() {
 				switch c.Value() {
 				case '\n':
 					lines = append(lines, NewEmptyWordLine())
 					lid = len(lines) - 1
 					wid = -1
+				case '_':
+					if mnemonic {
+						nextId := wcId + 1
+						if l := word.Len(); l > nextId {
+							ch := word.GetCharacter(nextId)
+							switch ch.Value() {
+							case '_', ' ':
+							default:
+								mnemonicFound = true
+								continue
+							}
+						}
+					}
+					fallthrough
 				default:
 					if wid >= lines[lid].Len() {
 						lines[lid].AppendWordCell(NewEmptyWordCell())
 					}
-					lines[lid].AppendWordRune(wid, c.Value(), c.Style())
+					if mnemonicFound {
+						_ = lines[lid].AppendWordRune(wid, c.Value(), c.Style().Underline(true))
+						mnemonicFound = false
+					} else {
+						_ = lines[lid].AppendWordRune(wid, c.Value(), c.Style())
+					}
 				}
 				cid++
 			}
