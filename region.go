@@ -59,6 +59,14 @@ func (r Region) String() string {
 	return fmt.Sprintf("{x:%v,y:%v,w:%v,h:%v}", r.X, r.Y, r.H, r.W)
 }
 
+func (r Region) Clone() (clone Region) {
+	clone.X = r.X
+	clone.Y = r.Y
+	clone.W = r.W
+	clone.H = r.H
+	return
+}
+
 func (r *Region) SetRegion(x, y, w, h int) {
 	r.X, r.Y, r.W, r.H = x, y, w, h
 }

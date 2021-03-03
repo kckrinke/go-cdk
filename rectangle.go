@@ -53,6 +53,12 @@ func (r Rectangle) String() string {
 	return fmt.Sprintf("{w:%v,h:%v}", r.W, r.H)
 }
 
+func (r Rectangle) Clone() (clone Rectangle) {
+	clone.W = r.W
+	clone.H = r.H
+	return
+}
+
 func (r Rectangle) Equals(w, h int) bool {
 	return r.W == w && r.H == h
 }
