@@ -202,6 +202,13 @@ var KeyNames = map[Key]string{
 	KeyCtrlCarat:      "Ctrl-^",
 }
 
+func LookupKeyName(key Key) string {
+	if s, ok := KeyNames[key]; ok {
+		return s
+	}
+	return fmt.Sprintf("%v", key)
+}
+
 // Name returns a printable value or the key stroke.  This can be used
 // when printing the event, for example.
 func (ev *EventKey) Name() string {
@@ -278,6 +285,23 @@ const (
 
 func (m ModMask) Has(mask ModMask) bool {
 	return m&mask != 0
+}
+
+func (m ModMask) String() string {
+	v := ""
+	if m.Has(ModCtrl) {
+		v += "<Control>"
+	}
+	if m.Has(ModAlt) {
+		v += "<Alt>"
+	}
+	if m.Has(ModMeta) {
+		v += "<Meta>"
+	}
+	if m.Has(ModShift) {
+		v += "<Shift>"
+	}
+	return v
 }
 
 // Key is a generic value for representing keys, and especially special
@@ -473,3 +497,110 @@ const (
 	KeyEnter      = KeyCR
 	KeyBackspace2 = KeyDEL
 )
+
+// ASCII Keys
+const (
+	KeySpacebar           Key = KeyRune
+	KeySpace              Key = 32
+	KeyExclamationMark    Key = 33
+	KeyDoubleQuote        Key = 34
+	KeyNumber             Key = 35
+	KeyDollarSign         Key = 36
+	KeyPercent            Key = 37
+	KeyAmpersand          Key = 38
+	KeySingleQuote        Key = 39
+	KeyLeftParenthesis    Key = 40
+	KeyRightParenthesis   Key = 41
+	KeyAsterisk           Key = 42
+	KeyPlus               Key = 43
+	KeyComma              Key = 44
+	KeyMinus              Key = 45
+	KeyPeriod             Key = 46
+	KeySlash              Key = 47
+	KeyZero               Key = 48
+	KeyOne                Key = 49
+	KeyTwo                Key = 50
+	KeyThree              Key = 51
+	KeyFour               Key = 52
+	KeyFive               Key = 53
+	KeySix                Key = 54
+	KeySeven              Key = 55
+	KeyEight              Key = 56
+	KeyNine               Key = 57
+	KeyColon              Key = 58
+	KeySemicolon          Key = 59
+	KeyLessThan           Key = 60
+	KeyEqualitySign       Key = 61
+	KeyGreaterThan        Key = 62
+	KeyQuestionMark       Key = 63
+	KeyAtSign             Key = 64
+	KeyCapitalA           Key = 65
+	KeyCapitalB           Key = 66
+	KeyCapitalC           Key = 67
+	KeyCapitalD           Key = 68
+	KeyCapitalE           Key = 69
+	KeyCapitalF           Key = 70
+	KeyCapitalG           Key = 71
+	KeyCapitalH           Key = 72
+	KeyCapitalI           Key = 73
+	KeyCapitalJ           Key = 74
+	KeyCapitalK           Key = 75
+	KeyCapitalL           Key = 76
+	KeyCapitalM           Key = 77
+	KeyCapitalN           Key = 78
+	KeyCapitalO           Key = 79
+	KeyCapitalP           Key = 80
+	KeyCapitalQ           Key = 81
+	KeyCapitalR           Key = 82
+	KeyCapitalS           Key = 83
+	KeyCapitalT           Key = 84
+	KeyCapitalU           Key = 85
+	KeyCapitalV           Key = 86
+	KeyCapitalW           Key = 87
+	KeyCapitalX           Key = 88
+	KeyCapitalY           Key = 89
+	KeyCapitalZ           Key = 90
+	KeyLeftSquareBracket  Key = 91
+	KeyBackslash          Key = 92
+	KeyRightSquareBracket Key = 93
+	KeyCaretCircumflex    Key = 94
+	KeyUnderscore         Key = 95
+	KeyGraveAccent        Key = 96
+	KeySmallA             Key = 97
+	KeySmallB             Key = 98
+	KeySmallC             Key = 99
+	KeySmallD             Key = 100
+	KeySmallE             Key = 101
+	KeySmallF             Key = 102
+	KeySmallG             Key = 103
+	KeySmallH             Key = 104
+	KeySmallI             Key = 105
+	KeySmallJ             Key = 106
+	KeySmallK             Key = 107
+	KeySmallL             Key = 108
+	KeySmallM             Key = 109
+	KeySmallN             Key = 110
+	KeySmallO             Key = 111
+	KeySmallP             Key = 112
+	KeySmallQ             Key = 113
+	KeySmallR             Key = 114
+	KeySmallS             Key = 115
+	KeySmallT             Key = 116
+	KeySmallU             Key = 117
+	KeySmallV             Key = 118
+	KeySmallW             Key = 119
+	KeySmallX             Key = 120
+	KeySmallY             Key = 121
+	KeySmallZ             Key = 122
+	KeyLeftCurlyBracket   Key = 123
+	KeyVerticalBar        Key = 124
+	KeyRightCurlyBracket  Key = 125
+	KeyTilde              Key = 126
+)
+
+func LookupKeyRune(r rune) Key {
+	if r >= 32 && r <= 126 {
+		return Key(r)
+	}
+	return 0
+}
