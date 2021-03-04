@@ -211,7 +211,6 @@ func SetCurrentTheme(theme Theme) {
 }
 
 func (d *CDisplayManager) Destroy() {
-	d.CObject.Destroy()
 	d.ReleaseDisplay()
 	d.closeChannels()
 }
