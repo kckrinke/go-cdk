@@ -23,24 +23,24 @@ import (
 func TestTextBuffer(t *testing.T) {
 	Convey("Text Buffers with...", t, func() {
 		Convey("Basic checks", func() {
-			tb := NewEmptyTextBuffer(DefaultMonoStyle)
+			tb := NewEmptyTextBuffer(DefaultMonoStyle, false)
 			So(tb, ShouldNotBeNil)
 			So(tb.Style().String(), ShouldEqual, DefaultMonoStyle.String())
 			So(tb.CharacterCount(), ShouldEqual, 0)
 			So(tb.WordCount(), ShouldEqual, 0)
-			tb = NewTextBuffer("test", DefaultMonoStyle)
+			tb = NewTextBuffer("test", DefaultMonoStyle, false)
 			So(tb, ShouldNotBeNil)
 			So(tb.CharacterCount(), ShouldEqual, 4)
 			So(tb.WordCount(), ShouldEqual, 1)
 		})
 		Convey("Draw checks", func() {
-			tb := NewEmptyTextBuffer(DefaultMonoStyle)
+			tb := NewEmptyTextBuffer(DefaultMonoStyle, false)
 			So(tb, ShouldNotBeNil)
 			canvas := NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme.Content.Normal)
 			f := tb.Draw(canvas, true, WRAP_NONE, false, JUSTIFY_LEFT, ALIGN_TOP)
 			So(f, ShouldEqual, EVENT_PASS)
 
-			tb = NewTextBuffer("test", DefaultMonoStyle)
+			tb = NewTextBuffer("test", DefaultMonoStyle, false)
 			So(tb, ShouldNotBeNil)
 			canvas = NewCanvas(Point2I{}, Rectangle{10, 3}, DefaultMonoTheme.Content.Normal)
 			f = tb.Draw(canvas, true, WRAP_NONE, false, JUSTIFY_LEFT, ALIGN_TOP)
