@@ -122,6 +122,7 @@ type CDisplayManager struct {
 
 	running  bool
 	waiting  bool
+	closing  sync.Once
 	done     chan bool
 	queue    chan DisplayCallbackFn
 	events   chan Event
@@ -210,14 +211,18 @@ func SetCurrentTheme(theme Theme) {
 }
 
 func (d *CDisplayManager) Destroy() {
-	if d.display != nil {
-		d.display.Close()
-	}
-	close(d.done)
-	close(d.queue)
-	close(d.process)
-	close(d.requests)
 	d.CObject.Destroy()
+	d.ReleaseDisplay()
+	d.closeChannels()
+}
+
+func (d *CDisplayManager) closeChannels() {
+	d.closing.Do(func() {
+		close(d.done)
+		close(d.queue)
+		close(d.process)
+		close(d.requests)
+	})
 }
 
 func (d *CDisplayManager) GetTitle() string {
@@ -733,10 +738,7 @@ func (d *CDisplayManager) Run() error {
 	go d.processEventWorker()
 	go d.screenRequestWorker()
 	defer func() {
-		d.ReleaseDisplay()
-		close(d.done)
-		close(d.events)
-		close(d.queue)
+		d.Destroy()
 		if p := recover(); p != nil {
 			panic(p)
 		}

@@ -116,7 +116,6 @@ func (app *CApp) init() {
 
 func (app *CApp) Destroy() {
 	if app.display != nil {
-		app.display.ReleaseDisplay()
 		app.display.Destroy()
 	}
 	app.display = nil

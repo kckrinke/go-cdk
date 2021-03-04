@@ -89,7 +89,6 @@ func WithApp(initFn DisplayInitFn, action AppFn) func() {
 		)
 		defer func() {
 			if app.DisplayManager() != nil {
-				app.DisplayManager().ReleaseDisplay()
 				app.DisplayManager().Destroy()
 			}
 			app = nil
