@@ -101,7 +101,7 @@ func TestSignalingPatterns(t *testing.T) {
 		So(hit2, ShouldEqual, true)
 		err := s.Disconnect(SignalEventError, "many-errors-1")
 		So(err, ShouldNotBeNil)
-		So(err.Error(), ShouldEqual, "unknown signal handle: many-errors-1")
+		So(err.Error(), ShouldEqual, "event-error signal handler not found: many-errors-1")
 	})
 	Convey("Signaling Regulating", t, func() {
 		So(s.Disconnect(SignalEventError, "many-errors-0"), ShouldBeNil)

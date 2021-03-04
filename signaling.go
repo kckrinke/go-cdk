@@ -115,15 +115,20 @@ func (o *CSignaling) Disconnect(signal, handle Signal) error {
 	if _, ok := o.listeners[signal]; !ok {
 		return fmt.Errorf("signal not found: %v", signal)
 	}
+	found := false
 	var listeners []*CSignalListener
 	for _, s := range o.listeners[signal] {
 		if s.n != handle {
 			listeners = append(listeners, s)
-		} else {
-			o.LogTrace("disconnected %v listener: %v", signal, handle)
+		} else if !found {
+			found = true
 		}
 	}
+	if !found {
+		return fmt.Errorf("%v signal handler not found: %v", signal, handle)
+	}
 	o.listeners[signal] = listeners
+	o.LogTrace("disconnected %v listener: %v", signal, handle)
 	return nil
 }
 
