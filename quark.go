@@ -53,7 +53,7 @@ func QuarkFromString(text string) (qid QuarkID) {
 	}
 	cdkQuarkMap[next] = &CQuark{
 		id: next,
-		v: text,
+		v:  text,
 	}
 	return next
 }

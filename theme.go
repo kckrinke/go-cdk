@@ -47,7 +47,7 @@ var (
 )
 
 var (
-	DefaultNilTheme  = Theme{}
+	DefaultNilTheme        = Theme{}
 	DefaultMonoThemeAspect = ThemeAspect{
 		Normal:      DefaultMonoStyle,
 		Focused:     DefaultMonoStyle.Dim(false),

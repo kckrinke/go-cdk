@@ -142,6 +142,6 @@ const PropertyDebug Property = "debug"
 // property wrapper around the CTypeItem name field
 const PropertyName Property = "name"
 
-const PropertyTheme        Property = "theme"
+const PropertyTheme Property = "theme"
 
 const PropertyThemeRequest Property = "theme-request"
